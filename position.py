@@ -83,9 +83,9 @@ def ep_is_capturable(state: Bits, ep_square: Square) -> Flag:
     """
     black_to_move = state[STM] != ZERO
     us = state[BOCC] if black_to_move else state[WOCC]
-    # A pawn of ours can capture onto ep_square exactly when it stands on a square that
-    # attacks it, which is what the opposite colour's attack table from ep_square gives.
-    attackers = PAWN_ATT[1 if black_to_move else 0, ep_square]
+    # Same inverted index as in attacked(): the squares a BLACK pawn could capture from
+    # are the squares a WHITE pawn on ep_square would attack, so black uses PAWN_ATT[0].
+    attackers = PAWN_ATT[0 if black_to_move else 1, ep_square]
     return (attackers & state[PAWN] & us) != ZERO
 
 
@@ -241,11 +241,22 @@ def make(
     black = int64(src_state[STM])
     us = BOCC if black else WOCC
     them = WOCC if black else BOCC
+    us_colour = black
+    them_colour = 1 - black
     from_bit = ONE << U(frm)
     to_bit = ONE << U(to)
     moved = int64(src_mail[frm])
 
     dst_state[HALF] = src_state[HALF] + ONE
+
+    # Incremental Zobrist. A full recompute here costs a scan of all twelve bitboards per
+    # node, which measured at roughly a third of the total node cost.
+    key = src_state[KEY]
+    key ^= Z_STM[0]
+    if src_state[EP] != ZERO:
+        old_ep = int64(src_state[EP]) - 1
+        if ep_is_capturable(src_state, old_ep):
+            key ^= Z_EP[old_ep % 8]
 
     if flag == FLAG_EP:
         # The captured pawn sits beside the target square, not behind it: a black pawn
@@ -262,24 +273,31 @@ def make(
         dst_mail[frm] = -1
         dst_mail[to] = PAWN
         dst_state[HALF] = ZERO
+        key ^= Z_PIECE[them_colour, PAWN, capture_square]
+        key ^= Z_PIECE[us_colour, PAWN, frm]
+        key ^= Z_PIECE[us_colour, PAWN, to]
     else:
         captured = int64(src_mail[to])
         if captured >= 0:
             dst_state[captured] &= ~to_bit
             dst_state[them] &= ~to_bit
             dst_state[HALF] = ZERO
+            key ^= Z_PIECE[them_colour, captured, to]
         if moved == PAWN:
             dst_state[HALF] = ZERO
 
         dst_state[moved] &= ~from_bit
         dst_state[us] = (dst_state[us] & ~from_bit) | to_bit
         dst_mail[frm] = -1
+        key ^= Z_PIECE[us_colour, moved, frm]
         if flag == FLAG_PROMO:
             dst_state[promo] |= to_bit
             dst_mail[to] = int8(promo)
+            key ^= Z_PIECE[us_colour, promo, to]
         else:
             dst_state[moved] |= to_bit
             dst_mail[to] = int8(moved)
+            key ^= Z_PIECE[us_colour, moved, to]
 
         if flag == FLAG_CASTLE:
             if to == 6:
@@ -296,17 +314,30 @@ def make(
             dst_state[us] = (dst_state[us] & ~rook_from_bit) | rook_to_bit
             dst_mail[rook_from] = -1
             dst_mail[rook_to] = ROOK
+            key ^= Z_PIECE[us_colour, ROOK, rook_from]
+            key ^= Z_PIECE[us_colour, ROOK, rook_to]
 
     if moved == PAWN and (to - frm == 16 or frm - to == 16):
         dst_state[EP] = U((frm + to) // 2 + 1)
     else:
         dst_state[EP] = ZERO
 
-    dst_state[CASTLE] = U(int64(src_state[CASTLE]) & CASTLE_MASK[frm] & CASTLE_MASK[to])
+    old_rights = int64(src_state[CASTLE])
+    new_rights = old_rights & CASTLE_MASK[frm] & CASTLE_MASK[to]
+    dst_state[CASTLE] = U(new_rights)
+    key ^= Z_CASTLE[old_rights] ^ Z_CASTLE[new_rights]
+
     dst_state[STM] = U(1 - black)
     if black:
         dst_state[FULLMOVE] = src_state[FULLMOVE] + ONE
-    dst_state[KEY] = full_key(dst_state)
+
+    # The new en passant term needs the finished position: ep_is_capturable reads the
+    # updated pawns and the flipped side to move.
+    if dst_state[EP] != ZERO:
+        new_ep = int64(dst_state[EP]) - 1
+        if ep_is_capturable(dst_state, new_ep):
+            key ^= Z_EP[new_ep % 8]
+    dst_state[KEY] = key
 
 
 @njit(boolean(uint64[:], int64), cache=False, inline="always")
