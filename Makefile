@@ -9,7 +9,7 @@ play:
 	uv run python -m harness.play --white . --black baselines/greedy $(if $(FEN),--fen "$(FEN)") --pgn game.pgn
 
 arena:
-	uv run python -m harness.arena --opponent baselines/greedy --games 20
+	CHESSATHON_INCREMENT_MS=100 uv run python -m harness.arena --opponent baselines/greedy --games 20
 
 zip:
 	uv run python -m harness.package
@@ -17,7 +17,7 @@ zip:
 gate:
 	uv run ruff check .
 	uv run mypy
-	uv run python -m harness.arena --opponent baselines/random --games 2 --base-ms 5000
+	CHESSATHON_INCREMENT_MS=100 uv run python -m harness.arena --opponent baselines/random --games 2 --base-ms 5000
 
 test:
 	uv run pytest -q

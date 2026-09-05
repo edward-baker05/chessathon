@@ -1,75 +1,55 @@
-import chess
-from numba import int64, njit, uint64
+"""Evaluation. Centipawns, positive means the side to move is better.
 
-PIECE_VALUE = {
-    chess.PAWN: 100,
-    chess.KNIGHT: 320,
-    chess.BISHOP: 330,
-    chess.ROOK: 500,
-    chess.QUEEN: 900,
-}
+The search calls this at leaf nodes from jitted code, so it has to stay njit-compatible.
+That is the whole contract:
 
-MATE = 999999
+    evaluate(state, mailbox) -> int32
+
+`state` is one row of the position state vector and `mailbox` its 64-entry piece array, as
+laid out in position.py. Field indices come from bitboard.py.
+
+Two things to know before changing this.
+
+torch and onnxruntime must not appear here. Their per-call overhead is 20 to 50 us, which
+is larger than the entire budget for a node, so calling one per leaf would make the engine
+slower than it was before it had a real search at all. When this becomes an NNUE, train in
+torch offline, export quantised weights to a .npz, and do inference here in numba over an
+incrementally updated int16 accumulator. Fields 13 to 15 of the state vector are spare and
+reserved for exactly that.
+
+Checkmate and stalemate are not detected here. The search knows when a node has no legal
+moves and scores it, so an evaluation that looked for mate would be both slower and wrong
+at a node the search has already handled.
+"""
+
+from typing import Any
+
+import numpy as np
+from numba import int8, int32, njit, uint64
+
+from bitboard import BOCC, STM, WOCC, popcount
+
+Bits = Any
+
+# Pawn, knight, bishop, rook, queen. The king is not counted: both sides always have one.
+PIECE_VALUE = np.array([100, 320, 330, 500, 900], dtype=np.int32)
 
 
-@njit(uint64(uint64), cache=True)
-def popcount(x: int) -> int:
-    count = 0
-    while x:
-        x &= x - uint64(1)  # type: ignore[assignment]  # numba needs a same-width literal here
-        count += 1
-    return count
-
-
-@njit(int64(uint64, uint64, uint64, uint64, uint64, uint64, uint64), cache=True)
-def material_score(
-    pawns: int,
-    knights: int,
-    bishops: int,
-    rooks: int,
-    queens: int,
-    white: int,
-    black: int,
-) -> int:
+@njit(int32(uint64[:], int8[:]), cache=False)
+def evaluate(state: Bits, mailbox: Bits) -> Bits:
+    """Material only. This is the piece a stronger evaluation replaces."""
+    white = state[WOCC]
+    black = state[BOCC]
     score = 0
-    score += 100 * (popcount(pawns & white) - popcount(pawns & black))
-    score += 320 * (popcount(knights & white) - popcount(knights & black))
-    score += 330 * (popcount(bishops & white) - popcount(bishops & black))
-    score += 500 * (popcount(rooks & white) - popcount(rooks & black))
-    score += 900 * (popcount(queens & white) - popcount(queens & black))
-    return score
-
-
-def evaluate(board: chess.Board) -> int:
-    who_to_move = 1 if board.turn else -1
-
-    if board.is_checkmate():
-        return -MATE
-
-    return (
-        material_score(
-            board.pawns,
-            board.knights,
-            board.bishops,
-            board.rooks,
-            board.queens,
-            board.occupied_co[chess.WHITE],
-            board.occupied_co[chess.BLACK],
+    for piece in range(5):
+        score += PIECE_VALUE[piece] * (
+            popcount(state[piece] & white) - popcount(state[piece] & black)
         )
-        * who_to_move
-    )
+    return np.int32(-score if state[STM] else score)
 
 
-def evaluate_pure_python(board: chess.Board) -> int:
-    who_to_move = 1 if board.turn else -1
-
-    if board.is_checkmate():
-        return -MATE
-
-    return (
-        sum(
-            value * (len(board.pieces(piece, True)) - len(board.pieces(piece, False)))
-            for piece, value in PIECE_VALUE.items()
-        )
-        * who_to_move
-    )
+# Warm the jitted function with the argument types the real calls use, so compilation
+# lands in the import budget rather than on the clock.
+_state = np.zeros(16, dtype=np.uint64)
+_mailbox = np.full(64, -1, dtype=np.int8)
+evaluate(_state, _mailbox)

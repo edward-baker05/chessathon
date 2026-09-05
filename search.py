@@ -1,50 +1,586 @@
-from time import perf_counter_ns
+"""Search: iterative deepening, PVS, quiescence, move ordering and time control.
+
+Everything the search mutates travels inside one `Work` namedtuple, because numba exposes
+module globals to jitted code as *readonly* arrays. Read-only tables (attack tables,
+Zobrist keys) stay as globals in bitboard.py, where being readonly is exactly right.
+
+Time is read through numba's objmode, since time.time() is not available in nopython mode.
+An objmode call costs about 1.8 us, so it happens every 2048 nodes: roughly 0.9 ns a node.
+"""
+
+import time
+from typing import Any, NamedTuple
 
 import chess
+import numpy as np
+from numba import njit, objmode
 
+from bitboard import HALF, KEY, STM
 from evaluate import evaluate
+from movegen import MAX_MOVES, generate, generate_captures, move_to_uci
+from position import (
+    SEE_VALUE,
+    STACK_PLIES,
+    encode,
+    in_check,
+    insufficient_material,
+    legal_after,
+    make,
+    new_stacks,
+    see,
+)
+from tt import (
+    BOUND_EXACT,
+    BOUND_LOWER,
+    BOUND_UPPER,
+    TT,
+    tt_clear,
+    tt_probe,
+    tt_store,
+)
+from tt import MATE as MATE
+from tt import MATE_IN_MAX as MATE_IN_MAX
 
-MATE = 999999
+Bits = Any
+Square = Any
+Flag = Any
+
+INF = 32000
+MAX_DEPTH = 127
+
+# Indices into Work.ints.
+I_NODES, I_ABORT, I_NODE_LIMIT, I_HIST_LEN, I_AGE, I_SELDEPTH, I_NO_PRUNING = 0, 1, 2, 3, 4, 5, 6
+INT_SLOTS = 8
+
+# Indices into Work.floats.
+F_HARD, F_SOFT = 0, 1
+FLOAT_SLOTS = 4
+
+# How often to read the clock. Must be a power of two minus one when used as a mask.
+CLOCK_INTERVAL_MASK = 2047
+
+RESERVE_MS = 300.0
+
+# Most valuable victim, least valuable attacker. Indexed [victim][attacker].
+MVV_LVA = np.zeros((6, 6), dtype=np.int32)
+for _victim in range(6):
+    for _attacker in range(6):
+        MVV_LVA[_victim, _attacker] = 100 * (_victim + 1) - _attacker
+
+# Ordering scores. Captures and killers sit above every quiet move, and history fills the
+# space below, so the bands can never cross.
+SCORE_TT = 1 << 24
+SCORE_GOOD_CAPTURE = 1 << 22
+SCORE_KILLER_1 = (1 << 21) + 2
+SCORE_KILLER_2 = (1 << 21) + 1
+SCORE_COUNTER = 1 << 21
+SCORE_BAD_CAPTURE = -(1 << 22)
+HISTORY_MAX = 1 << 14
 
 
-def search(board: chess.Board, time_left_ms: int) -> str:
-    legal_moves = board.legal_moves
-    move_results = {move: 0 for move in legal_moves}
+class Work(NamedTuple):
+    """Every mutable array the search touches. Passed, never global."""
 
-    start = end = perf_counter_ns()
-
-    i = 0
-    while (elapsed := (end - start) / 1_000_000) < (time_left_ms / 50):
-        i += 1
-        print(f"Calculating best move at depth {i}, current elapsed {elapsed:.2f}")
-        for current_move in legal_moves:
-            board.push(current_move)
-            score = -negamax(board, i, -MATE, MATE)
-            move_results[board.pop()] = score
-        end = perf_counter_ns()
-
-    move = max(move_results, key=lambda k: move_results[k])
-    print(f"{move} at depth {i} in time {elapsed:.2f}s")
-    return move.uci()
+    state: np.ndarray
+    mail: np.ndarray
+    moves: np.ndarray
+    scores: np.ndarray
+    table: np.ndarray
+    killers: np.ndarray
+    history: np.ndarray
+    counter: np.ndarray
+    ints: np.ndarray
+    floats: np.ndarray
+    hist_keys: np.ndarray
+    static_evals: np.ndarray
+    played: np.ndarray
 
 
-def negamax(board: chess.Board, depth: int, alpha: int, beta: int) -> int:
-    if depth == 0:
-        return evaluate(board)
+def new_work(table: np.ndarray = TT) -> Work:
+    state, mail = new_stacks()
+    return Work(
+        state=state,
+        mail=mail,
+        moves=np.zeros(STACK_PLIES * MAX_MOVES, dtype=np.int32),
+        scores=np.zeros(STACK_PLIES * MAX_MOVES, dtype=np.int32),
+        table=table,
+        killers=np.zeros((STACK_PLIES, 2), dtype=np.int32),
+        history=np.zeros((2, 64, 64), dtype=np.int32),
+        counter=np.zeros((2, 64, 64), dtype=np.int32),
+        ints=np.zeros(INT_SLOTS, dtype=np.int64),
+        floats=np.zeros(FLOAT_SLOTS, dtype=np.float64),
+        hist_keys=np.zeros(2048, dtype=np.uint64),
+        static_evals=np.zeros(STACK_PLIES, dtype=np.int32),
+        played=np.zeros(STACK_PLIES, dtype=np.int32),
+    )
 
-    best_value = -MATE
 
-    for move in board.legal_moves:
-        board.push(move)
-        current_value = -negamax(board, depth - 1, -beta, -alpha)
-        board.pop()
+WORK = new_work()
 
-        if current_value > best_value:
-            best_value = current_value
-            if current_value > alpha:
-                alpha = current_value
 
-        if current_value >= beta:
-            return best_value
+@njit(cache=False)
+def check_time(work: Bits) -> None:
+    """Abort the search when the hard limit or the node limit is reached.
 
-    return best_value
+    numba cannot call time.time() in nopython mode, so the clock is read through objmode.
+    Doing that every node would cost more than the search; every 2048 nodes it is free.
+    """
+    if work.ints[I_NODES] & CLOCK_INTERVAL_MASK != 0:
+        return
+    limit = work.ints[I_NODE_LIMIT]
+    if limit != 0 and work.ints[I_NODES] >= limit:
+        work.ints[I_ABORT] = 1
+        return
+    with objmode(now="f8"):
+        now = time.time()
+    if now >= work.floats[F_HARD]:
+        work.ints[I_ABORT] = 1
+
+
+@njit(cache=False)
+def is_repetition(work: Bits, ply: Square) -> Flag:
+    """A position seen before, either in this line or earlier in the real game.
+
+    One repetition scores as a draw. Waiting for a third occurrence inside the search
+    loses far more than the strict reading gains, because the opponent can always decline.
+    """
+    key = work.state[ply][KEY]
+    half = np.int64(work.state[ply][HALF])
+    back = 0
+    node = ply - 2
+    while node >= 0 and back < half:
+        if work.state[node][KEY] == key:
+            return True
+        node -= 2
+        back += 2
+    length = work.ints[I_HIST_LEN]
+    index = length - 2
+    while index >= 0 and (length - index) <= half:
+        if work.hist_keys[index] == key:
+            return True
+        index -= 2
+    return False
+
+
+@njit(cache=False)
+def score_moves(work: Bits, ply: Square, base: Square, count: Square, tt_move: Bits) -> None:
+    """Assign an ordering score to each generated move. Never sorts the whole list."""
+    state = work.state[ply]
+    mail = work.mail[ply]
+    black = np.int64(state[STM])
+    previous = work.played[ply - 1] if ply > 0 else np.int32(0)
+    counter_move = np.int32(0)
+    if previous != 0:
+        counter_move = work.counter[black, previous & 63, (previous >> 6) & 63]
+
+    for i in range(base, count):
+        move = work.moves[i]
+        if move == tt_move and tt_move != 0:
+            work.scores[i] = SCORE_TT
+            continue
+        frm = np.int64(move & 63)
+        to = np.int64((move >> 6) & 63)
+        victim = np.int64(mail[to])
+        flag = np.int64((move >> 15) & 3)
+        if victim >= 0 or flag == 1:
+            attacker = np.int64(mail[frm])
+            gain = see(state, mail, move)
+            base_score = MVV_LVA[victim if victim >= 0 else 0, attacker]
+            if gain >= 0:
+                work.scores[i] = SCORE_GOOD_CAPTURE + base_score
+            else:
+                work.scores[i] = SCORE_BAD_CAPTURE + base_score
+        elif move == work.killers[ply, 0]:
+            work.scores[i] = SCORE_KILLER_1
+        elif move == work.killers[ply, 1]:
+            work.scores[i] = SCORE_KILLER_2
+        elif move == counter_move and counter_move != 0:
+            work.scores[i] = SCORE_COUNTER
+        else:
+            work.scores[i] = work.history[black, frm, to]
+
+
+@njit(cache=False)
+def pick_move(work: Bits, index: Square, count: Square) -> Square:
+    """Selection sort one step: swap the best remaining move into `index`.
+
+    Cheaper than sorting the list, because a beta cutoff usually happens in the first few
+    moves and the rest are never looked at.
+    """
+    best = index
+    for i in range(index + 1, count):
+        if work.scores[i] > work.scores[best]:
+            best = i
+    if best != index:
+        work.moves[index], work.moves[best] = work.moves[best], work.moves[index]
+        work.scores[index], work.scores[best] = work.scores[best], work.scores[index]
+    return work.moves[index]
+
+
+@njit(cache=False)
+def update_history(work: Bits, ply: Square, best_move: Bits, depth: Square, base: Square,
+                   quiet_end: Square) -> None:
+    """Reward the move that caused a cutoff and punish the quiets that did not."""
+    state = work.state[ply]
+    black = np.int64(state[STM])
+    bonus = np.int32(min(depth * depth, 400))
+
+    if work.killers[ply, 0] != best_move:
+        work.killers[ply, 1] = work.killers[ply, 0]
+        work.killers[ply, 0] = best_move
+
+    frm = np.int64(best_move & 63)
+    to = np.int64((best_move >> 6) & 63)
+    work.history[black, frm, to] += bonus
+    if work.history[black, frm, to] > HISTORY_MAX:
+        for a in range(64):
+            for b in range(64):
+                work.history[black, a, b] //= 2
+
+    previous = work.played[ply - 1] if ply > 0 else np.int32(0)
+    if previous != 0:
+        work.counter[black, previous & 63, (previous >> 6) & 63] = best_move
+
+    for i in range(base, quiet_end):
+        move = work.moves[i]
+        if move == best_move:
+            continue
+        work.history[black, move & 63, (move >> 6) & 63] -= bonus
+
+
+@njit(cache=False)
+def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
+    """Search captures until the position is quiet, so the evaluation is not measured
+    halfway through an exchange."""
+    work.ints[I_NODES] += 1
+    check_time(work)
+    if work.ints[I_ABORT] != 0:
+        return np.int32(0)
+    if ply >= STACK_PLIES - 2:
+        return evaluate(work.state[ply], work.mail[ply])
+    if ply > work.ints[I_SELDEPTH]:
+        work.ints[I_SELDEPTH] = ply
+
+    state = work.state[ply]
+    mail = work.mail[ply]
+    base = ply * MAX_MOVES
+    checked = in_check(state)
+
+    if checked:
+        # Standing pat while in check would claim a score the side to move cannot
+        # actually hold, so every evasion has to be searched.
+        stand_pat = np.int32(-INF)
+        best = np.int32(-INF)
+        count = generate(state, work.moves, base)
+    else:
+        stand_pat = evaluate(state, mail)
+        if stand_pat >= beta:
+            return stand_pat
+        if stand_pat > alpha:
+            alpha = stand_pat
+        best = stand_pat
+        count = generate_captures(state, work.moves, base)
+
+    score_moves(work, ply, base, count, np.int32(0))
+
+    black = np.int64(state[STM])
+    legal = 0
+    for index in range(base, count):
+        move = pick_move(work, index, count)
+        if not checked and work.ints[I_NO_PRUNING] == 0:
+            # A capture that loses material cannot rescue a position this far behind.
+            victim = np.int64(mail[(move >> 6) & 63])
+            gain = SEE_VALUE[victim] if victim >= 0 else 100
+            if stand_pat + gain + 200 < alpha:
+                continue
+            if see(state, mail, move) < 0:
+                continue
+        make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
+        if not legal_after(work.state[ply + 1], black):
+            continue
+        legal += 1
+        work.played[ply] = move
+        value = -qsearch(work, ply + 1, -beta, -alpha)
+        if work.ints[I_ABORT] != 0:
+            return np.int32(0)
+        if value > best:
+            best = value
+            if value > alpha:
+                alpha = value
+                if alpha >= beta:
+                    break
+
+    if checked and legal == 0:
+        return np.int32(-MATE + ply)
+    return np.int32(best)
+
+
+@njit(cache=False)
+def negamax(work: Bits, ply: Square, depth: Square, alpha: Bits, beta: Bits, is_pv: Flag) -> Bits:
+    """Principal variation search."""
+    work.ints[I_NODES] += 1
+    check_time(work)
+    if work.ints[I_ABORT] != 0:
+        return np.int32(0)
+
+    if ply >= STACK_PLIES - 4:
+        return evaluate(work.state[ply], work.mail[ply])
+
+    state = work.state[ply]
+    mail = work.mail[ply]
+    checked = in_check(state)
+
+    if ply > 0:
+        if state[HALF] >= 100 or insufficient_material(state) or is_repetition(work, ply):
+            return np.int32(0)
+        # Mate distance pruning: a mate found elsewhere is already nearer than anything
+        # this subtree can produce, so there is nothing left to look for.
+        alpha = max(alpha, np.int32(-MATE + ply))
+        beta = min(beta, np.int32(MATE - ply - 1))
+        if alpha >= beta:
+            return np.int32(alpha)
+
+    # Check extension. Disabled with pruning off so the oracle compares like with like.
+    if checked and work.ints[I_NO_PRUNING] == 0:
+        depth += 1
+
+    if depth <= 0:
+        return qsearch(work, ply, alpha, beta)
+
+    key = state[KEY]
+    hit, tt_score, tt_move, tt_depth, tt_bound, tt_static = tt_probe(work.table, key, ply)
+    if hit and not is_pv and tt_depth >= depth and work.ints[I_NO_PRUNING] == 0:
+        if tt_bound == BOUND_EXACT:
+            return tt_score
+        if tt_bound == BOUND_LOWER and tt_score >= beta:
+            return tt_score
+        if tt_bound == BOUND_UPPER and tt_score <= alpha:
+            return tt_score
+
+    static = tt_static if hit and tt_static != 0 else evaluate(state, mail)
+    work.static_evals[ply] = static
+
+    base = ply * MAX_MOVES
+    count = generate(state, work.moves, base)
+    score_moves(work, ply, base, count, tt_move if hit else np.int32(0))
+
+    black = np.int64(state[STM])
+    best = np.int32(-INF)
+    best_move = np.int32(0)
+    original_alpha = alpha
+    legal = 0
+
+    for index in range(base, count):
+        move = pick_move(work, index, count)
+        make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
+        if not legal_after(work.state[ply + 1], black):
+            continue
+        legal += 1
+        work.played[ply] = move
+
+        if legal == 1:
+            value = -negamax(work, ply + 1, depth - 1, -beta, -alpha, is_pv)
+        else:
+            value = -negamax(work, ply + 1, depth - 1, -alpha - 1, -alpha, False)
+            if alpha < value < beta:
+                value = -negamax(work, ply + 1, depth - 1, -beta, -alpha, is_pv)
+
+        if work.ints[I_ABORT] != 0:
+            return np.int32(0)
+
+        if value > best:
+            best = value
+            best_move = move
+            if value > alpha:
+                alpha = value
+                if alpha >= beta:
+                    victim = np.int64(mail[(move >> 6) & 63])
+                    if victim < 0:
+                        update_history(work, ply, move, depth, base, index + 1)
+                    break
+
+    if legal == 0:
+        return np.int32(-MATE + ply) if checked else np.int32(0)
+
+    bound = BOUND_EXACT
+    if best <= original_alpha:
+        bound = BOUND_UPPER
+    elif best >= beta:
+        bound = BOUND_LOWER
+    tt_store(
+        work.table, key, ply, np.int32(best), best_move, depth, bound, np.int32(static),
+        work.ints[I_AGE],
+    )
+    return np.int32(best)
+
+
+@njit(cache=False)
+def search_root(work: Bits, max_depth: Square) -> Bits:
+    """Iterative deepening with aspiration windows. Returns the best move found."""
+    best_move = np.int32(0)
+    best_score = np.int32(0)
+    base = 0
+    state = work.state[0]
+    mail = work.mail[0]
+    black = np.int64(state[STM])
+
+    count = generate(state, work.moves, base)
+    # Establish a legal move before anything is allowed to abort.
+    for index in range(base, count):
+        move = work.moves[index]
+        make(state, mail, work.state[1], work.mail[1], move)
+        if legal_after(work.state[1], black):
+            best_move = move
+            break
+    if best_move == 0:
+        return np.int32(0)
+
+    for depth in range(1, max_depth + 1):
+        window = np.int32(18)
+        if depth >= 5:
+            low = best_score - window
+            high = best_score + window
+            alpha = np.int32(low if low > -INF else -INF)
+            beta = np.int32(high if high < INF else INF)
+        else:
+            alpha = np.int32(-INF)
+            beta = np.int32(INF)
+
+        while True:
+            score = np.int32(-INF)
+            iteration_move = np.int32(0)
+            count = generate(state, work.moves, base)
+            score_moves(work, 0, base, count, best_move)
+            legal = 0
+            local_alpha = alpha
+            for index in range(base, count):
+                move = pick_move(work, index, count)
+                make(state, mail, work.state[1], work.mail[1], move)
+                if not legal_after(work.state[1], black):
+                    continue
+                legal += 1
+                work.played[0] = move
+                if legal == 1:
+                    value = -negamax(work, 1, depth - 1, -beta, -local_alpha, True)
+                else:
+                    value = -negamax(work, 1, depth - 1, -local_alpha - 1, -local_alpha, False)
+                    if local_alpha < value < beta:
+                        value = -negamax(work, 1, depth - 1, -beta, -local_alpha, True)
+                if work.ints[I_ABORT] != 0:
+                    break
+                if value > score:
+                    score = value
+                    iteration_move = move
+                    if value > local_alpha:
+                        local_alpha = value
+
+            if work.ints[I_ABORT] != 0:
+                break
+            if score <= alpha:
+                # Failed low: widen downwards and try this depth again.
+                window *= 4
+                low = score - window
+                alpha = np.int32(low if low > -INF else -INF)
+                continue
+            if score >= beta:
+                window *= 4
+                high = score + window
+                beta = np.int32(high if high < INF else INF)
+                continue
+            best_score = score
+            if iteration_move != 0:
+                best_move = iteration_move
+            break
+
+        if work.ints[I_ABORT] != 0:
+            break
+        # A forced mate is found; searching deeper cannot improve on it.
+        if best_score >= MATE_IN_MAX or best_score <= -MATE_IN_MAX:
+            break
+    return best_move
+
+
+def budget_ms(time_left_ms: int, increment_ms: int) -> tuple[float, float]:
+    """Soft and hard limits in milliseconds.
+
+    Floored rather than allowed to go negative: late in a long game the base clock is gone
+    and play is increment-only, and a negative budget would return no move at all.
+    """
+    usable = max(float(time_left_ms) - RESERVE_MS, 10.0)
+    # Only half the increment is credited. Over-crediting it is how engines flag, and a
+    # flag costs a whole game, so the asymmetry is deliberate.
+    soft = min(usable / 22.0 + 0.5 * increment_ms, usable / 12.0)
+    hard = min(usable / 4.0, soft * 4.0)
+    return min(soft, hard), hard
+
+
+def set_pruning(enabled: bool, work: Work = WORK) -> None:
+    """Turn every heuristic off, so the search can be compared with plain alpha-beta."""
+    work.ints[I_NO_PRUNING] = 0 if enabled else 1
+
+
+def set_game_history(keys: list[int], work: Work = WORK) -> None:
+    """Positions already played in this game, for repetition detection above the root."""
+    length = min(len(keys), work.hist_keys.shape[0])
+    for i in range(length):
+        work.hist_keys[i] = np.uint64(keys[i])
+    work.ints[I_HIST_LEN] = length
+
+
+def clear_tables(work: Work = WORK) -> None:
+    work.history[:] = 0
+    work.counter[:] = 0
+    work.killers[:] = 0
+    work.played[:] = 0
+
+
+def _prepare(
+    board: chess.Board, time_left_ms: int, increment_ms: int, node_limit: int, work: Work
+) -> None:
+    encode(board, work.state[0], work.mail[0])
+    work.ints[I_NODES] = 0
+    work.ints[I_ABORT] = 0
+    work.ints[I_SELDEPTH] = 0
+    work.ints[I_NODE_LIMIT] = node_limit
+    work.ints[I_AGE] = (int(work.ints[I_AGE]) + 1) & 63
+    soft, hard = budget_ms(time_left_ms, increment_ms)
+    now = time.time()
+    work.floats[F_SOFT] = now + soft / 1000.0
+    work.floats[F_HARD] = now + hard / 1000.0
+
+
+def think(
+    board: chess.Board,
+    time_left_ms: int,
+    increment_ms: int = 500,
+    node_limit: int = 0,
+    max_depth: int = MAX_DEPTH,
+    work: Work = WORK,
+) -> str:
+    """Best move for `board` in UCI, within the clock."""
+    _prepare(board, time_left_ms, increment_ms, node_limit, work)
+    move = int(search_root(work, min(max_depth, MAX_DEPTH)))
+    if move == 0:
+        return next(iter(board.legal_moves)).uci()
+    return move_to_uci(move)
+
+
+def search_value(board: chess.Board, depth: int, work: Work = WORK) -> int:
+    """Score rather than move, at a fixed depth. Used by the oracle tests."""
+    _prepare(board, 3_600_000, 0, 0, work)
+    return int(negamax(work, 0, depth, np.int32(-INF), np.int32(INF), True))
+
+
+def nodes(work: Work = WORK) -> int:
+    return int(work.ints[I_NODES])
+
+
+# Warm every jitted function at import, with the argument types the real calls use.
+_board = chess.Board()
+_prepare(_board, 1000, 0, 4096, WORK)
+search_root(WORK, 2)
+qsearch(WORK, 0, np.int32(-INF), np.int32(INF))
+is_repetition(WORK, 0)
+update_history(WORK, 0, np.int32(WORK.moves[0]), 1, 0, 1)
+tt_clear(WORK.table)
+clear_tables(WORK)
