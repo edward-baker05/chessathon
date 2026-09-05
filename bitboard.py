@@ -28,7 +28,7 @@ FULL = U(0xFFFFFFFFFFFFFFFF)
 # Indices into the position state vector. Six piece bitboards, two colour occupancies,
 # then the scalars. 13 to 15 are spare, reserved for an NNUE accumulator handle later.
 PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING = 0, 1, 2, 3, 4, 5
-WOCC, BOCC, STM, CASTLE, EP, HALF, KEY = 6, 7, 8, 9, 10, 11, 12
+WOCC, BOCC, STM, CASTLE, EP, HALF, KEY, FULLMOVE = 6, 7, 8, 9, 10, 11, 12, 13
 NFIELDS = 16
 
 # Castling rights bits.
