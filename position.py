@@ -50,6 +50,7 @@ from bitboard import (
     U,
     bishop_attacks,
     lsb,
+    popcount,
     rook_attacks,
 )
 
@@ -60,6 +61,10 @@ Square = Any
 Flag = Any
 
 STACK_PLIES = 256
+
+# Values SEE uses. Deliberately separate from the evaluation's own piece values: SEE is
+# about whether an exchange wins material, not about how the position should be judged.
+SEE_VALUE = np.array([100, 320, 330, 500, 900, 20000], dtype=np.int32)
 
 # python-chess piece types are 1..6; ours are 0..5. Kept as a named constant so the
 # off-by-one is stated once rather than scattered.
@@ -346,6 +351,106 @@ def legal_after(dst_state: Bits, mover_black: Square) -> Flag:
     return not attacked(dst_state, king_square(dst_state, mover_black), 1 - mover_black)
 
 
+@njit(uint64(uint64[:], int64, uint64), cache=False)
+def attackers_to(state: Bits, sq: Square, occ: Bits) -> Bits:
+    """Every piece of either colour attacking `sq`, given an occupancy.
+
+    Taking `occ` as an argument rather than reading it from the state is what makes x-ray
+    detection work: SEE clears each consumed piece from `occ` and calls this again, which
+    reveals sliders that were standing behind it.
+    """
+    return (
+        (PAWN_ATT[0, sq] & state[PAWN] & state[BOCC])
+        | (PAWN_ATT[1, sq] & state[PAWN] & state[WOCC])
+        | (KNIGHT_ATT[sq] & state[KNIGHT])
+        | (KING_ATT[sq] & state[KING])
+        | (bishop_attacks(sq, occ) & (state[BISHOP] | state[QUEEN]))
+        | (rook_attacks(sq, occ) & (state[ROOK] | state[QUEEN]))
+    ) & occ
+
+
+@njit(int32(uint64[:], int8[:], int32), cache=False)
+def see(state: Bits, mail: Bits, move: Bits) -> Bits:
+    """Static exchange evaluation: the material outcome of the capture sequence on `to`.
+
+    The swap algorithm. Build the list of gains assuming both sides always recapture with
+    their least valuable attacker, then walk it backwards applying the option not to
+    continue, which is what turns a raw sequence into a value either side would accept.
+    """
+    frm = int64(move & 63)
+    to = int64((move >> 6) & 63)
+    flag = int64((move >> 15) & 3)
+
+    # Castling never captures, and en passant is a pawn for a pawn on a square SEE would
+    # have to special-case. Neither is worth the complexity here.
+    if flag == FLAG_CASTLE:
+        return int32(0)
+
+    captured = int64(mail[to])
+    gain = np.zeros(32, dtype=np.int32)
+    gain[0] = SEE_VALUE[captured] if captured >= 0 else 0
+    if flag == FLAG_EP:
+        gain[0] = SEE_VALUE[PAWN]
+
+    occ = (state[WOCC] | state[BOCC]) & ~(ONE << U(frm))
+    if flag == FLAG_EP:
+        occ &= ~(ONE << U(to + 8 if state[STM] else to - 8))
+
+    on_square = int64(mail[frm])
+    side_black = int64(state[STM])
+    attacks = attackers_to(state, to, occ)
+
+    depth = 0
+    while True:
+        side_black = 1 - side_black
+        side_pieces = state[BOCC] if side_black else state[WOCC]
+        mine = attacks & side_pieces & occ
+        if mine == ZERO:
+            break
+
+        # Recapture with the least valuable attacker available.
+        piece = -1
+        for candidate in range(6):
+            if mine & state[candidate]:
+                piece = candidate
+                break
+        if piece < 0:
+            break
+
+        depth += 1
+        if depth >= 31:
+            break
+        gain[depth] = SEE_VALUE[on_square] - gain[depth - 1]
+
+        square = lsb(mine & state[piece])
+        occ &= ~(ONE << U(square))
+        on_square = piece
+        # Re-derive attackers so sliders behind the piece just consumed are included.
+        attacks = attackers_to(state, to, occ)
+
+    # Walk back: at each point the side to move could simply decline the exchange.
+    while depth > 0:
+        gain[depth - 1] = -max(-gain[depth - 1], gain[depth])
+        depth -= 1
+    return int32(gain[0])
+
+
+@njit(boolean(uint64[:], int64), cache=False, inline="always")
+def has_non_pawn_material(state: Bits, black: Square) -> Flag:
+    """Null move is unsafe without this: a side with only pawns can be in zugzwang."""
+    side = state[BOCC] if black else state[WOCC]
+    return (side & (state[KNIGHT] | state[BISHOP] | state[ROOK] | state[QUEEN])) != ZERO
+
+
+@njit(boolean(uint64[:]), cache=False)
+def insufficient_material(state: Bits) -> Flag:
+    """King versus king, or king and one minor versus king. Draws under FIDE rules."""
+    if state[PAWN] | state[ROOK] | state[QUEEN]:
+        return False
+    minors = state[KNIGHT] | state[BISHOP]
+    return popcount(minors) <= 1
+
+
 # Warm every jitted function with the argument types the real calls use.
 _state, _mailbox = new_stacks()
 encode(chess.Board(), _state[0], _mailbox[0])
@@ -357,3 +462,7 @@ in_check(_state[0])
 _warm_move = np.int32((8) | (16 << 6))
 make(_state[0], _mailbox[0], _state[1], _mailbox[1], _warm_move)
 legal_after(_state[1], 0)
+attackers_to(_state[0], 0, _state[0][WOCC] | _state[0][BOCC])
+see(_state[0], _mailbox[0], _warm_move)
+has_non_pawn_material(_state[0], 0)
+insufficient_material(_state[0])
