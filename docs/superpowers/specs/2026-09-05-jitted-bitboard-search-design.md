@@ -295,9 +295,14 @@ Each stage leaves the repo working and verified.
 
 - **Compile time growth.** 2.9 s today. `tests/bench.py` asserts import stays under 30 s,
   so drift surfaces locally rather than as a validation failure on upload.
-- **numba caching.** Off by default, matching the platform, where `/tmp` is cleared per
-  game and caching never helps. Opt-in through an environment variable for local
-  iteration only, so local and platform behaviour never silently diverge.
+- **numba caching.** `cache=False` everywhere, with no opt-in. This was going to be an
+  environment variable for local iteration, but numba silently bakes the *contents* of
+  global numpy arrays into the cached binary. A probe confirmed it: a jitted function
+  reading a global table returned the previous run's value, with no warning, after the
+  table changed. This design keeps magic tables, Zobrist keys and history tables in exactly
+  that shape, so caching would silently serve stale results the first time anyone changed
+  table generation. The platform gains nothing from caching anyway, since `/tmp` is cleared
+  per game. Local test runs amortise compilation across a single pytest session instead.
 - **Type checking.** numba decorators are untyped, so the new modules get a targeted mypy
   override rather than blanket ignores, keeping `make gate` meaningful.
 - **Memory.** 128 MB transposition table, about 2.5 MB of magic tables, plus the numba
