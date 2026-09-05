@@ -1,7 +1,6 @@
 """The submission entrypoint. The platform imports this file and calls get_move."""
 
 import io
-import random
 import sys
 
 import chess
@@ -11,6 +10,53 @@ import chess
 
 if isinstance(sys.stdout, io.TextIOWrapper):
     sys.stdout.reconfigure(line_buffering=True)
+
+PIECE_VALUE = {
+    chess.PAWN: 100,
+    chess.KNIGHT: 320,
+    chess.BISHOP: 330,
+    chess.ROOK: 500,
+    chess.QUEEN: 900,
+}
+
+MATE = 10**6
+
+
+def evaluate(board: chess.Board) -> int:
+    who_to_move = 1 if board.turn else -1
+
+    if board.is_checkmate():
+        return -MATE
+
+    return (
+        sum(
+            value * (len(board.pieces(piece, True)) - len(board.pieces(piece, False)))
+            for piece, value in PIECE_VALUE.items()
+        )
+        * who_to_move
+    )
+
+
+def negamax(board: chess.Board, depth: int, alpha: int, beta: int) -> int:
+    if depth == 0:
+        return evaluate(board)
+
+    best_value = -MATE
+
+    for move in board.legal_moves:
+        board.push(move)
+        current_value = -negamax(board, depth - 1, -beta, -alpha)
+        board.pop()
+
+        if current_value > best_value:
+            best_value = current_value
+            if current_value > alpha:
+                alpha = current_value
+
+        if current_value >= beta:
+            return best_value
+
+    return best_value
 
 
 def get_move(fen: str, time_left_ms: int) -> str:
@@ -27,9 +73,14 @@ def get_move(fen: str, time_left_ms: int) -> str:
     during rated games and shown back to you in the validation log.
     """
     board = chess.Board(fen)
-    print("test")
 
-    # Everything from here down is yours to replace. baselines/greedy searches one ply,
-    # baselines/minimax searches two. Neither is strong. Reading them is the fastest way
-    # to see the shape of a search, and beating them is the first real milestone.
-    return random.choice(list(board.legal_moves)).uci()
+    move_results = {move: 0 for move in board.legal_moves}
+
+    for current_move in board.legal_moves:
+        board.push(current_move)
+        score = -negamax(board, 3, -MATE, MATE)
+        move_results[board.pop()] = score
+
+    move = max(move_results, key=lambda k: move_results[k])
+    print(move)
+    return move.uci()
