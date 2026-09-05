@@ -22,10 +22,12 @@ from position import (
     SEE_VALUE,
     STACK_PLIES,
     encode,
+    has_non_pawn_material,
     in_check,
     insufficient_material,
     legal_after,
     make,
+    make_null,
     new_stacks,
     see,
 )
@@ -316,7 +318,10 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
 
 
 @njit(cache=False)
-def negamax(work: Bits, ply: Square, depth: Square, alpha: Bits, beta: Bits, is_pv: Flag) -> Bits:
+def negamax(
+    work: Bits, ply: Square, depth: Square, alpha: Bits, beta: Bits, is_pv: Flag,
+    can_null: Flag = True,
+) -> Bits:
     """Principal variation search."""
     work.ints[I_NODES] += 1
     check_time(work)
@@ -360,11 +365,63 @@ def negamax(work: Bits, ply: Square, depth: Square, alpha: Bits, beta: Bits, is_
     static = tt_static if hit and tt_static != 0 else evaluate(state, mail)
     work.static_evals[ply] = static
 
+    black = np.int64(state[STM])
+    prunable = (
+        work.ints[I_NO_PRUNING] == 0
+        and not is_pv
+        and not checked
+        and beta < MATE_IN_MAX
+        and beta > -MATE_IN_MAX
+    )
+
+    if prunable:
+        # Reverse futility. So far ahead that giving back a margin per remaining ply still
+        # beats beta, so the opponent would have avoided this line.
+        if depth <= 8 and static - 75 * depth >= beta:
+            return np.int32(static)
+
+        # Razoring. So far behind that only a capture sequence could rescue it.
+        if depth <= 3 and static + 200 * depth < alpha:
+            razor = qsearch(work, ply, alpha, beta)
+            if razor <= alpha:
+                return razor
+
+        # Null move. Skipping a turn and still failing high means the real move will too.
+        # Not tried without a piece on the board: a side with only pawns can be in
+        # zugzwang, where passing is better than every legal move.
+        if (
+            can_null
+            and depth >= 3
+            and static >= beta
+            and has_non_pawn_material(state, black)
+        ):
+            reduction = 3 + depth // 4 + min((static - beta) // 200, 3)
+            make_null(state, mail, work.state[ply + 1], work.mail[ply + 1])
+            work.played[ply] = np.int32(0)
+            null_value = -negamax(
+                work, ply + 1, depth - reduction - 1, -beta, np.int32(-beta + 1), False, False
+            )
+            if work.ints[I_ABORT] != 0:
+                return np.int32(0)
+            if null_value >= beta:
+                # A mate score proved by passing is not a real mate.
+                if null_value >= MATE_IN_MAX:
+                    null_value = beta
+                if depth < 10:
+                    return np.int32(null_value)
+                # Deep enough that zugzwang is worth ruling out explicitly.
+                verify = negamax(
+                    work, ply, depth - reduction - 1, np.int32(beta - 1), beta, False, False
+                )
+                if work.ints[I_ABORT] != 0:
+                    return np.int32(0)
+                if verify >= beta:
+                    return np.int32(null_value)
+
     base = ply * MAX_MOVES
     count = generate(state, work.moves, base)
     score_moves(work, ply, base, count, tt_move if hit else np.int32(0))
 
-    black = np.int64(state[STM])
     best = np.int32(-INF)
     best_move = np.int32(0)
     original_alpha = alpha
@@ -561,7 +618,9 @@ def think(
     _prepare(board, time_left_ms, increment_ms, node_limit, work)
     move = int(search_root(work, min(max_depth, MAX_DEPTH)))
     if move == 0:
-        return next(iter(board.legal_moves)).uci()
+        # No legal move exists. The referee ends a game before asking, so this cannot
+        # happen in play; raising clearly beats a bare StopIteration out of an iterator.
+        raise ValueError(f"no legal move in {board.fen()}")
     return move_to_uci(move)
 
 

@@ -177,6 +177,45 @@ def test_oracle_holds_deeply() -> None:
     assert_matches_oracle(seed=74, depth=4, count=8, max_plies=16)
 
 
+# ---------------------------------------------------------------------- pruning
+
+
+def test_null_move_guard_rejects_a_pawns_only_side() -> None:
+    """Null move assumes passing is never better than moving. A side with only pawns can
+    be in zugzwang, where that assumption is false, so the guard has to refuse it."""
+    state, mailbox = position.new_stacks()
+    position.encode(chess.Board("8/8/8/8/1k6/8/1P6/1K6 w - - 0 1"), state[0], mailbox[0])
+    assert not position.has_non_pawn_material(state[0], 0)
+    assert not position.has_non_pawn_material(state[0], 1)
+
+    position.encode(chess.Board("8/8/8/8/1k6/8/1P6/1KR5 w - - 0 1"), state[0], mailbox[0])
+    assert position.has_non_pawn_material(state[0], 0), "a rook makes null move safe again"
+
+
+def test_pawn_endgame_is_searched_without_crashing() -> None:
+    fen = "8/8/8/8/1k6/8/1P6/1K6 w - - 0 1"
+    uci = best_move(fen, depth=12)
+    assert chess.Move.from_uci(uci) in chess.Board(fen).legal_moves
+
+
+def test_think_on_a_terminal_position_fails_loudly() -> None:
+    """The referee ends a game before asking, so this is about a legible failure, not play."""
+    stalemate = chess.Board("8/8/8/8/8/6k1/6p1/6K1 w - - 0 1")
+    assert stalemate.is_stalemate()
+    with pytest.raises(ValueError, match="no legal move"):
+        search.think(stalemate, time_left_ms=1_000, max_depth=2)
+
+
+def test_pruning_does_not_break_a_won_pawn_endgame() -> None:
+    # White queens by force. A search that pruned the winning line would shuffle instead.
+    assert search.search_value(chess.Board("8/8/8/8/8/1k6/1P6/1K6 w - - 0 1"), depth=8) >= 0
+
+
+def test_pruning_keeps_finding_the_mate() -> None:
+    assert best_move(MATE_IN_ONE, depth=10) == "a1a8"
+    assert search.search_value(chess.Board(MATE_IN_ONE), depth=10) == search.MATE - 1
+
+
 # ------------------------------------------------------------------ determinism
 
 

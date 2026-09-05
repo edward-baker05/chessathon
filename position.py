@@ -345,6 +345,31 @@ def make(
     dst_state[KEY] = key
 
 
+@njit(void(uint64[:], int8[:], uint64[:], int8[:]), cache=False)
+def make_null(src_state: Bits, src_mail: Bits, dst_state: Bits, dst_mail: Bits) -> None:
+    """Pass the move to the opponent. Used by null-move pruning.
+
+    The halfmove clock is reset rather than carried. A null move breaks the alternating
+    parity that repetition scanning relies on, and zeroing the clock bounds that scan to
+    nothing inside the null subtree. The cost is that a fifty-move draw deep inside a null
+    subtree can go unnoticed, which is conservative: it never invents a draw.
+    """
+    for i in range(NFIELDS):
+        dst_state[i] = src_state[i]
+    for i in range(64):
+        dst_mail[i] = src_mail[i]
+
+    key = src_state[KEY] ^ Z_STM[0]
+    if src_state[EP] != ZERO:
+        old_ep = int64(src_state[EP]) - 1
+        if ep_is_capturable(src_state, old_ep):
+            key ^= Z_EP[old_ep % 8]
+    dst_state[EP] = ZERO
+    dst_state[HALF] = ZERO
+    dst_state[STM] = U(1 - int64(src_state[STM]))
+    dst_state[KEY] = key
+
+
 @njit(boolean(uint64[:], int64), cache=False, inline="always")
 def legal_after(dst_state: Bits, mover_black: Square) -> Flag:
     """Did the side that just moved leave its own king attacked?"""
@@ -462,6 +487,7 @@ in_check(_state[0])
 _warm_move = np.int32((8) | (16 << 6))
 make(_state[0], _mailbox[0], _state[1], _mailbox[1], _warm_move)
 legal_after(_state[1], 0)
+make_null(_state[0], _mailbox[0], _state[1], _mailbox[1])
 attackers_to(_state[0], 0, _state[0][WOCC] | _state[0][BOCC])
 see(_state[0], _mailbox[0], _warm_move)
 has_non_pawn_material(_state[0], 0)
