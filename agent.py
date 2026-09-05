@@ -1,11 +1,16 @@
 """The submission entrypoint. The platform imports this file and calls get_move."""
 
+import io
 import random
+import sys
 
 import chess
 
 # Import time runs once per game, inside a 60 second budget, before your clock starts.
 # Load weights and build tables out here, not inside get_move.
+
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(line_buffering=True)
 
 
 def get_move(fen: str, time_left_ms: int) -> str:
@@ -22,6 +27,7 @@ def get_move(fen: str, time_left_ms: int) -> str:
     during rated games and shown back to you in the validation log.
     """
     board = chess.Board(fen)
+    print("test")
 
     # Everything from here down is yours to replace. baselines/greedy searches one ply,
     # baselines/minimax searches two. Neither is strong. Reading them is the fastest way

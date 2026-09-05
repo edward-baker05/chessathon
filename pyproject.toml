@@ -35,3 +35,7 @@ ignore = ["N818"]
 [tool.mypy]
 strict = true
 files = ["agent.py", "harness"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
