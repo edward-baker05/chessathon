@@ -22,7 +22,7 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [dependency-groups]
-dev = ["mypy>=1.18", "ruff>=0.14"]
+dev = ["mypy>=1.18", "ruff>=0.14", "pytest>=8.3"]
 
 [tool.ruff]
 line-length = 100
@@ -32,9 +32,13 @@ target-version = "py312"
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
 ignore = ["N818"]
 
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
 [tool.mypy]
 strict = true
-files = ["agent.py", "harness"]
+files = ["agent.py", "evaluate.py", "search.py", "harness", "tests"]
 
 [tool.pyright]
 venvPath = "."

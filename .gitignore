@@ -4,3 +4,5 @@ __pycache__/
 .ruff_cache/
 submission.zip
 *.pgn
+.pytest_cache/
+snapshots/
