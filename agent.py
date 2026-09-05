@@ -2,6 +2,7 @@
 
 import io
 import sys
+from time import perf_counter_ns
 
 import chess
 
@@ -74,13 +75,21 @@ def get_move(fen: str, time_left_ms: int) -> str:
     """
     board = chess.Board(fen)
 
-    move_results = {move: 0 for move in board.legal_moves}
+    legal_moves = board.legal_moves
+    move_results = {move: 0 for move in legal_moves}
 
-    for current_move in board.legal_moves:
-        board.push(current_move)
-        score = -negamax(board, 3, -MATE, MATE)
-        move_results[board.pop()] = score
+    start = end = perf_counter_ns()
+
+    i = 0
+    while (elapsed := (end - start) / 1_000_000_000) < 1:
+        i += 1
+        print(f"Calculating best move at depth {i}, current elapsed {elapsed:.2f}")
+        for current_move in legal_moves:
+            board.push(current_move)
+            score = -negamax(board, i, -MATE, MATE)
+            move_results[board.pop()] = score
+        end = perf_counter_ns()
 
     move = max(move_results, key=lambda k: move_results[k])
-    print(move)
+    print(f"{move} at depth {i} in time {elapsed:.2f}s")
     return move.uci()
