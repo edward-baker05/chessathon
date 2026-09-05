@@ -12,7 +12,7 @@ from typing import Any
 
 import chess
 import numpy as np
-from numba import int32, int64, njit, uint64
+from numba import int8, int32, int64, njit, uint64
 
 import position
 from bitboard import (
@@ -22,6 +22,9 @@ from bitboard import (
     BOCC,
     CASTLE,
     EP,
+    FLAG_CASTLE,
+    FLAG_EP,
+    FLAG_PROMO,
     KING,
     KING_ATT,
     KNIGHT,
@@ -41,16 +44,13 @@ from bitboard import (
     lsb,
     rook_attacks,
 )
-from position import attacked
+from position import attacked, legal_after, make
 
 Bits = Any
 Square = Any
 Move = Any
 
 MAX_MOVES = 256
-
-# Move flags.
-FLAG_NORMAL, FLAG_EP, FLAG_CASTLE, FLAG_PROMO = 0, 1, 2, 3
 
 # Promotion piece indices as stored in a move, 1..4.
 PROMO_PIECES = "nbrq"
@@ -308,6 +308,26 @@ def generate_captures(state: Bits, moves: Bits, base: Square) -> Square:
     return n
 
 
+@njit(int64(uint64[:, :], int8[:, :], int32[:], int64, int64), cache=False)
+def perft(state: Bits, mail: Bits, moves: Bits, ply: Square, depth: Square) -> Square:
+    """Count legal move sequences. The correctness gate for the whole engine.
+
+    Lives here rather than in position.py because it needs generate(), and movegen.py
+    already imports position.py. Putting it the other way round is a circular import.
+    """
+    if depth == 0:
+        return 1
+    base = ply * MAX_MOVES
+    count = generate(state[ply], moves, base)
+    mover_black = int64(state[ply][STM])
+    total = 0
+    for i in range(base, count):
+        make(state[ply], mail[ply], state[ply + 1], mail[ply + 1], moves[i])
+        if legal_after(state[ply + 1], mover_black):
+            total += perft(state, mail, moves, ply + 1, depth - 1)
+    return total
+
+
 # Warm every jitted function with the argument types the real calls use.
 _state, _mailbox = position.new_stacks()
 position.encode(chess.Board(), _state[0], _mailbox[0])
@@ -318,3 +338,5 @@ move_from(np.int32(0))
 move_to(np.int32(0))
 move_promo(np.int32(0))
 move_flag(np.int32(0))
+_perft_moves = np.zeros(64 * MAX_MOVES, dtype=np.int32)
+perft(_state, _mailbox, _perft_moves, 0, 1)

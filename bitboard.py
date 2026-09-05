@@ -35,6 +35,11 @@ NFIELDS = 16
 WHITE_KINGSIDE, WHITE_QUEENSIDE, BLACK_KINGSIDE, BLACK_QUEENSIDE = 1, 2, 4, 8
 ALL_CASTLING = 15
 
+# Move flags. A move is one int32: from | to << 6 | promo << 12 | flag << 15.
+# These live here rather than in movegen.py because position.make needs them too, and
+# movegen.py already imports position.py.
+FLAG_NORMAL, FLAG_EP, FLAG_CASTLE, FLAG_PROMO = 0, 1, 2, 3
+
 DEBRUIJN = U(0x03F79D71B4CB0A89)
 
 # Derived from the constant rather than transcribed. A transcribed table cannot be
