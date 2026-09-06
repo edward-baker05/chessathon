@@ -59,13 +59,21 @@ def elo_with_interval(wins: int, draws: int, losses: int) -> tuple[float, float,
 
 
 def snapshot(tag: str) -> Path:
-    """Freeze the shipped files into snapshots/<tag>/ for use as an A/B opponent."""
+    """Freeze the shipped files into snapshots/<tag>/ for use as an A/B opponent.
+
+    The weights come too. A snapshot of an engine that evaluates with a network is useless
+    without the network it was measured with, and nnue.py raises rather than falling back,
+    so a weightless snapshot would fail at import rather than quietly play differently.
+    """
     destination = ROOT / "snapshots" / tag
     if destination.exists():
         shutil.rmtree(destination)
     destination.mkdir(parents=True)
     for source in sorted(ROOT.glob("*.py")):
         shutil.copy2(source, destination / source.name)
+    weights = ROOT / "weights"
+    if weights.is_dir():
+        shutil.copytree(weights, destination / "weights")
     return destination
 
 

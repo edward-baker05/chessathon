@@ -1,15 +1,15 @@
 SHELL := /bin/bash
 
-.PHONY: setup play arena zip gate test bench ab
+.PHONY: setup play arena zip gate test bench ab random-net data train quantise
 
 setup:
 	uv sync
 
 play:
-	uv run python -m harness.play --white . --black baselines/greedy $(if $(FEN),--fen "$(FEN)") --pgn game.pgn
+	uv run python -m harness.play --white . --black baselines/numba $(if $(FEN),--fen "$(FEN)") --pgn game.pgn
 
 arena:
-	CHESSATHON_INCREMENT_MS=100 uv run python -m harness.arena --opponent baselines/greedy --games 20
+	uv run python -m harness.arena --opponent baselines/numba --games 20
 
 zip:
 	uv run python -m harness.package
@@ -17,7 +17,7 @@ zip:
 gate:
 	uv run ruff check .
 	uv run mypy
-	CHESSATHON_INCREMENT_MS=100 uv run python -m harness.arena --opponent baselines/random --games 2 --base-ms 5000
+	uv run python -m harness.arena --opponent baselines/random --games 2 --base-ms 5000
 
 test:
 	uv run pytest -q
@@ -27,3 +27,18 @@ bench:
 
 ab:
 	uv run python tests/match.py --opponent $(OPPONENT) --games $(if $(GAMES),$(GAMES),200) --nodes $(if $(NODES),$(NODES),200000)
+
+# A randomly initialised network in the shipped format. Plays badly by construction; it
+# exists so the runtime can be tested before any training has happened.
+random-net:
+	uv run python tools/random_net.py
+
+# Download the Lichess evaluation file and pack it into training data. CPU heavy, one off.
+data:
+	uv run python tools/extract.py $(if $(LIMIT),--limit $(LIMIT))
+
+train:
+	uv run python tools/train.py $(if $(EPOCHS),--epochs $(EPOCHS))
+
+quantise:
+	uv run python tools/quantise.py

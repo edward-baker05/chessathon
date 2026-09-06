@@ -19,6 +19,10 @@ from numba import njit, objmode
 from bitboard import HALF, KEY, STM
 from evaluate import evaluate
 from movegen import MAX_MOVES, generate, generate_captures, move_to_uci
+from nnue import apply as nnue_apply
+from nnue import copy as nnue_copy
+from nnue import new_accumulator
+from nnue import refresh as nnue_refresh
 from position import (
     SEE_VALUE,
     STACK_PLIES,
@@ -112,6 +116,7 @@ class Work(NamedTuple):
     played: np.ndarray
     moved_piece: np.ndarray
     cont_hist: np.ndarray
+    acc: np.ndarray
 
 
 def new_work(table: np.ndarray = TT) -> Work:
@@ -134,6 +139,8 @@ def new_work(table: np.ndarray = TT) -> Work:
         # [distance][piece][to][piece][to]: how a reply fared after a given earlier move.
         # Two distances, one and two plies back, at about 1.2 MB in total.
         cont_hist=np.zeros((2, 6, 64, 6, 64), dtype=np.int32),
+        # The network's per-ply accumulator. C-contiguous so acc[ply, p] vectorises.
+        acc=new_accumulator(STACK_PLIES),
     )
 
 
@@ -337,7 +344,7 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
     if work.ints[I_ABORT] != 0:
         return np.int32(0)
     if ply >= STACK_PLIES - 2:
-        return evaluate(work.state[ply], work.mail[ply])
+        return evaluate(work.acc, ply, work.state[ply])
     if ply > work.ints[I_SELDEPTH]:
         work.ints[I_SELDEPTH] = ply
 
@@ -353,7 +360,7 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
         best = np.int32(-INF)
         count = generate(state, work.moves, base)
     else:
-        stand_pat = evaluate(state, mail)
+        stand_pat = evaluate(work.acc, ply, state)
         if stand_pat >= beta:
             return stand_pat
         if stand_pat > alpha:
@@ -378,6 +385,7 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
         make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
         if not legal_after(work.state[ply + 1], black):
             continue
+        nnue_apply(work.acc, ply, state, mail, move)
         legal += 1
         work.played[ply] = move
         work.moved_piece[ply] = mail[np.int64(move & 63)]
@@ -408,7 +416,7 @@ def negamax(
         return np.int32(0)
 
     if ply >= STACK_PLIES - 4:
-        return evaluate(work.state[ply], work.mail[ply])
+        return evaluate(work.acc, ply, work.state[ply])
 
     state = work.state[ply]
     mail = work.mail[ply]
@@ -441,7 +449,7 @@ def negamax(
         if tt_bound == BOUND_UPPER and tt_score <= alpha:
             return tt_score
 
-    static = tt_static if hit and tt_static != 0 else evaluate(state, mail)
+    static = tt_static if hit and tt_static != 0 else evaluate(work.acc, ply, state)
     work.static_evals[ply] = static
 
     black = np.int64(state[STM])
@@ -476,6 +484,7 @@ def negamax(
         ):
             reduction = 3 + depth // 4 + min((static - beta) // 200, 3)
             make_null(state, mail, work.state[ply + 1], work.mail[ply + 1])
+            nnue_copy(work.acc, ply)
             work.played[ply] = np.int32(0)
             work.moved_piece[ply] = np.int8(-1)
             null_value = -negamax(
@@ -547,6 +556,7 @@ def negamax(
         make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
         if not legal_after(work.state[ply + 1], black):
             continue
+        nnue_apply(work.acc, ply, state, mail, move)
         legal += 1
         work.played[ply] = move
         work.moved_piece[ply] = mail[np.int64(move & 63)]
@@ -656,6 +666,7 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
                 make(state, mail, work.state[1], work.mail[1], move)
                 if not legal_after(work.state[1], black):
                     continue
+                nnue_apply(work.acc, 0, state, mail, move)
                 legal += 1
                 work.played[0] = move
                 if legal == 1:
@@ -752,6 +763,8 @@ def _prepare(
     board: chess.Board, time_left_ms: int, increment_ms: int, node_limit: int, work: Work
 ) -> None:
     encode(board, work.state[0], work.mail[0])
+    # The only full rebuild. Every ply below this is reached incrementally.
+    nnue_refresh(work.acc, 0, work.state[0], work.mail[0])
     work.ints[I_NODES] = 0
     work.ints[I_ABORT] = 0
     work.ints[I_SELDEPTH] = 0

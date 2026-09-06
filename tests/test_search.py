@@ -6,7 +6,7 @@ import time
 import chess
 import pytest
 
-import evaluate
+import nnue
 import position
 import search
 import tt
@@ -115,9 +115,18 @@ def reference_qsearch(board: chess.Board, alpha: int, beta: int, ply: int) -> in
 
 
 def reference_evaluate(board: chess.Board) -> int:
+    """The network, rebuilt from the board rather than carried incrementally.
+
+    That makes the oracle below a differential test of the accumulator as well as of the
+    search: the engine reaches every node by updating the accumulator one move at a time,
+    and this reference reaches the same node by rebuilding it from scratch. If they ever
+    disagree the oracle fails, which is the cheapest possible place to catch drift.
+    """
     state, mailbox = position.new_stacks()
     position.encode(board, state[0], mailbox[0])
-    return int(evaluate.evaluate(state[0], mailbox[0]))
+    acc = nnue.new_accumulator(2)
+    nnue.refresh(acc, 0, state[0], mailbox[0])
+    return int(nnue.forward(acc, 0, state[0]))
 
 
 def reference_alpha_beta(board: chess.Board, depth: int, alpha: int, beta: int, ply: int) -> int:
@@ -246,7 +255,16 @@ def test_node_limit_is_respected() -> None:
 
 
 def test_node_limited_search_is_deterministic() -> None:
+    # The tables are cleared between the two searches because the engine deliberately
+    # keeps its transposition table across moves within a game, so a second search from
+    # the same position legitimately sees a warmer table and can pick a different move
+    # among equals. What is being asserted here is that the search itself has no
+    # nondeterminism, not that it ignores what it already learned.
+    tt.tt_clear(tt.TT)
+    search.clear_tables()
     first = best_move(chess.STARTING_FEN, depth=127, nodes=100_000)
+    tt.tt_clear(tt.TT)
+    search.clear_tables()
     second = best_move(chess.STARTING_FEN, depth=127, nodes=100_000)
     assert first == second
 

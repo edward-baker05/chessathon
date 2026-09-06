@@ -38,7 +38,7 @@ testpaths = ["tests"]
 
 [tool.mypy]
 strict = true
-files = ["agent.py", "bitboard.py", "position.py", "movegen.py", "tt.py", "evaluate.py", "search.py", "harness", "tests"]
+files = ["agent.py", "bitboard.py", "position.py", "movegen.py", "tt.py", "evaluate.py", "nnue.py", "search.py", "harness", "tests", "tools"]
 
 [tool.pyright]
 venvPath = "."
