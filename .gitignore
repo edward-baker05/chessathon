@@ -7,6 +7,7 @@ submission.zip
 .pytest_cache/
 snapshots/
 data/
+docs/superpowers/
 # The shipped network is added deliberately with `git add -f`, so that a random
 # smoke-test net can never be committed and mistaken for a trained one.
 weights/*.npz
