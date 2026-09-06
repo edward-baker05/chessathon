@@ -212,10 +212,15 @@ INIT
 Round 35 was played by the material build, which imports in 24.8 s here. So the platform
 is **2.43x slower** at numba compilation than this machine.
 
-| build | local import | platform, at 2.43x | share of the 90 s budget |
+| build | local import | platform | share of the 90 s budget |
 | --- | --- | --- | --- |
 | material | 24.8 s | 60.2 s (measured) | 67% |
-| with the network | 28.2 s | about 68.5 s | about 76% |
+| with the network | 28.2 s | 68.8 s and 69.4 s (measured) | 76% |
+
+The prediction from the 2.43x ratio was 68.5 s and the validation log for the network build
+reported 68.8 s and 69.4 s across its two smoke games, so the ratio is confirmed and the
+build validates. It also confirms that Round 35 was the material build, which had been an
+inference from its move quality rather than a fact.
 
 The network fits, with roughly **21 s of platform slack, which is 8.8 s of local import
 time**. That is now a design constraint on everything that follows, because every feature
@@ -230,8 +235,16 @@ There is one free saving available, not yet taken: `perft` in `movegen.py` and
 `material_eval` in `evaluate.py` are both warmed at import but used only by tests. Dropping
 those two warm-ups costs the test suite a one-off compile and buys back platform budget.
 
-Time management in the same game looks healthy and needs nothing: 131.0 s used of the
-144.0 s available over 48 moves, 13.0 s left at the end, slowest move 6.8 s.
+Time management for the material build looked healthy: 131.0 s used of the 144.0 s
+available over 48 moves, 13.0 s left at the end, slowest move 6.8 s, which is 1.2x its soft
+limit.
+
+Under the network it is **not** healthy. The v4 validation log reports slowest moves of
+14.4 s and 11.5 s, and those positions reproduce locally at 10.7 s and 17.8 s against a
+5.69 s soft limit, up to 3.1x over. The soft limit is only sampled between completed depths
+and the aspiration re-search loop sits inside that check, so a single iteration or a failed
+window runs until the hard limit. The plan carries the fix; it is listed ahead of the margin
+sweep because margins measured under erratic time use are measured against noise.
 
 ## Risks
 

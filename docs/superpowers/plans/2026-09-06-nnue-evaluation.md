@@ -283,6 +283,47 @@ the budget.
 spends from it, and missing the budget loses every game in the round. Check `make bench`
 against this before adding anything that compiles.
 
+### The soft time limit overshoots, and it is the most expensive class of bug
+
+Found in the v4 validation log (`logs/AI Chessathon v4 log.log`), which reports
+`slowest 14.4 s` and `slowest 11.5 s` on the two smoke games.
+
+Reproduced locally from the same two smoke positions with a 120 s clock, against a soft
+limit of 5.69 s and a hard limit of 22.76 s:
+
+| position | move time | overshoot vs soft |
+| --- | --- | --- |
+| smoke 1 | 10.7 s | 1.9x |
+| smoke 2 | 17.8 s | 3.1x |
+
+17.8 s is 78% of the way to the hard limit. For comparison, the material build in rated
+Round 35 had a slowest move of 6.8 s, only 1.2x its soft limit, so this got worse with the
+network: slower nodes mean each iteration takes longer in wall clock, and the soft limit is
+only sampled between them.
+
+Two causes, both in `search_root`:
+
+1. `past_soft_limit` is checked only **after** a completed depth, so an iteration that
+   starts just under the limit runs to completion regardless of how long it takes.
+2. The aspiration window `while True:` re-search loop sits **inside** that check. A failed
+   window re-searches the same depth with nothing but the hard limit to stop it.
+
+The hard limit does prevent an outright flag, so this is time trouble rather than an
+immediate loss, and the budget formula's `time_left / 22` self-corrects as the clock drains.
+But an engine that habitually spends 3x its intended budget arrives in the endgame with
+very little left, and Round 35 already finished with only 13.0 s of 144.0 s.
+
+- [ ] Do not start a new iteration unless it is likely to finish: break out when elapsed
+      already exceeds some fraction of the soft limit, around 0.5 to 0.6, rather than only
+      when the whole limit is gone. This is the standard fix and it is a few lines.
+- [ ] Check the soft limit inside the aspiration re-search loop as well, so a failed window
+      cannot run unbounded.
+- [ ] Re-measure with a full game at the real 120 s + 0.5 s control afterwards, not just at
+      the harness default of 10 s, because the overshoot only shows at a realistic clock.
+
+Worth doing **before** the margin sweep: it is cheap, it is a whole-game risk rather than an
+Elo tweak, and margins measured under erratic time use are measured against noise.
+
 ### Is more data worth acquiring? Measure before deciding
 
 The network is about 402k parameters against roughly 189 million available positions, some
