@@ -100,3 +100,68 @@ def test_clear_empties_the_table() -> None:
 
 def test_table_is_a_power_of_two_number_of_buckets() -> None:
     assert tt.BUCKETS & (tt.BUCKETS - 1) == 0, "index masking requires a power of two"
+
+
+def test_every_move_flag_survives_a_round_trip() -> None:
+    """A move needs seventeen bits. Masking it to sixteen drops the high flag bit, which
+    turns a stored castle into a quiet move and a stored promotion into an en passant
+    capture. Neither corrupted move ever matches a generated one, so the node silently
+    loses its TT move and, with it, a ply to the internal iterative reduction."""
+    moves = {
+        "castle kingside": 4 | (6 << 6) | (2 << 15),
+        "castle queenside": 4 | (2 << 6) | (2 << 15),
+        "promotion to queen": 52 | (60 << 6) | (4 << 12) | (3 << 15),
+        "promotion to knight": 52 | (60 << 6) | (1 << 12) | (3 << 15),
+        "en passant": 36 | (43 << 6) | (1 << 15),
+        "quiet": 12 | (28 << 6),
+    }
+    for index, (name, move) in enumerate(moves.items()):
+        key = np.uint64(0x5000 + index)
+        tt.tt_store(tt.TT, key, 0, np.int32(1), np.int32(move), 4, tt.BOUND_EXACT, np.int32(0), 1)
+        hit, _, stored, _, _, _ = tt.tt_probe(tt.TT, key, 0)
+        assert hit and stored == move, f"{name} did not survive packing"
+
+
+def test_the_packed_word_uses_every_bit_it_claims_and_no_more() -> None:
+    widths = (
+        (tt.SCORE_SHIFT, tt.SCORE_BITS),
+        (tt.MOVE_SHIFT, tt.MOVE_BITS),
+        (tt.DEPTH_SHIFT, tt.DEPTH_BITS),
+        (tt.BOUND_SHIFT, tt.BOUND_BITS),
+        (tt.AGE_SHIFT, tt.AGE_BITS),
+        (tt.STATIC_SHIFT, tt.STATIC_BITS),
+    )
+    occupied = 0
+    for shift, bits in widths:
+        field = ((1 << bits) - 1) << shift
+        assert occupied & field == 0, "two fields overlap in the packed word"
+        occupied |= field
+    assert occupied == (1 << 64) - 1, "the packed word has unused or overflowing bits"
+
+
+def test_extreme_field_values_do_not_bleed_into_their_neighbours() -> None:
+    key = np.uint64(0x6001)
+    # The widest real move there is: h8 to h8, promoting to a queen.
+    move = 63 | (63 << 6) | (4 << 12) | (3 << 15)
+    tt.tt_store(
+        tt.TT, key, 0, np.int32(-32768), np.int32(move), tt.DEPTH_MASK,
+        tt.BOUND_LOWER, np.int32(32767), tt.AGE_MASK,
+    )
+    hit, score, stored, depth, bound, static = tt.tt_probe(tt.TT, key, 0)
+    assert hit
+    assert score == -32768 and stored == move and depth == tt.DEPTH_MASK
+    assert bound == tt.BOUND_LOWER and static == 32767
+
+
+def test_every_move_the_generator_can_produce_round_trips() -> None:
+    """The stored form is sixteen bits and a generator move is seventeen, so the encoding
+    has to be exhaustively reversible rather than merely reversible for the common case."""
+    assert tt.unpack_move(tt.pack_move(np.int32(0))) == 0, "the empty move must survive"
+    for frm in (0, 7, 31, 56, 63):
+        for to in (0, 12, 40, 63):
+            for flag, promos in ((0, (0,)), (1, (0,)), (2, (0,)), (3, (1, 2, 3, 4))):
+                for promo in promos:
+                    move = frm | (to << 6) | (promo << 12) | (flag << 15)
+                    assert tt.unpack_move(tt.pack_move(np.int32(move))) == move, (
+                        f"from {frm} to {to} promo {promo} flag {flag} did not round trip"
+                    )

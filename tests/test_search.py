@@ -4,12 +4,15 @@ import os
 import time
 
 import chess
+import numpy as np
 import pytest
 
 import nnue
 import position
 import search
 import tt
+from bitboard import HALF, KEY
+from evaluate import evaluate
 from tests.conftest import random_positions
 
 MATE_IN_ONE = "6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1"  # Ra8 is mate
@@ -317,3 +320,80 @@ def test_continuation_history_stays_within_bounds() -> None:
 
 def test_oracle_holds_with_continuation_history() -> None:
     assert_matches_oracle(seed=111, depth=3, count=3)
+
+
+def test_game_history_repetition_is_found_from_both_plies() -> None:
+    """`agent.py` records the game as [us, them, us, ..., us], so a position repeats one
+    two of its own moves back at an even ply and one of the opponent's at an odd ply. A
+    scan that starts from a fixed index sees only one of those parities, and the one it
+    misses is our own turn, which is the shape a threefold actually takes."""
+    work = search.new_work(tt.new_table())
+    repeated = np.uint64(0xDEADBEEFCAFE1234)
+
+    # Seven entries: indices 0, 2, 4 and the root at 6 are ours; 1, 3, 5 are theirs.
+    for index in range(7):
+        work.hist_keys[index] = np.uint64(index + 1)
+    work.ints[search.I_HIST_LEN] = 7
+
+    for ply, index in ((2, 4), (3, 5)):
+        for slot in range(7):
+            work.hist_keys[slot] = np.uint64(slot + 1)
+        work.hist_keys[index] = repeated
+        work.state[:] = 0
+        work.state[ply][KEY] = repeated
+        work.state[ply][HALF] = np.uint64(40)
+        for node in range(ply):
+            work.state[node][KEY] = np.uint64(0xAAAA + node)
+        assert search.is_repetition(work, ply), (
+            f"a repetition of history entry {index} was missed at ply {ply}"
+        )
+
+
+def test_an_unrepeated_history_is_not_called_a_repetition() -> None:
+    work = search.new_work(tt.new_table())
+    for index in range(7):
+        work.hist_keys[index] = np.uint64(index + 1)
+    work.ints[search.I_HIST_LEN] = 7
+    for ply in (2, 3):
+        work.state[:] = 0
+        work.state[ply][KEY] = np.uint64(0x123456789)
+        work.state[ply][HALF] = np.uint64(40)
+        for node in range(ply):
+            work.state[node][KEY] = np.uint64(0xAAAA + node)
+        assert not search.is_repetition(work, ply)
+
+
+def test_the_halfmove_clock_stops_the_history_scan() -> None:
+    """An irreversible move makes everything before it unreachable, so a low halfmove
+    clock has to stop the walk before it reaches a position that cannot recur."""
+    work = search.new_work(tt.new_table())
+    repeated = np.uint64(0xFEEDFACE)
+    for index in range(7):
+        work.hist_keys[index] = np.uint64(index + 1)
+    work.hist_keys[4] = repeated
+    work.ints[search.I_HIST_LEN] = 7
+    work.state[:] = 0
+    work.state[2][KEY] = repeated
+    for node in range(2):
+        work.state[node][KEY] = np.uint64(0xAAAA + node)
+
+    work.state[2][HALF] = np.uint64(40)
+    assert search.is_repetition(work, 2)
+    work.state[2][HALF] = np.uint64(2)
+    assert not search.is_repetition(work, 2), "scanned past an irreversible move"
+
+
+def test_the_root_static_evaluation_is_recorded_for_the_improving_test() -> None:
+    """`improving` at ply 2 compares against static_evals[0]. search_root calls negamax at
+    ply 1 and never at ply 0, so unless the root writes that slot itself nothing ever does,
+    and the comparison silently degrades into `static > 0`."""
+    board = chess.Board("r2q1rk1/pp2bppp/2np1n2/2p1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 9")
+    search.WORK.static_evals[0] = np.int32(12345)
+    search.think(board, 3000)
+    recorded = int(search.WORK.static_evals[0])
+    assert recorded != 12345, "search_root left a stale value in static_evals[0]"
+
+    position.encode(board, search.WORK.state[0], search.WORK.mail[0])
+    nnue.refresh(search.WORK.acc, 0, search.WORK.state[0], search.WORK.mail[0])
+    expected = int(evaluate(search.WORK.acc, 0, search.WORK.state[0]))
+    assert recorded == expected, "static_evals[0] is not the root's static evaluation"

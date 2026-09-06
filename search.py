@@ -37,6 +37,7 @@ from position import (
     see,
 )
 from tt import (
+    AGE_MASK,
     BOUND_EXACT,
     BOUND_LOWER,
     BOUND_UPPER,
@@ -57,20 +58,57 @@ MAX_DEPTH = 127
 
 # Indices into Work.ints.
 I_NODES, I_ABORT, I_NODE_LIMIT, I_HIST_LEN, I_AGE, I_SELDEPTH, I_NO_PRUNING = 0, 1, 2, 3, 4, 5, 6
+# Consecutive completed iterations whose best move did not change.
+I_STABLE = 7
 INT_SLOTS = 8
 
-# Indices into Work.floats.
+# Indices into Work.floats. Both arrays are one-dimensional, so adding slots does not
+# change any jitted signature and costs no compile time.
 F_HARD, F_SOFT, F_SOFT_SPAN, F_START = 0, 1, 2, 3
-FLOAT_SLOTS = 4
+F_STRETCH, F_LAST_ITER, F_PREV_ITER = 4, 5, 6
+FLOAT_SLOTS = 7
 
 # A depth whose best move changed, or whose score fell by this much, is worth more time.
 INSTABILITY_DROP = 30
 INSTABILITY_FACTOR = 1.5
 
+# The other side of the same coin: a best move that has survived several iterations is
+# settled, so hand the unspent time to a later move that needs it. Without this the engine
+# spends its whole allowance on every position, including the easy ones.
+STABLE_STEP = 0.075
+STABLE_FLOOR = 0.70
+# Contracting on two or three trivial early iterations says nothing, so the counter only
+# starts here.
+STABLE_MIN_DEPTH = 5
+
+# An aspiration re-search re-runs a whole depth, so a failed window is bounded by this
+# multiple of the soft limit rather than by the hard limit. It sits above the instability
+# stretch and below the hard limit, so an unsettled position keeps its extension.
+STRETCH_MULTIPLE = 2.0
+
+# How much longer the next iteration is expected to take than the last one. Measured from
+# the two most recent iterations where there are two, and clamped, so that one anomalous
+# depth cannot poison the estimate.
+GROWTH_DEFAULT = 2.2
+GROWTH_MIN = 1.6
+GROWTH_MAX = 4.0
+
 # How often to read the clock. Must be a power of two minus one when used as a mask.
 CLOCK_INTERVAL_MASK = 2047
 
 RESERVE_MS = 300.0
+
+# Stockfish's optScale. The share of the remaining clock spent on one move, rising with the
+# ply. A flat share of a draining clock falls away monotonically, which spends the most on
+# the opening and the least on the middlegame; letting the share rise roughly cancels the
+# fall and keeps the allocation level. Refitting these steeper was tried and was worse.
+SOFT_BASE = 0.0084
+SOFT_PLY_SCALE = 0.0042
+# Caps. A single move may never take more than a twelfth of the clock, and the hard limit
+# is the backstop one level above the stretch.
+SOFT_CAP_DIVISOR = 12.0
+HARD_DIVISOR = 6.0
+HARD_MULTIPLE = 3.0
 
 # Most valuable victim, least valuable attacker. Indexed [victim][attacker].
 MVV_LVA = np.zeros((6, 6), dtype=np.int32)
@@ -167,15 +205,17 @@ def check_time(work: Bits) -> None:
 
 
 @njit(cache=False)
-def past_soft_limit(work: Bits) -> Flag:
-    """Is there time to start another iteration?
+def read_clock() -> float:
+    """Wall clock seconds, readable from jitted code.
 
-    The hard limit aborts a search mid-iteration; this stops one from beginning. Without
-    it every move runs to the hard limit, which is how an engine flags.
+    This replaces a `past_soft_limit` predicate. Every deadline in `search_root` is now
+    compared against the same reading, so one objmode call serves the soft limit, the
+    stretch limit and the iteration timing, and no extra jitted function is compiled. The
+    import budget is the binding constraint on this engine, so that matters.
     """
     with objmode(now="f8"):
         now = time.time()
-    return now >= work.floats[F_SOFT]
+    return now
 
 
 @njit(cache=False)
@@ -194,9 +234,20 @@ def is_repetition(work: Bits, ply: Square) -> Flag:
             return True
         node -= 2
         back += 2
+    # agent.py builds the game history as [us, them, us, ..., us], so the root sits at
+    # the last index and entries alternate side to move from there. A position can only
+    # repeat one with the same side to move, so which end of that alternation to start
+    # from depends on the parity of `ply`: an even ply has the root's side to move and
+    # matches index length-3, an odd ply matches length-2. Walking from length-2 for
+    # every ply, as this did, scans one parity only, and so could never find a repetition
+    # of a position from earlier in the game where it is our own turn, which is exactly
+    # the shape a threefold takes. The root itself is already covered by the loop above,
+    # through work.state[0], and is skipped here rather than tested twice.
     length = work.ints[I_HIST_LEN]
-    index = length - 2
-    while index >= 0 and (length - index) <= half:
+    index = length - 3 + (ply & 1)
+    # Distance in plies from this node back to a history entry, bounded by the halfmove
+    # clock: an irreversible move makes everything before it unreachable.
+    while index >= 0 and (length - 1 - index) + ply <= half:
         if work.hist_keys[index] == key:
             return True
         index -= 2
@@ -632,6 +683,13 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
     mail = work.mail[0]
     black = np.int64(state[STM])
 
+    # `improving` at ply 2 asks whether the side to move has bettered its evaluation of
+    # two plies back, which at ply 2 is the root. negamax never runs at ply 0 from here,
+    # so nothing else ever writes this slot: left alone it holds whatever the last search
+    # put there, and in real play it is never written at all, which quietly turns the test
+    # into "is the static evaluation positive" and changes the reductions that follow.
+    work.static_evals[0] = evaluate(work.acc, 0, state)
+
     count = generate(state, work.moves, base)
     # Establish a legal move before anything is allowed to abort.
     for index in range(base, count):
@@ -643,8 +701,16 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
     if best_move == 0:
         return np.int32(0)
 
+    growth = GROWTH_DEFAULT
     for depth in range(1, max_depth + 1):
+        iteration_start = read_clock()
         window = np.int32(18)
+        # A failed window re-runs the whole depth. The first failure widens by four, the
+        # second goes straight to full width, so a depth costs at most three passes and the
+        # last of them cannot fail. Escalating by four indefinitely took three or four
+        # passes to reach full width from a window of 18, each one a complete search.
+        widenings = 0
+        abandoned = False
         if depth >= 5:
             low = best_score - window
             high = best_score + window
@@ -677,6 +743,13 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
                         value = -negamax(work, 1, depth - 1, -beta, -local_alpha, True)
                 if work.ints[I_ABORT] != 0:
                     break
+                # An iteration whose cost was underestimated is otherwise stopped only by
+                # the hard limit, which is how a move still reached 3x its soft limit after
+                # the checks between depths were added. The first root move is the previous
+                # best, so once one has finished there is always a move to fall back on.
+                if legal >= 1 and read_clock() >= work.floats[F_STRETCH]:
+                    work.ints[I_ABORT] = 1
+                    break
                 if value > score:
                     score = value
                     iteration_move = move
@@ -686,55 +759,129 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
             if work.ints[I_ABORT] != 0:
                 break
             if score <= alpha:
-                # Failed low: widen downwards and try this depth again.
-                window *= 4
-                low = score - window
-                alpha = np.int32(low if low > -INF else -INF)
+                # Failed low: widen downwards and try this depth again. On a fail-low every
+                # root score is an upper bound, so their ordering is unreliable and the
+                # partial result must not be committed; abandoning keeps the last depth's
+                # move instead.
+                if read_clock() >= work.floats[F_STRETCH]:
+                    abandoned = True
+                    break
+                widenings += 1
+                if widenings >= 2:
+                    alpha = np.int32(-INF)
+                else:
+                    window *= 4
+                    low = score - window
+                    alpha = np.int32(low if low > -INF else -INF)
                 continue
             if score >= beta:
-                window *= 4
-                high = score + window
-                beta = np.int32(high if high < INF else INF)
+                if read_clock() >= work.floats[F_STRETCH]:
+                    abandoned = True
+                    break
+                widenings += 1
+                if widenings >= 2:
+                    beta = np.int32(INF)
+                else:
+                    window *= 4
+                    high = score + window
+                    beta = np.int32(high if high < INF else INF)
                 continue
             best_score = score
             if iteration_move != 0:
                 best_move = iteration_move
             break
 
-        if work.ints[I_ABORT] != 0:
+        if work.ints[I_ABORT] != 0 or abandoned:
             break
         # A forced mate is found; searching deeper cannot improve on it.
         if best_score >= MATE_IN_MAX or best_score <= -MATE_IN_MAX:
             break
 
-        # Instability: a changed best move or a falling score means this position is not
-        # settled, so allow the soft limit to stretch, never past the hard limit.
-        if depth >= 4 and (
+        now = read_clock()
+        work.floats[F_PREV_ITER] = work.floats[F_LAST_ITER]
+        work.floats[F_LAST_ITER] = now - iteration_start
+
+        # Stability, in both directions. A changed best move or a falling score means this
+        # position is not settled and is worth more time; a move that has survived several
+        # iterations is settled and the unspent time is worth more to a later move. The
+        # soft limit is derived from the base span each iteration rather than accumulated,
+        # because a limit that is only ever written upwards cannot contract.
+        unsettled = depth >= 4 and (
             best_move != previous_move or best_score < previous_score - INSTABILITY_DROP
-        ):
-            extended = work.floats[F_START] + work.floats[F_SOFT_SPAN] * INSTABILITY_FACTOR
-            if extended > work.floats[F_SOFT]:
-                work.floats[F_SOFT] = min(extended, work.floats[F_HARD])
+        )
+        if not unsettled and depth >= STABLE_MIN_DEPTH:
+            work.ints[I_STABLE] += 1
+        else:
+            work.ints[I_STABLE] = 0
+        if unsettled:
+            scale = INSTABILITY_FACTOR
+        else:
+            scale = 1.0 - STABLE_STEP * work.ints[I_STABLE]
+            if scale < STABLE_FLOOR:
+                scale = STABLE_FLOOR
+        span = work.floats[F_SOFT_SPAN]
+        soft = work.floats[F_START] + span * scale
+        if soft > work.floats[F_HARD]:
+            soft = work.floats[F_HARD]
+        work.floats[F_SOFT] = soft
+        # The prediction below is allowed to aim at the stretch rather than the soft limit.
+        # Requiring the next iteration to finish inside the soft limit sounds right and is
+        # not: iterations grow by a factor of two to four, so that rule lands between a
+        # quarter and all of the budget and throws most of it away. Aiming at twice the
+        # limit lands either side of it, which is what a soft limit is supposed to mean.
+        stretch = work.floats[F_START] + span * scale * STRETCH_MULTIPLE
+        if stretch > work.floats[F_HARD]:
+            stretch = work.floats[F_HARD]
+        work.floats[F_STRETCH] = stretch
+
         previous_move = best_move
         previous_score = best_score
 
-        if past_soft_limit(work):
+        if now >= soft:
+            break
+        # Do not start an iteration that cannot finish. Checking only whether the limit has
+        # already passed lets a depth that begins at 99% of it run to completion however
+        # long it takes, which is where the overshoot came from.
+        if work.floats[F_PREV_ITER] > 0.0:
+            growth = work.floats[F_LAST_ITER] / work.floats[F_PREV_ITER]
+            if growth < GROWTH_MIN:
+                growth = GROWTH_MIN
+            elif growth > GROWTH_MAX:
+                growth = GROWTH_MAX
+        if now + work.floats[F_LAST_ITER] * growth >= stretch:
             break
     return best_move
 
 
-def budget_ms(time_left_ms: int, increment_ms: int) -> tuple[float, float]:
+def budget_ms(time_left_ms: int, increment_ms: int, ply: int = 0) -> tuple[float, float]:
     """Soft and hard limits in milliseconds.
+
+    The share of the remaining clock rises with the ply, so that a draining clock does not
+    drag the allocation down with it. A flat share spent 5.7 s on move one and 1.4 s on
+    move forty, which is backwards: move one comes out of a curated opening and move forty
+    does not.
 
     Floored rather than allowed to go negative: late in a long game the base clock is gone
     and play is increment-only, and a negative budget would return no move at all.
     """
     usable = max(float(time_left_ms) - RESERVE_MS, 10.0)
+    fraction = SOFT_BASE + math.sqrt(float(ply) + 3.0) * SOFT_PLY_SCALE
     # Only half the increment is credited. Over-crediting it is how engines flag, and a
     # flag costs a whole game, so the asymmetry is deliberate.
-    soft = min(usable / 22.0 + 0.5 * increment_ms, usable / 12.0)
-    hard = min(usable / 4.0, soft * 4.0)
+    soft = min(usable * fraction + 0.5 * increment_ms, usable / SOFT_CAP_DIVISOR)
+    hard = min(usable / HARD_DIVISOR, soft * HARD_MULTIPLE)
     return min(soft, hard), hard
+
+
+def ply_of(board: chess.Board) -> int:
+    """Plies played, from the FEN alone.
+
+    Rated games start from curated positions rather than the standard start, so the
+    fullmove number carries real information about how far into the game we are. Clamped
+    because a hand-written FEN can say anything.
+    """
+    ply = (board.fullmove_number - 1) * 2 + (0 if board.turn == chess.WHITE else 1)
+    return min(max(ply, 0), 400)
 
 
 def set_pruning(enabled: bool, work: Work = WORK) -> None:
@@ -769,13 +916,17 @@ def _prepare(
     work.ints[I_ABORT] = 0
     work.ints[I_SELDEPTH] = 0
     work.ints[I_NODE_LIMIT] = node_limit
-    work.ints[I_AGE] = (int(work.ints[I_AGE]) + 1) & 63
-    soft, hard = budget_ms(time_left_ms, increment_ms)
+    work.ints[I_AGE] = (int(work.ints[I_AGE]) + 1) & AGE_MASK
+    work.ints[I_STABLE] = 0
+    soft, hard = budget_ms(time_left_ms, increment_ms, ply_of(board))
     now = time.time()
     work.floats[F_START] = now
     work.floats[F_SOFT_SPAN] = soft / 1000.0
     work.floats[F_SOFT] = now + soft / 1000.0
     work.floats[F_HARD] = now + hard / 1000.0
+    work.floats[F_STRETCH] = min(now + soft * STRETCH_MULTIPLE / 1000.0, work.floats[F_HARD])
+    work.floats[F_LAST_ITER] = 0.0
+    work.floats[F_PREV_ITER] = 0.0
 
 
 def think(

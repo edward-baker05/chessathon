@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: setup play arena zip gate test bench ab random-net data train quantise
+.PHONY: setup play arena zip gate test bench ab replay random-net data train quantise
 
 setup:
 	uv sync
@@ -24,6 +24,11 @@ test:
 
 bench:
 	uv run python tests/bench.py
+
+# Time allocation over a played game, at the real control. Cheap evidence about the clock
+# before spending arena hours on an A/B that measures strength.
+replay:
+	uv run python tools/replay.py $(if $(PGN),"$(PGN)",logs/*.pgn) --side $(if $(SIDE),$(SIDE),Edward)
 
 ab:
 	uv run python tests/match.py --opponent $(OPPONENT) --games $(if $(GAMES),$(GAMES),200) --nodes $(if $(NODES),$(NODES),200000)

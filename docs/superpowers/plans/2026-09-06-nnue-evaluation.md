@@ -319,13 +319,34 @@ reassuring but weak evidence: two games, both decisive, so neither reached the l
 where the accumulated overshoot would actually bite. It rules out an immediate loss, not the
 time trouble. Treat the fix as still worth making.
 
-- [ ] Do not start a new iteration unless it is likely to finish: break out when elapsed
-      already exceeds some fraction of the soft limit, around 0.5 to 0.6, rather than only
-      when the whole limit is gone. This is the standard fix and it is a few lines.
-- [ ] Check the soft limit inside the aspiration re-search loop as well, so a failed window
-      cannot run unbounded.
-- [ ] Re-measure with a full game at the real 120 s + 0.5 s control afterwards, not just at
-      the harness default of 10 s, because the overshoot only shows at a realistic clock.
+- [x] Do not start a new iteration unless it is likely to finish. Done by predicting the
+      next iteration from the growth of the last two, not by a fixed fraction. Note that the
+      prediction has to aim at the stretch limit rather than the soft limit; aiming at the
+      soft limit guarantees no overshoot and costs three quarters of the budget.
+- [x] Check the soft limit inside the aspiration re-search loop as well, so a failed window
+      cannot run unbounded. Also inside the root move loop, which the original list missed:
+      an iteration whose cost was underestimated was still reaching the hard limit.
+- [x] Re-measure at the real 120 s + 0.5 s control. `tools/replay.py` does it from a played
+      PGN in about two minutes, without needing a whole arena match.
+
+Done, in `docs/superpowers/specs/2026-09-06-time-management-design.md`, together with the
+budget reshape the overshoot was hiding. Measured old against new on the same machine, same
+network, over `logs/Epoch Mate vs Edward.pgn`:
+
+| | old | new |
+| --- | --- | --- |
+| overshoot mean / median / max | 1.78x / 1.85x / 3.35x | 0.71x / 0.79x / 1.36x |
+| worst single move | 13.4 s, 84% of hard | 4.5 s, 45% of hard |
+| clock after 20 of our moves | 16.5 s | 71.7 s |
+
+Still open, and the reason this is not finished:
+
+- [ ] The A/B at 30 s + 0.125 s against a snapshot frozen before the change. Nothing above
+      is an Elo measurement.
+- [ ] Decide whether a mean of 0.71x is underspending. The easy moves come in at 0.4x to
+      0.6x by design and the hard ones at 1.0x to 1.4x, which is the intended shape, but the
+      replayed game ended with 61 s to 72 s unspent. Raising `SOFT_BASE` is the lever. Do
+      not touch it on one game's evidence.
 
 Worth doing **before** the margin sweep: it is cheap, it is a whole-game risk rather than an
 Elo tweak, and margins measured under erratic time use are measured against noise.
