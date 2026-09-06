@@ -255,5 +255,104 @@ Measured on the development machine, for comparison against the desktop:
 - [ ] Input king buckets, `768 x N`, if the margin sweep and self-play data are done and
       there is still time. This reintroduces an accumulator refresh path, so it needs its
       own differential test before it can be trusted.
+- [ ] **Correction history.** Genuinely absent from `search.py`: a running correction to the
+      static evaluation, keyed on pawn structure and material, applied when search results
+      systematically disagree with the static eval. It pairs particularly well with a
+      network and is self-contained. Perhaps 15 to 30 Elo. Check its compile cost against
+      the import headroom below before committing to it.
+- [ ] **Buy back import headroom**, which every item above spends. `perft` in `movegen.py`
+      and `material_eval` in `evaluate.py` are warmed at import but used only by tests;
+      dropping those two warm-ups costs the test suite a one-off compile and buys platform
+      budget. Measure the saving before and after with `make bench`.
 
 Ship whichever version last won its match.
+
+---
+
+## Constraints and open questions carried out of the first day
+
+### The import budget is the binding constraint on new features
+
+`docs/superpowers/specs/2026-09-06-nnue-evaluation-design.md` has the full working. In
+short: a real rated game log reports `Ready in 60.2 s` of a 90 s budget for the material
+build, which imports in 24.8 s here, so the platform is **2.43x slower** at numba
+compilation. The network build imports in 28.2 s here, so about 68.5 s there, about 76% of
+the budget.
+
+**That leaves about 8.8 s of local import time to spend.** Every jitted function added
+spends from it, and missing the budget loses every game in the round. Check `make bench`
+against this before adding anything that compiles.
+
+### Is more data worth acquiring? Measure before deciding
+
+The network is about 402k parameters against roughly 189 million available positions, some
+470 positions per parameter. Engines that train on billions run 1.5M parameter nets. So
+data volume is plausibly **not** the binding constraint, and the honest way to find out is
+cheap:
+
+- [ ] Train the same architecture on 25%, 50% and 100% of `train.bin` and plot holdout loss
+      against data size. Still falling steeply at 100% means data-limited and acquisition
+      pays. Flattened means capacity-limited and more data buys nothing.
+
+Do this **after** the L1 sweep, not before. More data only pays once capacity can absorb
+it, so the architecture decision comes first.
+
+If it does turn out data-limited, in preference order:
+
+| Source | Volume | Notes |
+| --- | --- | --- |
+| Lichess monthly PGN dumps | about 66M usable per month, 4+ months live | 29 GB per month. Measured: **10.2% of games carry `[%eval]`**, about 65 per annotated game. Labels are shallower than the eval file's, but these are real games and they carry the **result**, which unlocks the eval/WDL lambda blend that was dropped on pipeline cost |
+| Self-play, labelled by our own search | unlimited | Free, entirely ours, and in-domain. Already a Phase 4 item above |
+| Public Stockfish binpacks | hundreds of GB | Legal as training data. Download size is the practical blocker |
+
+Prefer the PGN dumps over more eval-file data: the value is the game results, not the count.
+
+**Do not rent cloud compute.** The binding constraint is single-core inference speed on a
+2.60 GHz core, not training throughput. A faster GPU buys nothing that can be spent.
+
+### Measured figures for planning the full run
+
+| | |
+| --- | --- |
+| Lines in `lichess_db_eval.jsonl.zst` | about 278 million (5.33x compression, 416 bytes per line) |
+| Kept after filters, about 68% | about 189 million positions |
+| `data/train.bin` | about 6.0 GB |
+| Extraction, 11 workers | about 1 hour |
+| One training epoch at 200k/s | about 16 minutes, so 30 epochs is about 8 hours |
+| `dataset.unpack` throughput | 2.0M positions/s, 25x the training rate, so the data path is **not** a bottleneck and needs no prefetching |
+| A/B harness | about 1 minute per game, almost entirely numba compile in the freshly spawned agent processes. Budget match sizes by that, not by node count |
+
+### What the ladder logs showed, and what to do about it
+
+`logs/` holds a Round 31 PGN and a Round 35 log. Both games were played by the material
+evaluation, identifiable from the aimless quiet play that an evaluation with no positional
+terms produces.
+
+Round 31 was **not** played by the build in `snapshots/material`. In that game the engine
+declined `d8=Q+` eight consecutive times, eventually blocking its own promotion square with
+its own bishop, and stalemated with a rook, bishop and pawn against a bare king. The
+current material build promotes there at depth 1 on 200 nodes, and still promotes when the
+whole game is replayed through `agent.get_move` with the real clocks and history. So this
+is an older upload rather than a live bug, and no fix is outstanding.
+
+- [ ] Check the dashboard for which submission is actually live. Round 31 suggests the
+      deployed build had drifted behind the local work, which would mean the network upload
+      is worth more than the +168 Elo measured against `snapshots/material`.
+- [ ] After uploading, read the new validation log's init time against the 68.5 s
+      prediction above. That confirms or corrects the 2.43x platform ratio.
+
+### Not worth doing, so they do not eat the remaining days
+
+- **Opening book.** Rated games start from curated, unpublished positions, so a book keyed
+  on the start position is out of book on move one.
+- **Syzygy tablebases.** 3-4-5 man WDL is about 380 MB against a 50 MB cap. Only 3-4 man
+  fits and is worth almost nothing, and probing would mean building a `python-chess` board
+  per probe from the bitboard state.
+- **ONNX or torch at runtime.** Per-call overhead is 20 to 50 us against a node budget of
+  about 600 ns.
+- **Threads.** One core, and the contract says threads past the first cost time.
+
+### Minor, noted but not worth doing alone
+
+- `search.py` uses `tt_static != 0` as "a static eval is stored", so a position that
+  genuinely evaluates to exactly 0 is recomputed. A wasted evaluation, not a wrong one.

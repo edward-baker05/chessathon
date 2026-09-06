@@ -104,9 +104,14 @@ below `2^31`. The same check bounds the accumulator against int16 overflow using
 maximum feature weight and the maximum number of pieces on the board. A scale that cannot
 be proven safe for the specific net being shipped is not shipped.
 
-`SCALE` is then chosen by calibrating the net's output against the existing material
-evaluation over a shared position set, so that the six pruning margins in `search.py`,
-all of which are written in centipawns, keep approximately the meaning they were tuned for.
+`SCALE` needs no calibration step, and an early plan to fit it against the material
+evaluation was dropped as actively wrong. The trainer's target is `sigmoid(cp / 400)`
+against Stockfish centipawns and the float and quantised networks are the same function by
+construction, so the network already emits centipawns on a better scale than a material
+count's. Fitting to the material evaluation would have moved it off that scale rather than
+onto one. The six pruning margins in `search.py` still want rechecking, because the
+*distribution* of a network's evaluations differs from a material count's even on the same
+scale, and that is a Phase 4 task in the plan rather than a quantisation concern.
 
 ## Runtime integration
 
@@ -190,6 +195,44 @@ hands both sides the same node count and so hides the 21% of node rate the netwo
 - **Fixed nodes** stays as a diagnostic. It isolates evaluation quality from speed, so a
   net that wins on nodes and loses on time means L1 is too large, not that the net is bad.
 
+## What the platform costs, measured from a rated game log
+
+`logs/AI Chessathon Round 35 Log.log` is a real rated game and it reports the init time the
+platform actually charged. That is the only direct measurement of how much slower their
+core is than the development machine, and it turns the 90 second init budget from an
+abstraction into a number.
+
+```
+INIT
+  Ready in       60.2 s
+  Budget         90.0 s
+  Used           67 percent
+```
+
+Round 35 was played by the material build, which imports in 24.8 s here. So the platform
+is **2.43x slower** at numba compilation than this machine.
+
+| build | local import | platform, at 2.43x | share of the 90 s budget |
+| --- | --- | --- | --- |
+| material | 24.8 s | 60.2 s (measured) | 67% |
+| with the network | 28.2 s | about 68.5 s | about 76% |
+
+The network fits, with roughly **21 s of platform slack, which is 8.8 s of local import
+time**. That is now a design constraint on everything that follows, because every feature
+that adds a jitted function adds compile time: correction history, input king buckets and a
+larger L1 all spend from those 8.8 s. Missing the init budget loses every game in the round.
+
+`cache=True` cannot buy the headroom back. numba bakes the contents of global arrays into
+cached binaries with no warning, and this design keeps the network's weights in globals, so
+a cached build would serve stale weights.
+
+There is one free saving available, not yet taken: `perft` in `movegen.py` and
+`material_eval` in `evaluate.py` are both warmed at import but used only by tests. Dropping
+those two warm-ups costs the test suite a one-off compile and buys back platform budget.
+
+Time management in the same game looks healthy and needs nothing: 131.0 s used of the
+144.0 s available over 48 moves, 13.0 s left at the end, slowest move 6.8 s.
+
 ## Risks
 
 | Risk | Mitigation |
@@ -197,5 +240,5 @@ hands both sides the same node count and so hides the 21% of node rate the netwo
 | Incremental accumulator drifts from a true refresh | Differential test over random playouts, asserting equality every ply |
 | int32 overflow in the output sum | Exact worst-case bound computed from the shipped weights at export, hard failure |
 | Sign or perspective error in feature indexing | Test that the evaluation of a position and of its colour-mirrored twin are negatives |
-| Import budget | Currently 24.8 s of 90 s. `tests/bench.py` already gates it |
+| Import budget | 28.2 s local, about 68.5 s of the platform's 90 s. Only 8.8 s of local slack left. `tests/bench.py` gates it, and the section above explains why the margin is thinner than it looks |
 | Net trained on the wrong target | Held-out loss plus a fixed-node A/B against `snapshots/material` before anything ships |
