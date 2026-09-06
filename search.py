@@ -56,8 +56,12 @@ I_NODES, I_ABORT, I_NODE_LIMIT, I_HIST_LEN, I_AGE, I_SELDEPTH, I_NO_PRUNING = 0,
 INT_SLOTS = 8
 
 # Indices into Work.floats.
-F_HARD, F_SOFT = 0, 1
+F_HARD, F_SOFT, F_SOFT_SPAN, F_START = 0, 1, 2, 3
 FLOAT_SLOTS = 4
+
+# A depth whose best move changed, or whose score fell by this much, is worth more time.
+INSTABILITY_DROP = 30
+INSTABILITY_FACTOR = 1.5
 
 # How often to read the clock. Must be a power of two minus one when used as a mask.
 CLOCK_INTERVAL_MASK = 2047
@@ -153,6 +157,18 @@ def check_time(work: Bits) -> None:
         now = time.time()
     if now >= work.floats[F_HARD]:
         work.ints[I_ABORT] = 1
+
+
+@njit(cache=False)
+def past_soft_limit(work: Bits) -> Flag:
+    """Is there time to start another iteration?
+
+    The hard limit aborts a search mid-iteration; this stops one from beginning. Without
+    it every move runs to the hard limit, which is how an engine flags.
+    """
+    with objmode(now="f8"):
+        now = time.time()
+    return now >= work.floats[F_SOFT]
 
 
 @njit(cache=False)
@@ -599,6 +615,8 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
     """Iterative deepening with aspiration windows. Returns the best move found."""
     best_move = np.int32(0)
     best_score = np.int32(0)
+    previous_move = np.int32(0)
+    previous_score = np.int32(0)
     base = 0
     state = work.state[0]
     mail = work.mail[0]
@@ -677,6 +695,20 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
         # A forced mate is found; searching deeper cannot improve on it.
         if best_score >= MATE_IN_MAX or best_score <= -MATE_IN_MAX:
             break
+
+        # Instability: a changed best move or a falling score means this position is not
+        # settled, so allow the soft limit to stretch, never past the hard limit.
+        if depth >= 4 and (
+            best_move != previous_move or best_score < previous_score - INSTABILITY_DROP
+        ):
+            extended = work.floats[F_START] + work.floats[F_SOFT_SPAN] * INSTABILITY_FACTOR
+            if extended > work.floats[F_SOFT]:
+                work.floats[F_SOFT] = min(extended, work.floats[F_HARD])
+        previous_move = best_move
+        previous_score = best_score
+
+        if past_soft_limit(work):
+            break
     return best_move
 
 
@@ -727,6 +759,8 @@ def _prepare(
     work.ints[I_AGE] = (int(work.ints[I_AGE]) + 1) & 63
     soft, hard = budget_ms(time_left_ms, increment_ms)
     now = time.time()
+    work.floats[F_START] = now
+    work.floats[F_SOFT_SPAN] = soft / 1000.0
     work.floats[F_SOFT] = now + soft / 1000.0
     work.floats[F_HARD] = now + hard / 1000.0
 
