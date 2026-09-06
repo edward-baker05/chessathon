@@ -313,6 +313,12 @@ immediate loss, and the budget formula's `time_left / 22` self-corrects as the c
 But an engine that habitually spends 3x its intended budget arrives in the endgame with
 very little left, and Round 35 already finished with only 13.0 s of 144.0 s.
 
+Two games were played at the real 120 s + 0.5 s control against `snapshots/material` to
+check. Both were won by checkmate with no flag and no failed termination. That is
+reassuring but weak evidence: two games, both decisive, so neither reached the long endgame
+where the accumulated overshoot would actually bite. It rules out an immediate loss, not the
+time trouble. Treat the fix as still worth making.
+
 - [ ] Do not start a new iteration unless it is likely to finish: break out when elapsed
       already exceeds some fraction of the soft limit, around 0.5 to 0.6, rather than only
       when the whole limit is gone. This is the standard fix and it is a few lines.
