@@ -263,3 +263,4 @@ def test_deeper_search_never_loses_the_free_queen() -> None:
         assert best_move(FREE_QUEEN, depth=depth) == "e4d5", (
             f"lost a free queen at depth {depth}"
         )
+
