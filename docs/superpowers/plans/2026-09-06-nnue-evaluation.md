@@ -51,12 +51,13 @@ Every task's requirements implicitly include this section.
 | `tools/extract.py` | Lichess eval file to a packed training binary | no |
 | `tools/train.py` | torch trainer, device-agnostic, checkpoints per epoch | no |
 | `tools/quantise.py` | Checkpoint to `weights/net.npz`, with overflow proof | no |
-| `tools/calibrate.py` | Fits `SCALE` against the material eval | no |
-| `tests/test_nnue.py` | Differential, mirror and overflow tests | no |
+| `tools/dataset.py` | The packed record, and the one place features are derived | no |
+| `tests/test_nnue.py` | Differential, mirror and contiguity tests | no |
+| `tests/test_dataset.py` | Proof that trainer features equal engine features | no |
 
 ---
 
-## Phase 1: runtime, on this machine, light compute
+## Phase 1: runtime, on this machine, light compute  [DONE, commit 2aa84b3]
 
 Proves the engine can run a network correctly and fast, using a randomly initialised net.
 No training strength is expected or measured here. This phase is worthless if rushed and
@@ -66,88 +67,88 @@ everything after it depends on being able to trust the accumulator.
 
 **Files:** Create `nnue.py`, `tests/test_nnue.py`
 
-- [ ] Load `weights/net.npz` at import. Raise with a readable message if it is absent or
+- [x] Load `weights/net.npz` at import. Raise with a readable message if it is absent or
       any array shape disagrees with the compiled constants. No fallback.
-- [ ] `L1`, `QA`, `QB`, `SCALE`, `BUCKETS` are module constants read from the npz before
+- [x] `L1`, `QA`, `QB`, `SCALE`, `BUCKETS` are module constants read from the npz before
       the jitted functions are defined, so numba compiles them as literals and the loop
       bounds are known at compile time.
-- [ ] `feature(perspective, colour, piece, square) -> int32`, matching the spec exactly.
-- [ ] `refresh(acc, ply, state, mail)` rebuilding both perspectives from the mailbox.
-- [ ] `forward(acc, ply, state) -> int32`, SCReLU, int32 accumulation, bucket by popcount.
-- [ ] Warm every jitted function at import with the real argument types.
-- [ ] Test: evaluation of a position and of its colour-mirrored twin are exact negatives.
+- [x] `feature(perspective, colour, piece, square) -> int32`, matching the spec exactly.
+- [x] `refresh(acc, ply, state, mail)` rebuilding both perspectives from the mailbox.
+- [x] `forward(acc, ply, state) -> int32`, SCReLU, int32 accumulation, bucket by popcount.
+- [x] Warm every jitted function at import with the real argument types.
+- [x] Test: evaluation of a position and of its colour-mirrored twin are exact negatives.
       This is the test that catches a perspective or sign error in the indexing.
-- [ ] Test: `forward` after `refresh` equals a plain numpy reimplementation of the same
+- [x] Test: `forward` after `refresh` equals a plain numpy reimplementation of the same
       arithmetic, so the jitted version is checked against something readable.
 
 ### Task 2: incremental update and its differential test
 
 **Files:** Modify `nnue.py`, `tests/test_nnue.py`
 
-- [ ] `apply(acc, ply, state, mail, move)` writing ply+1 from ply: one subtract and one
+- [x] `apply(acc, ply, state, mail, move)` writing ply+1 from ply: one subtract and one
       add for a quiet move, plus the captured piece, the promotion piece swap, the castled
       rook and the en passant victim. Decoded from the parent state and mailbox.
-- [ ] `copy(acc, ply)` for the null move.
-- [ ] Test: over several hundred random playouts, at every ply, the incrementally updated
+- [x] `copy(acc, ply)` for the null move.
+- [x] Test: over several hundred random playouts, at every ply, the incrementally updated
       accumulator equals `refresh` on the same position, element for element. This is the
       test the whole design rests on.
-- [ ] Test: the update path is exercised for every move flag, castling, en passant,
+- [x] Test: the update path is exercised for every move flag, castling, en passant,
       promotion and promotion-with-capture, rather than only whatever random play produced.
 
 ### Task 3: wire into the search
 
 **Files:** Modify `search.py`, `evaluate.py`
 
-- [ ] Add `acc` to `Work` as `np.zeros((STACK_PLIES, 2, L1), dtype=np.int16)`.
-- [ ] `evaluate.py` exposes `evaluate(acc, ply, state) -> int32` delegating to `nnue`, and
+- [x] Add `acc` to `Work` as `np.zeros((STACK_PLIES, 2, L1), dtype=np.int16)`.
+- [x] `evaluate.py` exposes `evaluate(acc, ply, state) -> int32` delegating to `nnue`, and
       keeps `material_eval(state, mailbox)` for the tests and the snapshot opponent.
-- [ ] Call `nnue.apply` at the five `make` sites, after `legal_after` passes; `nnue.copy`
+- [x] Call `nnue.apply` at the five `make` sites, after `legal_after` passes; `nnue.copy`
       after `make_null`; `nnue.refresh` once per `think` at ply 0.
-- [ ] Update the three `evaluate` call sites in `negamax` and `qsearch`.
-- [ ] Test: a fixed-depth search from a set of positions returns the same score whether
+- [x] Update the three `evaluate` call sites in `negamax` and `qsearch`.
+- [x] Test: a fixed-depth search from a set of positions returns the same score whether
       the evaluation came through the accumulator or through a refresh at every node.
 
 ### Task 4: measure the real cost
 
 **Files:** Modify `tests/bench.py` if needed
 
-- [ ] Snapshot the current engine as `snapshots/material` **before** any of this lands, so
+- [x] Snapshot the current engine as `snapshots/material` **before** any of this lands, so
       there is a fixed opponent to measure against.
-- [ ] Record node rate before and after with a random net. Expect roughly 1.65 Mnps to
+- [x] Record node rate before and after with a random net. Expect roughly 1.65 Mnps to
       1.30 Mnps. A larger drop means something in the path is not vectorising, and the
       cause is a non-contiguous numba type until proven otherwise.
-- [ ] Record import time. Must stay well inside the 90 s budget.
+- [x] Record import time. Must stay well inside the 90 s budget.
 
 ---
 
-## Phase 2: data and trainer, smoke tested here
+## Phase 2: data and trainer, smoke tested here  [DONE, commit a9641ae]
 
 ### Task 5: `tools/extract.py`
 
 **Files:** Create `tools/extract.py`, add a `data` target to the `Makefile`
 
-- [ ] Stream the `.zst` without decompressing it to disk. Parse one JSON line per position.
-- [ ] Take the deepest eval per position. **Negate `cp` when Black is to move**, because
+- [x] Stream the `.zst` without decompressing it to disk. Parse one JSON line per position.
+- [x] Take the deepest eval per position. **Negate `cp` when Black is to move**, because
       the file is White-relative. This was determined empirically, not assumed.
-- [ ] Apply the spec's filters: not in check, best move not a capture, depth at least 12,
+- [x] Apply the spec's filters: not in check, best move not a capture, depth at least 12,
       `|cp| < 10000`. Mates saturate to +/- 12800.
-- [ ] Write a packed binary, about 28 bytes per position, plus a small JSON sidecar
+- [x] Write a packed binary, about 28 bytes per position, plus a small JSON sidecar
       recording counts, the filter settings and the source file's date, so a trained net
       can be traced to the data that produced it.
-- [ ] Run on a small slice here to confirm correctness and throughput. The full pass is a
+- [x] Run on a small slice here to confirm correctness and throughput. The full pass is a
       desktop job.
 
 ### Task 6: `tools/train.py`
 
 **Files:** Create `tools/train.py`, add a `train` target to the `Makefile`
 
-- [ ] Device selection: CUDA, then MPS, then CPU. The desktop has an RTX 2060; this
+- [x] Device selection: CUDA, then MPS, then CPU. The desktop has an RTX 2060; this
       machine has MPS. The same script must run on both without edits.
-- [ ] `768 -> L1 -> 1` per perspective with shared input weights, 8 output buckets,
+- [x] `768 -> L1 -> 1` per perspective with shared input weights, 8 output buckets,
       SCReLU, MSE in probability space against `sigmoid(cp / 400)`.
-- [ ] Clamp output weights during training so the export-time overflow bound can pass.
-- [ ] Checkpoint every epoch to `data/checkpoints/`, with a held-out loss logged per epoch.
-- [ ] Smoke test here on the small slice: loss must fall, and the net must beat
+- [x] Clamp output weights during training so the export-time overflow bound can pass.
+- [x] Checkpoint every epoch to `data/checkpoints/`, with a held-out loss logged per epoch.
+- [x] Smoke test here on the small slice: loss must fall, and the net must beat
       `snapshots/material` on a fixed-node match by a visible margin. A short run on a
       small slice will produce a weak net, and that is the expected result. What is being
       tested is that the pipeline is wired correctly end to end.
@@ -156,21 +157,28 @@ everything after it depends on being able to trust the accumulator.
 
 **Files:** Create `tools/quantise.py`, add a `quantise` target to the `Makefile`
 
-- [ ] Checkpoint to `weights/net.npz` at `QA`, `QB`, `SCALE`.
-- [ ] **Compute the exact worst case from the weights being written**,
+- [x] Checkpoint to `weights/net.npz` at `QA`, `QB`, `SCALE`.
+- [x] **Compute the exact worst case from the weights being written**,
       `max over buckets of sum_i (QA^2 * |w_i|)`, and refuse to write unless it is below
       `2^31`. Do the same for int16 accumulator overflow using the real maximum feature
       weight and the maximum piece count. Report both margins.
-- [ ] Report quantisation error: mean absolute difference between the float net and the
+- [x] Report quantisation error: mean absolute difference between the float net and the
       quantised net over a sample of positions.
 
-### Task 8: `tools/calibrate.py`
+### Task 8: scale calibration, dropped
 
-**Files:** Create `tools/calibrate.py`
+Planned as `tools/calibrate.py`, fitting `SCALE` so the network's output lined up with the
+material evaluation. Dropped once the trainer was written, because it would have calibrated
+against the worse of the two references.
 
-- [ ] Fit `SCALE` so the net's centipawn output lines up with the material evaluation over
-      a shared position set, so the six centipawn pruning margins in `search.py` keep
-      approximately the meaning they were tuned for.
+The trainer's target is `sigmoid(cp / 400)` against Stockfish centipawns, and the float and
+quantised networks are the same function by construction, so the network already emits
+centipawns on a better scale than a material count's. Fitting to the material evaluation
+would have moved it off that scale, not onto one.
+
+What survives from this task is the observation that prompted it, and it moves to Phase 4:
+the pruning margins in `search.py` still want rechecking, because the *distribution* of a
+network's evaluations differs from a material count's even on the same scale.
 
 ---
 
@@ -178,10 +186,35 @@ everything after it depends on being able to trust the accumulator.
 
 ### Task 9: full extraction and training
 
-- [ ] `make data` on the desktop against the full 21.7 GB file.
+Everything below is committed, so the desktop needs only the repo and the data file.
+
+```
+git clone <this repo> && cd chessathon && uv sync
+curl -L --retry 10 -C - -o data/lichess_db_eval.jsonl.zst \
+    https://database.lichess.org/lichess_db_eval.jsonl.zst      # 21.7 GB, resumable
+
+uv run python tools/extract.py --workers 11                     # -> data/train.bin
+uv run python tools/train.py --epochs 30                        # -> data/checkpoints/
+uv run python tools/quantise.py --checkpoint data/checkpoints/epoch030.pt
+uv run pytest tests/test_nnue.py tests/test_dataset.py -q       # must pass
+```
+
+Measured on the development machine, for comparison against the desktop:
+
+| | rate |
+| --- | --- |
+| extraction, 6 worker processes | about 25,000 positions/s kept |
+| training, MPS, L1 512, batch 16384 | about 80,000 positions/s |
+
+- [ ] `make data` on the desktop against the full 21.7 GB file. It keeps about 68% of what
+      it reads: roughly a third is dropped because the best move is a capture, which is
+      the filter doing its job.
 - [ ] Train to convergence. Checkpoint every epoch so a long run can be cut short at any
       point without losing the day.
-- [ ] Quantise every checkpoint, so there is always a shippable net on disk.
+- [ ] Quantise a checkpoint and check the overflow margins it prints. The smoke run used
+      26.7% of int32 and 12.9% of int16, both at QA 255.
+- [ ] `git add -f weights/net.npz`. It is gitignored so a random or smoke-test net can
+      never be committed by accident and mistaken for a trained one.
 
 ### Task 10: accept or reject, then ship
 
@@ -203,6 +236,20 @@ everything after it depends on being able to trust the accumulator.
 - [ ] Sweep the six centipawn pruning margins in `search.py`, which were tuned against the
       material evaluation and mean something different under a network. Lines 374, 459,
       463, 477 and 540. One at a time, each against the current snapshot.
+
+      This needs a change first: the margins are literals inside jitted functions, so a
+      sweep means lifting them to module constants read from the environment at import.
+      numba freezes globals at compile time and compilation happens at import, so that
+      works, and it lets `tests/match.py` A/B two settings as two snapshots.
+
+      Deliberately not done yet. Sweeping margins against a smoke-test net measures the
+      net's weakness, not the margins. This waits for the real net.
+
+      Note on scale: no separate calibration step is needed. The trainer's target is
+      `sigmoid(cp / 400)` against Stockfish centipawns, so the network's output is already
+      on a centipawn scale, and a better one than the material evaluation's. The margins
+      still want checking, because the *distribution* of a network's evaluations differs
+      from a material count's even on the same scale.
 - [ ] Self-play data: positions from our own engine, labelled by our own search at fixed
       depth. In-domain and entirely our own. Train v3 on the combined set, A/B against v2.
 - [ ] Input king buckets, `768 x N`, if the margin sweep and self-play data are done and
