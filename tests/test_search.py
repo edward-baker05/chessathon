@@ -9,6 +9,7 @@ import pytest
 import evaluate
 import position
 import search
+import tt
 from tests.conftest import random_positions
 
 MATE_IN_ONE = "6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1"  # Ra8 is mate
@@ -264,3 +265,37 @@ def test_deeper_search_never_loses_the_free_queen() -> None:
             f"lost a free queen at depth {depth}"
         )
 
+
+# ------------------------------------------------------- continuation history
+
+
+def test_continuation_history_is_populated_by_a_search() -> None:
+    # The transposition table has to be cleared too. It deliberately survives between
+    # moves, so a warm table from an earlier test lets the search finish on TT hits
+    # alone and record no history at all.
+    tt.tt_clear(tt.TT)
+    search.clear_tables()
+    search.think(chess.Board(), time_left_ms=5_000, max_depth=8)
+    assert search.WORK.cont_hist.any(), "a search should leave continuation history behind"
+
+
+def test_clear_tables_resets_every_history() -> None:
+    search.think(chess.Board(), time_left_ms=3_000, max_depth=6)
+    search.clear_tables()
+    assert not search.WORK.cont_hist.any()
+    assert not search.WORK.history.any()
+    assert not search.WORK.counter.any()
+    assert not search.WORK.killers.any()
+
+
+def test_continuation_history_stays_within_bounds() -> None:
+    """Unbounded history overflows its int32 and inverts the ordering it is meant to fix."""
+    tt.tt_clear(tt.TT)
+    search.clear_tables()
+    search.think(chess.Board(), time_left_ms=5_000, max_depth=10)
+    assert abs(int(search.WORK.cont_hist.min())) <= search.HISTORY_MAX
+    assert int(search.WORK.cont_hist.max()) <= search.HISTORY_MAX
+
+
+def test_oracle_holds_with_continuation_history() -> None:
+    assert_matches_oracle(seed=111, depth=3, count=3)

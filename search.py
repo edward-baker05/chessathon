@@ -106,6 +106,8 @@ class Work(NamedTuple):
     hist_keys: np.ndarray
     static_evals: np.ndarray
     played: np.ndarray
+    moved_piece: np.ndarray
+    cont_hist: np.ndarray
 
 
 def new_work(table: np.ndarray = TT) -> Work:
@@ -124,6 +126,10 @@ def new_work(table: np.ndarray = TT) -> Work:
         hist_keys=np.zeros(2048, dtype=np.uint64),
         static_evals=np.zeros(STACK_PLIES, dtype=np.int32),
         played=np.zeros(STACK_PLIES, dtype=np.int32),
+        moved_piece=np.zeros(STACK_PLIES, dtype=np.int8),
+        # [distance][piece][to][piece][to]: how a reply fared after a given earlier move.
+        # Two distances, one and two plies back, at about 1.2 MB in total.
+        cont_hist=np.zeros((2, 6, 64, 6, 64), dtype=np.int32),
     )
 
 
@@ -175,6 +181,22 @@ def is_repetition(work: Bits, ply: Square) -> Flag:
 
 
 @njit(cache=False)
+def continuation_score(work: Bits, ply: Square, piece: Square, to: Square) -> Square:
+    """How this reply has fared after the moves that led here."""
+    total = 0
+    for distance in range(2):
+        previous = ply - 1 - distance
+        if previous < 0 or work.played[previous] == 0:
+            continue
+        prior_piece = np.int64(work.moved_piece[previous])
+        if prior_piece < 0:
+            continue
+        prior_to = np.int64((work.played[previous] >> 6) & 63)
+        total += work.cont_hist[distance, prior_piece, prior_to, piece, to]
+    return total
+
+
+@njit(cache=False)
 def score_moves(work: Bits, ply: Square, base: Square, count: Square, tt_move: Bits) -> None:
     """Assign an ordering score to each generated move. Never sorts the whole list."""
     state = work.state[ply]
@@ -209,7 +231,10 @@ def score_moves(work: Bits, ply: Square, base: Square, count: Square, tt_move: B
         elif move == counter_move and counter_move != 0:
             work.scores[i] = SCORE_COUNTER
         else:
-            work.scores[i] = work.history[black, frm, to]
+            piece = np.int64(mail[frm])
+            work.scores[i] = work.history[black, frm, to] + continuation_score(
+                work, ply, piece, to
+            )
 
 
 @njit(cache=False)
@@ -230,6 +255,28 @@ def pick_move(work: Bits, index: Square, count: Square) -> Square:
 
 
 @njit(cache=False)
+def update_continuation(
+    work: Bits, ply: Square, piece: Square, to: Square, bonus: Square
+) -> None:
+    if piece < 0:
+        return
+    for distance in range(2):
+        previous = ply - 1 - distance
+        if previous < 0 or work.played[previous] == 0:
+            continue
+        prior_piece = np.int64(work.moved_piece[previous])
+        if prior_piece < 0:
+            continue
+        prior_to = np.int64((work.played[previous] >> 6) & 63)
+        entry = work.cont_hist[distance, prior_piece, prior_to, piece, to] + bonus
+        if entry > HISTORY_MAX:
+            entry = HISTORY_MAX
+        elif entry < -HISTORY_MAX:
+            entry = -HISTORY_MAX
+        work.cont_hist[distance, prior_piece, prior_to, piece, to] = entry
+
+
+@njit(cache=False)
 def update_history(work: Bits, ply: Square, best_move: Bits, depth: Square, base: Square,
                    quiet_end: Square) -> None:
     """Reward the move that caused a cutoff and punish the quiets that did not."""
@@ -243,7 +290,9 @@ def update_history(work: Bits, ply: Square, best_move: Bits, depth: Square, base
 
     frm = np.int64(best_move & 63)
     to = np.int64((best_move >> 6) & 63)
+    piece = np.int64(work.mail[ply][frm])
     work.history[black, frm, to] += bonus
+    update_continuation(work, ply, piece, to, bonus)
     if work.history[black, frm, to] > HISTORY_MAX:
         for a in range(64):
             for b in range(64):
@@ -257,7 +306,10 @@ def update_history(work: Bits, ply: Square, best_move: Bits, depth: Square, base
         move = work.moves[i]
         if move == best_move:
             continue
-        work.history[black, move & 63, (move >> 6) & 63] -= bonus
+        move_from = np.int64(move & 63)
+        move_to = np.int64((move >> 6) & 63)
+        work.history[black, move_from, move_to] -= bonus
+        update_continuation(work, ply, np.int64(work.mail[ply][move_from]), move_to, -bonus)
 
 
 @njit(cache=False)
@@ -312,6 +364,7 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
             continue
         legal += 1
         work.played[ply] = move
+        work.moved_piece[ply] = mail[np.int64(move & 63)]
         value = -qsearch(work, ply + 1, -beta, -alpha)
         if work.ints[I_ABORT] != 0:
             return np.int32(0)
@@ -408,6 +461,7 @@ def negamax(
             reduction = 3 + depth // 4 + min((static - beta) // 200, 3)
             make_null(state, mail, work.state[ply + 1], work.mail[ply + 1])
             work.played[ply] = np.int32(0)
+            work.moved_piece[ply] = np.int8(-1)
             null_value = -negamax(
                 work, ply + 1, depth - reduction - 1, -beta, np.int32(-beta + 1), False, False
             )
@@ -479,6 +533,7 @@ def negamax(
             continue
         legal += 1
         work.played[ply] = move
+        work.moved_piece[ply] = mail[np.int64(move & 63)]
         if not is_capture:
             quiets_tried += 1
 
@@ -657,6 +712,8 @@ def clear_tables(work: Work = WORK) -> None:
     work.counter[:] = 0
     work.killers[:] = 0
     work.played[:] = 0
+    work.moved_piece[:] = 0
+    work.cont_hist[:] = 0
 
 
 def _prepare(
