@@ -2078,3 +2078,46 @@ the change compares a version against itself and reports zero Elo with a confide
 interval.
 
 **The oracle is the point.** `test_oracle_still_holds` reappears in Tasks 12, 13, 14 and 15 on purpose. Every technique added in those tasks reshapes the search tree while being required not to change the value of a full-width search. Without re-running that check after each one, a broken heuristic is indistinguishable from a weak one.
+
+---
+
+## Results (recorded 2026-09-06)
+
+What was built, and what it measured. Every Elo figure is fixed-node self-play against a
+snapshot of the version immediately before the change, at 30k nodes per move, with a 95%
+interval.
+
+| Task | Outcome |
+| --- | --- |
+| 1-9 foundation | perft correct on all six standard positions; `make`, Zobrist and SEE verified against python-chess |
+| 6 incremental Zobrist | perft(6) 7.83 to 13.35 Mnps |
+| 10 search core | 3.3 Mnps in search; first playing version |
+| 11 A/B harness | scores exactly +5 =10 -5 against a copy of itself, so it is unbiased |
+| 12 whole-node pruning | **+108 Elo [+61, +158]**, +19 =40 -1 |
+| 13 move-loop pruning and LMR | **+191 Elo [+130, +265]**, +32 =26 -2 |
+| 14 singular extensions | **-41 Elo [-94, +9]**, +12 =43 -21. **Reverted.** |
+| 15 continuation history | **+4 Elo [-42, +51]**, +15 =51 -14. Kept but unproven. |
+| 16 time management | found and fixed a real bug: the soft limit was computed but never enforced, so every move ran to the hard limit |
+
+Final state: 316 tests passing, `make gate` clean, 20/20 by checkmate against `greedy` with
+no flags or crashes, and a win at the real 120s + 0.5s control.
+
+### Three things worth carrying forward
+
+**Two of the plan's design assumptions were wrong and were corrected during the build.**
+numba exposes module globals to jitted code as *readonly* arrays, so the "mutate globals"
+design could not work and every mutable structure now travels in one `Work` namedtuple.
+And `mypy --strict` does not accept numba's `int64`/`uint64` at call boundaries once real
+bitboards flow through them, so jitted functions annotate as `Any` on the Python side and
+let the numba decorator signature carry the contract.
+
+**The two features that did not pay are the two that depend most on evaluation quality.**
+Singular extensions ask whether the TT move is uniquely good, and continuation history
+learns which quiet replies work. With a material-only evaluation most quiet moves score
+identically, so both are largely measuring noise. Both are worth re-measuring once the
+evaluation can tell positions apart; singular extensions are in the history at the parent
+of commit `86066cb`.
+
+**Import cost has drifted from 10.9s to 23.5s** as the search grew, against a 30s guard in
+`tests/bench.py` and a 90s platform budget. Not a problem yet, and the guard is doing its
+job by being close, but the next large addition to the jitted code will trip it.
