@@ -198,6 +198,26 @@ def test_pawn_endgame_is_searched_without_crashing() -> None:
     assert chess.Move.from_uci(uci) in chess.Board(fen).legal_moves
 
 
+def test_lmr_table_is_monotonic() -> None:
+    for depth in range(4, 64):
+        for index in range(4, 64):
+            assert search.LMR_TABLE[depth][index] >= search.LMR_TABLE[depth][index - 1], (
+                "later moves should be reduced at least as much as earlier ones"
+            )
+
+
+def test_reductions_never_reduce_below_one_ply() -> None:
+    for depth in range(1, 64):
+        for index in range(64):
+            assert depth - search.LMR_TABLE[depth][index] >= 1
+
+
+def test_first_moves_are_not_reduced() -> None:
+    for depth in range(1, 64):
+        assert search.LMR_TABLE[depth][0] == 0
+        assert search.LMR_TABLE[depth][1] == 0
+
+
 def test_think_on_a_terminal_position_fails_loudly() -> None:
     """The referee ends a game before asking, so this is about a legible failure, not play."""
     stalemate = chess.Board("8/8/8/8/8/6k1/6p1/6K1 w - - 0 1")

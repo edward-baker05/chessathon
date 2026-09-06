@@ -8,6 +8,7 @@ Time is read through numba's objmode, since time.time() is not available in nopy
 An objmode call costs about 1.8 us, so it happens every 2048 nodes: roughly 0.9 ns a node.
 """
 
+import math
 import time
 from typing import Any, NamedTuple
 
@@ -78,6 +79,15 @@ SCORE_KILLER_2 = (1 << 21) + 1
 SCORE_COUNTER = 1 << 21
 SCORE_BAD_CAPTURE = -(1 << 22)
 HISTORY_MAX = 1 << 14
+
+# Late move reductions. Later moves in a well-ordered list are progressively less likely
+# to be best, so they are searched shallower first and only re-searched if they beat alpha.
+LMR_TABLE = np.zeros((64, 64), dtype=np.int64)
+for _depth in range(1, 64):
+    for _index in range(1, 64):
+        _reduction = int(0.75 + math.log(_depth) * math.log(_index) / 2.25)
+        # Never reduce below one ply of real search, or the value is meaningless.
+        LMR_TABLE[_depth, _index] = max(0, min(_reduction, _depth - 1))
 
 
 class Work(NamedTuple):
@@ -427,18 +437,76 @@ def negamax(
     original_alpha = alpha
     legal = 0
 
+    # Internal iterative reduction: with no TT move the ordering is poor, so a full-depth
+    # search here is mostly wasted. Search shallower and let the TT move guide the retry.
+    if work.ints[I_NO_PRUNING] == 0 and depth >= 4 and not (hit and tt_move != 0):
+        depth -= 1
+
+    quiets_tried = 0
+    improving = ply < 2 or static > work.static_evals[ply - 2]
+
     for index in range(base, count):
         move = pick_move(work, index, count)
+        to = np.int64((move >> 6) & 63)
+        is_capture = mail[to] >= 0 or np.int64((move >> 15) & 3) != 0
+        move_score = work.scores[index]
+
+        if (
+            work.ints[I_NO_PRUNING] == 0
+            and not is_pv
+            and not checked
+            and legal > 0
+            and best > -MATE_IN_MAX
+        ):
+            if not is_capture:
+                # Late move pruning: this far down a well-ordered list, at low depth,
+                # a quiet move is not going to be the best one.
+                cap = 3 + depth * depth
+                if not improving:
+                    cap //= 2
+                if depth <= 8 and quiets_tried >= cap:
+                    continue
+                # Futility: too far below alpha for a quiet move to close the gap.
+                if depth <= 6 and static + 100 + 90 * depth <= alpha:
+                    continue
+                if depth <= 8 and see(state, mail, move) < -50 * depth:
+                    continue
+            elif depth <= 8 and see(state, mail, move) < -100 * depth:
+                continue
+
         make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
         if not legal_after(work.state[ply + 1], black):
             continue
         legal += 1
         work.played[ply] = move
+        if not is_capture:
+            quiets_tried += 1
 
         if legal == 1:
             value = -negamax(work, ply + 1, depth - 1, -beta, -alpha, is_pv)
         else:
-            value = -negamax(work, ply + 1, depth - 1, -alpha - 1, -alpha, False)
+            reduction = 0
+            if work.ints[I_NO_PRUNING] == 0 and depth >= 3 and legal >= 3 and not is_capture:
+                reduction = LMR_TABLE[min(depth, 63), min(legal, 63)]
+                if is_pv:
+                    reduction -= 1
+                if move_score >= SCORE_COUNTER:
+                    reduction -= 1
+                if not improving:
+                    reduction += 1
+                if reduction < 0:
+                    reduction = 0
+                if reduction > depth - 2:
+                    reduction = depth - 2 if depth >= 2 else 0
+
+            value = -negamax(
+                work, ply + 1, depth - 1 - reduction, -alpha - 1, -alpha, False
+            )
+            # A reduced search that beat alpha proves nothing until it is repeated at
+            # full depth. Skipping this re-search is how an engine looks fine in tests
+            # and quietly plays bad moves.
+            if reduction > 0 and value > alpha:
+                value = -negamax(work, ply + 1, depth - 1, -alpha - 1, -alpha, False)
             if alpha < value < beta:
                 value = -negamax(work, ply + 1, depth - 1, -beta, -alpha, is_pv)
 
