@@ -38,10 +38,6 @@ ab:
 random-net:
 	uv run python tools/random_net.py
 
-# Download the Lichess evaluation file and pack it into training data. CPU heavy, one off.
-data:
-	uv run python tools/extract.py $(if $(LIMIT),--limit $(LIMIT))
-
 train:
 	uv run python tools/train.py $(if $(EPOCHS),--epochs $(EPOCHS))
 
