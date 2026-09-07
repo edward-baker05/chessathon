@@ -61,9 +61,10 @@ def test_unpacked_features_build_the_accumulator_the_engine_builds() -> None:
     """
     for fen in FENS:
         board = chess.Board(fen)
-        index, white, black, stm, score = dataset.unpack(packed(board))
+        index, white, black, stm, score, pieces = dataset.unpack(packed(board))
         assert score.tolist() == [123]
         assert stm.tolist() == [1 if board.turn == chess.BLACK else 0]
+        assert pieces.tolist() == [len(board.piece_map())]
 
         built = np.stack([nnue.FT_BIAS.astype(np.int64)] * 2)
         for feature in white[index == 0]:
@@ -81,25 +82,39 @@ def test_unpacked_features_build_the_accumulator_the_engine_builds() -> None:
 
 def test_unpacking_a_batch_keeps_positions_separate() -> None:
     """The sparse layout is a flat coordinate list, so an off-by-one in the row index
-    would quietly mix pieces between positions rather than fail."""
+    would quietly mix pieces between positions rather than fail.
+
+    Checked against unpacking each record on its own rather than against a restatement of
+    the index formula, so that a batching bug is caught but a change of feature set does
+    not have to be written out twice.
+    """
     boards = [chess.Board(fen) for fen in FENS]
     batch = np.concatenate([packed(board) for board in boards])
-    index, white, _black, stm, _score = dataset.unpack(batch)
+    index, white, black, stm, _score, pieces = dataset.unpack(batch)
 
     for row, board in enumerate(boards):
-        expected = sorted(
-            (0 if piece.color == chess.WHITE else 1) * 6 * 64
-            + (piece.piece_type - 1) * 64
-            + square
-            for square, piece in board.piece_map().items()
-        )
-        assert sorted(white[index == row].tolist()) == expected, board.fen()
+        alone = dataset.unpack(packed(board))
+        assert white[index == row].tolist() == alone[1].tolist(), board.fen()
+        assert black[index == row].tolist() == alone[2].tolist(), board.fen()
+        assert int(pieces[row]) == len(board.piece_map()), board.fen()
+
     assert stm.tolist() == [1 if board.turn == chess.BLACK else 0 for board in boards]
+
+
+def test_each_perspective_drops_its_own_king_and_keeps_the_other() -> None:
+    """Eleven piece slots, not twelve. The own king is the index and carries no feature,
+    so both bags hold one entry fewer than there are pieces, and equally many, which is
+    what lets a single offsets array describe both."""
+    for fen in FENS:
+        board = chess.Board(fen)
+        index, white, black, _stm, _score, pieces = dataset.unpack(packed(board))
+        assert len(white) == len(black) == len(index) == int(pieces[0]) - 1, fen
+        assert white.max() < dataset.FEATURES and black.max() < dataset.FEATURES, fen
 
 
 def test_scores_survive_the_round_trip_including_negatives() -> None:
     for score in (-12800, -900, -1, 0, 1, 900, 12800):
         record = dataset.pack(0x1000_0000_0000_0010, [5, 11], False, score)
         batch = np.frombuffer(record, dtype=np.uint8).reshape(1, dataset.RECORD)
-        _index, _white, _black, _stm, unpacked = dataset.unpack(batch)
+        _index, _white, _black, _stm, unpacked, _pieces = dataset.unpack(batch)
         assert unpacked.tolist() == [score]

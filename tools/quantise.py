@@ -32,9 +32,10 @@ SCALE = 400
 
 INT32_MAX = 2**31 - 1
 INT16_MAX = 2**15 - 1
-# Both kings, plus at most thirty other pieces, is the most features that can ever be
-# active in one accumulator.
-MAX_ACTIVE_FEATURES = 32
+# Thirty two pieces at most, less the perspective's own king, which is the index rather
+# than a feature under HalfKA. So thirty one is the most that can ever be active in one
+# accumulator. Kept as the loose bound it is: no legal position reaches it.
+MAX_ACTIVE_FEATURES = 31
 
 
 def output_bound(out_weight: np.ndarray, qa: int) -> int:
@@ -71,7 +72,15 @@ def main() -> int:
     print(f"{arguments.checkpoint}: L1 {hidden}, {buckets} buckets, epoch {blob.get('epoch')}, "
           f"holdout loss {blob.get('holdout_loss'):.6f}")
 
+    # Fold the factoriser into the table. The trainer learns a king-specific weight and a
+    # shared piece-square weight for every feature, and the network that ships is their sum:
+    # HalfKA index bucket * 704 + slot * 64 + square has virtual index (index % 704). The
+    # engine never learns that this happened, which is the point of doing it here.
     ft = state["transformer.weight"].numpy()
+    if "factoriser.weight" in state:
+        virtual = state["factoriser.weight"].numpy()
+        ft = ft + np.tile(virtual, (ft.shape[0] // virtual.shape[0], 1))
+        print(f"  folded a {virtual.shape[0]} row factoriser into {ft.shape[0]} rows")
     ft_bias_float = state["transformer_bias"].numpy()
     out = state["output"].numpy()
     out_bias_float = state["output_bias"].numpy()

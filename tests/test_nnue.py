@@ -13,6 +13,7 @@ import pytest
 import movegen
 import nnue
 import position
+from bitboard import KING
 from tests.conftest import random_positions
 
 # Kiwipete and friends: positions dense in castling, en passant and promotion, so the
@@ -108,10 +109,14 @@ def test_incremental_update_matches_a_full_refresh_on_awkward_positions(fen: str
     acc = nnue.new_accumulator(4)
     nnue.refresh(acc, 0, state[0], mail[0])
     for move in board.legal_moves:
-        nnue.apply(acc, 0, state[0], mail[0], np.int32(encode_move(board, move)))
+        encoded_move = np.int32(encode_move(board, move))
         board.push(move)
+        # The child position comes from python-chess, not from `position.make`, so the
+        # comparison does not depend on make and apply sharing a bug.
+        position.encode(board, state[1], mail[1])
         want = refreshed(board)
         board.pop()
+        nnue.apply(acc, 0, state[0], mail[0], state[1], mail[1], encoded_move)
         assert np.array_equal(acc[1], want), f"{move.uci()} in {fen}"
 
 
@@ -135,9 +140,10 @@ def test_incremental_update_matches_a_full_refresh_over_playouts() -> None:
             if not moves:
                 break
             move = moves[int(rng.integers(len(moves)))]
-            nnue.apply(acc, ply, state[ply], mail[ply], np.int32(encode_move(board, move)))
+            encoded_move = np.int32(encode_move(board, move))
             board.push(move)
             position.encode(board, state[ply + 1], mail[ply + 1])
+            nnue.apply(acc, ply, state[ply], mail[ply], state[ply + 1], mail[ply + 1], encoded_move)
             want = refreshed(board)
             assert np.array_equal(acc[ply + 1], want), (
                 f"game {game} ply {ply} after {move.uci()} in {board.fen()}"
@@ -169,3 +175,91 @@ def test_hot_loops_are_typed_contiguous() -> None:
             assert getattr(argument, "layout", "C") == "C", (
                 f"{function} takes a non-contiguous {argument}, which compiles to scalar code"
             )
+
+
+# --------------------------------------------------------------------------------------
+# HalfKA: features indexed by the perspective's own king square, mirrored so the king
+# always sits on files e to h. The tests below are the contract for that indexing.
+# --------------------------------------------------------------------------------------
+
+
+def mirror_files(board: chess.Board) -> chess.Board:
+    """The same position reflected across the d/e file.
+
+    Castling rights and the en passant square are dropped rather than mirrored. Neither is
+    a feature, so neither can change an evaluation, and dropping them keeps the helper from
+    having to reason about a mirrored king that no longer matches its rooks.
+    """
+    flipped = chess.Board(None)
+    for square, piece in board.piece_map().items():
+        flipped.set_piece_at(square ^ 7, piece)
+    flipped.turn = board.turn
+    return flipped
+
+
+def test_the_feature_table_is_king_conditioned_and_mirrored() -> None:
+    """32 king buckets after the horizontal fold, 11 piece slots, 64 squares."""
+    assert nnue.KING_BUCKETS == 32
+    assert nnue.PIECE_SLOTS == 11
+    assert nnue.NUM_FEATURES == 32 * 11 * 64
+
+
+def test_every_feature_index_is_used_exactly_once() -> None:
+    """The indexing is a bijection onto the table.
+
+    Two king squares that mirror onto each other share a bucket, so the map is not
+    injective in the king square. It must still cover every row of the table and overrun
+    none of it: a gap means wasted weights, an overrun means reading another feature's row.
+    """
+    seen = set()
+    for perspective in (0, 1):
+        for king_square in range(64):
+            for colour in (0, 1):
+                for piece in range(6):
+                    if colour == perspective and piece == KING:
+                        continue  # the perspective's own king is the index, not a feature
+                    for square in range(64):
+                        seen.add(int(nnue.feature(perspective, king_square, colour, piece, square)))
+    assert seen == set(range(nnue.NUM_FEATURES))
+
+
+def test_evaluation_is_symmetric_under_horizontal_mirror() -> None:
+    """Reflecting the whole board across the d/e file must not change the evaluation.
+
+    This is the property the 32 buckets buy, and the one that catches a half-applied
+    mirror: folding the king square without folding the piece squares, or folding one
+    perspective and not the other, makes these two evaluations disagree.
+    """
+    for board in random_positions(count=40, seed=77):
+        plain = chess.Board(None)
+        for square, piece in board.piece_map().items():
+            plain.set_piece_at(square, piece)
+        plain.turn = board.turn
+        assert evaluate_board(plain) == evaluate_board(mirror_files(board)), board.fen()
+
+
+def test_a_king_move_matches_a_full_refresh() -> None:
+    """A king move changes the bucket every feature on that side is indexed by, so it
+    cannot be updated incrementally and must rebuild that perspective instead.
+
+    This is the failure mode king-conditioned features introduce, and it is silent: an
+    accumulator left stale after a king move still evaluates to a plausible number.
+    """
+    checked = 0
+    for board in random_positions(count=60, seed=404):
+        for move in board.legal_moves:
+            if board.piece_type_at(move.from_square) != chess.KING:
+                continue
+            state, mail = encoded(board)
+            acc = nnue.new_accumulator(2)
+            nnue.refresh(acc, 0, state[0], mail[0])
+            encoded_move = encode_move(board, move)
+            position.make(state[0], mail[0], state[1], mail[1], np.int32(encoded_move))
+            nnue.apply(acc, 0, state[0], mail[0], state[1], mail[1], np.int32(encoded_move))
+
+            board.push(move)
+            expected = refreshed(board)
+            board.pop()
+            assert np.array_equal(acc[1], expected), f"{board.fen()} {move.uci()}"
+            checked += 1
+    assert checked > 100, f"only {checked} king moves exercised"

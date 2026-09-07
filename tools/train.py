@@ -40,7 +40,14 @@ Batch = tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
-FEATURES = 768
+FEATURES = dataset.FEATURES
+# The factoriser: every HalfKA feature (king bucket, piece slot, square) also updates a
+# shared (piece slot, square) weight, and the HalfKA index is bucket * 704 + slot * 64 +
+# square, so the virtual index is simply the index modulo 704. Most (king, piece, square)
+# triples are rare, and without this they train slowly from scratch; the shared weight
+# gives every position a gradient on the general case as well as the specific one.
+# tools/quantise.py folds it into the table at export, so nothing ships knowing about it.
+VIRTUAL_FEATURES = dataset.PIECE_SLOTS * 64
 # Centipawns per unit of the network's output, and the divisor that turns a centipawn
 # score into a win probability. Equal, so that the loss is a plain sigmoid of the output.
 SCALE = 400
@@ -59,13 +66,18 @@ class Network(nn.Module):
         # EmbeddingBag sums the active features without ever materialising a dense input,
         # which is the whole reason a 768 wide sparse layer is cheap to train.
         self.transformer = nn.EmbeddingBag(FEATURES, hidden, mode="sum")
+        self.factoriser = nn.EmbeddingBag(VIRTUAL_FEATURES, hidden, mode="sum")
         self.transformer_bias = nn.Parameter(torch.zeros(hidden))
         self.output = nn.Parameter(torch.zeros(buckets, 2 * hidden))
         self.output_bias = nn.Parameter(torch.zeros(buckets))
         self.hidden = hidden
 
         bound = 1.0 / FEATURES**0.5
-        nn.init.uniform_(self.transformer.weight, -bound, bound)
+        # The king-specific weights start at zero so the network begins as a plain
+        # piece-square net and earns its king conditioning, rather than starting as noise
+        # spread over 32 buckets that every position has to train back out.
+        nn.init.zeros_(self.transformer.weight)
+        nn.init.uniform_(self.factoriser.weight, -bound, bound)
         nn.init.uniform_(self.output, -bound, bound)
 
     def forward(
@@ -76,8 +88,16 @@ class Network(nn.Module):
         stm: torch.Tensor,
         bucket: torch.Tensor,
     ) -> torch.Tensor:
-        accumulated_white = self.transformer(white, offsets) + self.transformer_bias
-        accumulated_black = self.transformer(black, offsets) + self.transformer_bias
+        accumulated_white = (
+            self.transformer(white, offsets)
+            + self.factoriser(white % VIRTUAL_FEATURES, offsets)
+            + self.transformer_bias
+        )
+        accumulated_black = (
+            self.transformer(black, offsets)
+            + self.factoriser(black % VIRTUAL_FEATURES, offsets)
+            + self.transformer_bias
+        )
 
         # The evaluation is always from the side to move's point of view, so the two
         # halves are ordered by whose turn it is rather than by colour.
@@ -93,7 +113,11 @@ class Network(nn.Module):
 
     def clamp_(self) -> None:
         with torch.no_grad():
+            # The clamp is on the sum that ships, not on either half alone: the two are
+            # added before quantisation, so bounding them separately would bound the wrong
+            # quantity and let the exported weight fall outside what int16 can carry.
             self.transformer.weight.clamp_(-FT_CLAMP, FT_CLAMP)
+            self.factoriser.weight.clamp_(-FT_CLAMP, FT_CLAMP)
             self.output.clamp_(-OUT_CLAMP, OUT_CLAMP)
 
 
@@ -137,12 +161,15 @@ def batches(
             size = chosen.shape[0]
             if size == 0:
                 continue
-            index, white, black, stm, score = dataset.unpack(block[chosen])
+            index, white, black, stm, score, pieces = dataset.unpack(block[chosen])
 
             counts = np.bincount(index, minlength=size)
             offsets = np.zeros(size, dtype=np.int64)
             np.cumsum(counts[:-1], out=offsets[1:])
-            bucket = np.clip((counts - 2) // ((32 - 2) // buckets + 1), 0, buckets - 1)
+            # From the real piece count, not from `counts`: each perspective omits its
+            # own king, so `counts` is one short and would put the trainer in a
+            # different output bucket from `nnue.forward` on every position.
+            bucket = np.clip((pieces - 2) // ((32 - 2) // buckets + 1), 0, buckets - 1)
 
             yield (
                 torch.from_numpy(white).to(device, non_blocking=True),
@@ -175,7 +202,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=ROOT / "data" / "train.bin")
     parser.add_argument("--checkpoints", type=Path, default=ROOT / "data" / "checkpoints")
-    parser.add_argument("--l1", type=int, default=512)
+    parser.add_argument("--l1", type=int, default=256)
     parser.add_argument("--buckets", type=int, default=8)
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch", type=int, default=16384)

@@ -40,7 +40,7 @@ import numpy as np
 from numba import int8, int16, int32, int64, njit, uint64, void
 from numba.core import types
 
-from bitboard import BOCC, ONE, PAWN, ROOK, STM, WOCC, U, popcount
+from bitboard import BOCC, KING, ONE, PAWN, ROOK, STM, WOCC, U, lsb, popcount
 
 Bits = Any
 Square = Any
@@ -53,8 +53,21 @@ RO_ROW: Any = types.Array(types.int16, 1, "C", readonly=True)  # type: ignore[no
 
 WEIGHTS_PATH = Path(__file__).resolve().parent / "weights" / "net.npz"
 
-# Piece-square-colour features, six piece types by two colours by sixty four squares.
-NUM_FEATURES = 768
+# HalfKA features: every piece is indexed by the square of the king it is being seen from.
+# That is what lets the network say "this configuration is dangerous *because* my king is
+# on g1", which a plain piece-square net cannot represent at all.
+#
+# The board is folded across the d/e file so the king always lands on files e to h, which
+# halves the table and doubles the data every weight sees. It conflates a kingside-castled
+# position with its queenside mirror image; castling rights are not features, so nothing
+# in the evaluation could have distinguished them anyway.
+KING_BUCKETS = 32
+# Eleven piece slots, not twelve: the perspective's own king is the index, so a feature for
+# it would carry no information. The enemy king *is* a piece here, which is the difference
+# between HalfKA and HalfKP, and the reason for choosing it: an attack is a relationship
+# between our pieces and their king, and HalfKP cannot see one side of that relationship.
+PIECE_SLOTS = 11
+NUM_FEATURES = KING_BUCKETS * PIECE_SLOTS * 64
 # One extra all-zero row past the real features. Pointing an unused slot at it lets every
 # move share one "subtract two, add two" update instead of branching per move flag.
 ZERO_FEATURE = NUM_FEATURES
@@ -185,30 +198,57 @@ def _dot(us: Bits, them: Bits, weights: Bits) -> Bits:
 # --------------------------------------------------------------------------------------
 
 
-@njit(int32(int64, int64, int64, int64), cache=False, inline="always")
-def feature(perspective: Square, colour: Square, piece: Square, square: Square) -> Bits:
-    """Index of one piece-on-square feature, as seen from one side.
+@njit(int32(int64, int64, int64, int64, int64), cache=False, inline="always")
+def feature(
+    perspective: Square, king_square: Square, colour: Square, piece: Square, square: Square
+) -> Bits:
+    """Index of one piece-on-square feature, as seen from one side and one king square.
 
     `perspective` is 0 for white and 1 for black. From black's side the board is flipped
-    vertically and the colours are swapped, so that "my pawn on my second rank" is the
-    same feature for both players and the two halves of the network share weights.
+    vertically and the colours are swapped, so that "my pawn on my second rank" is the same
+    feature for both players and the two halves of the network share weights.
+
+    On top of that, the board is folded horizontally so the perspective's own king sits on
+    files e to h, and the resulting 32 king squares select which block of the table every
+    other piece is indexed into. `king_square` is the perspective's *own* king, and passing
+    that king to this function is a caller error: it is the index, not a feature.
     """
-    return np.int32(((colour ^ perspective) * 6 + piece) * 64 + (square ^ (perspective * 56)))
+    oriented_king = king_square ^ (perspective * 56)
+    mirror = 7 if (oriented_king & 7) < 4 else 0
+    folded_king = oriented_king ^ mirror
+    bucket = (folded_king >> 3) * 4 + (folded_king & 7) - 4
+    # Own pieces occupy slots 0 to 4 with the king omitted; enemy pieces occupy 5 to 10.
+    slot = piece if (colour ^ perspective) == 0 else 5 + piece
+    square_index = square ^ (perspective * 56) ^ mirror
+    return np.int32((bucket * PIECE_SLOTS + slot) * 64 + square_index)
 
 
-@njit(void(int16[:, :, ::1], int64, uint64[:], int8[:]), cache=False)
-def refresh(acc: Bits, ply: Square, state: Bits, mail: Bits) -> None:
-    """Rebuild both accumulators from the board. Called once per search, at the root."""
-    _set(acc[ply, 0], FT_BIAS)
-    _set(acc[ply, 1], FT_BIAS)
+@njit(void(ROW, uint64[:], int8[:], int64), cache=False)
+def refresh_side(row: Bits, state: Bits, mail: Bits, perspective: Square) -> None:
+    """Rebuild one perspective from the board.
+
+    Separate from `refresh` because a king move forces exactly this and nothing more: the
+    side whose king moved has every feature reindexed, and the other side does not.
+    """
+    _set(row, FT_BIAS)
     black_occupancy = state[BOCC]
+    own_occupancy = black_occupancy if perspective != 0 else state[WOCC]
+    king_square = np.int64(lsb(state[KING] & own_occupancy))
     for square in range(64):
         piece = np.int64(mail[square])
         if piece < 0:
             continue
         colour = np.int64(1) if ((black_occupancy >> U(square)) & ONE) != 0 else np.int64(0)
-        _add(acc[ply, 0], FT_WEIGHT[feature(0, colour, piece, square)])
-        _add(acc[ply, 1], FT_WEIGHT[feature(1, colour, piece, square)])
+        if piece == KING and colour == perspective:
+            continue
+        _add(row, FT_WEIGHT[feature(perspective, king_square, colour, piece, square)])
+
+
+@njit(void(int16[:, :, ::1], int64, uint64[:], int8[:]), cache=False)
+def refresh(acc: Bits, ply: Square, state: Bits, mail: Bits) -> None:
+    """Rebuild both accumulators from the board. Called once per search, at the root."""
+    refresh_side(acc[ply, 0], state, mail, 0)
+    refresh_side(acc[ply, 1], state, mail, 1)
 
 
 @njit(void(int16[:, :, ::1], int64), cache=False)
@@ -218,19 +258,26 @@ def copy(acc: Bits, ply: Square) -> None:
     _copy_row(acc[ply + 1, 1], acc[ply, 1])
 
 
-@njit(void(int16[:, :, ::1], int64, uint64[:], int8[:], int32), cache=False)
-def apply(acc: Bits, ply: Square, state: Bits, mail: Bits, move: Bits) -> None:
+@njit(void(int16[:, :, ::1], int64, uint64[:], int8[:], uint64[:], int8[:], int32), cache=False)
+def apply(
+    acc: Bits, ply: Square, state: Bits, mail: Bits, next_state: Bits, next_mail: Bits, move: Bits
+) -> None:
     """Write ply+1 from ply for one move, without rebuilding from the board.
 
-    `state` and `mail` are the position *before* the move. Everything the update needs is
-    derivable from them, which is why this can sit in the search after the legality check
-    rather than inside `position.make`: `position.py` stays free of evaluation concerns,
-    and pseudo-legal moves that turn out illegal cost nothing.
+    `state` and `mail` are the position *before* the move, `next_state` and `next_mail` the
+    position after it. The parent is what the incremental update is derived from; the child
+    is only read when a king move forces a rebuild, which cannot be done from the parent.
+    Both already exist at every call site, because the search calls this after `make`.
 
-    At most two features leave and two arrive. A capture removes the mover's old square
-    and the victim; castling removes the king's and the rook's old squares and adds both
-    new ones; a promotion adds a different piece from the one that left. Unused slots
-    point at the all-zero row so the arithmetic stays uniform.
+    At most two features leave and two arrive. A capture removes the mover's old square and
+    the victim; castling removes the king's and the rook's old squares and adds both new
+    ones; a promotion adds a different piece from the one that left. Unused slots point at
+    the all-zero row so the arithmetic stays uniform.
+
+    The exception is a king move. Under HalfKA every feature on that side is indexed by its
+    own king's square, so moving it reindexes the whole side and there is nothing to carry:
+    that perspective is rebuilt. The other perspective sees an ordinary piece move, because
+    the enemy king is just a piece to it.
     """
     frm = np.int64(move & 63)
     to = np.int64((move >> 6) & 63)
@@ -245,10 +292,20 @@ def apply(acc: Bits, ply: Square, state: Bits, mail: Bits, move: Bits) -> None:
     # the decoded flag directly keeps this module free of a position.py import.
     arriving = promo if flag == 3 else moved
 
+    white_king = np.int64(lsb(state[KING] & state[WOCC]))
+    black_king = np.int64(lsb(state[KING] & state[BOCC]))
+
     simple = flag == 0 and mail[to] < 0
     for p in range(2):
-        sub0 = feature(p, us, moved, frm)
-        add0 = feature(p, us, arriving, to)
+        if moved == KING and us == p:
+            # Our own king moved, so every feature on our side is reindexed. Nothing about
+            # the parent accumulator survives, and the rebuild has to read the child board.
+            refresh_side(acc[ply + 1, p], next_state, next_mail, p)
+            continue
+        # The king square this perspective indexes by is its own, and it did not move.
+        ksq = black_king if p != 0 else white_king
+        sub0 = feature(p, ksq, us, moved, frm)
+        add0 = feature(p, ksq, us, arriving, to)
         if simple:
             _move_one(acc[ply + 1, p], acc[ply, p], FT_WEIGHT[sub0], FT_WEIGHT[add0])
             continue
@@ -257,7 +314,7 @@ def apply(acc: Bits, ply: Square, state: Bits, mail: Bits, move: Bits) -> None:
         add1 = np.int32(ZERO_FEATURE)
         if flag == 1:
             # En passant. The captured pawn sits beside the target square, not behind it.
-            sub1 = feature(p, them, PAWN, to + 8 if black else to - 8)
+            sub1 = feature(p, ksq, them, PAWN, to + 8 if black else to - 8)
         elif flag == 2:
             # Castling. The king's move is already in slot zero, so this is the rook.
             if to == 6:
@@ -268,12 +325,12 @@ def apply(acc: Bits, ply: Square, state: Bits, mail: Bits, move: Bits) -> None:
                 rook_from, rook_to = np.int64(63), np.int64(61)
             else:
                 rook_from, rook_to = np.int64(56), np.int64(59)
-            sub1 = feature(p, us, ROOK, rook_from)
-            add1 = feature(p, us, ROOK, rook_to)
+            sub1 = feature(p, ksq, us, ROOK, rook_from)
+            add1 = feature(p, ksq, us, ROOK, rook_to)
         else:
             captured = np.int64(mail[to])
             if captured >= 0:
-                sub1 = feature(p, them, captured, to)
+                sub1 = feature(p, ksq, them, captured, to)
         _move_two(
             acc[ply + 1, p],
             acc[ply, p],
@@ -312,17 +369,27 @@ def new_accumulator(plies: int) -> np.ndarray:
 _acc = new_accumulator(4)
 _state = np.zeros(16, dtype=np.uint64)
 _mail = np.full(64, -1, dtype=np.int8)
+# Both kings are present because HalfKA indexes by them: a warm-up board without kings
+# would take the lsb of an empty bitboard and index the table with rubbish.
+_mail[4] = KING
+_mail[60] = KING
 _mail[8] = PAWN
 _mail[16] = PAWN
 _mail[63] = ROOK
+_state[KING] = (np.uint64(1) << np.uint64(4)) | (np.uint64(1) << np.uint64(60))
 _state[PAWN] = (np.uint64(1) << np.uint64(8)) | (np.uint64(1) << np.uint64(16))
 _state[ROOK] = np.uint64(1) << np.uint64(63)
-_state[WOCC] = _state[PAWN]
-_state[BOCC] = _state[ROOK]
+_state[WOCC] = _state[KING] & np.uint64(0xFFFF) | _state[PAWN]
+_state[BOCC] = (_state[KING] & ~np.uint64(0xFFFF)) | _state[ROOK]
 refresh(_acc, 0, _state, _mail)
+refresh_side(_acc[0, 0], _state, _mail, 0)
 copy(_acc, 0)
 forward(_acc, 0, _state)
 for _flag in (0, 1, 2, 3):
-    # Both branches of `apply`: a quiet move onto an empty square, and every flagged form.
-    apply(_acc, 0, _state, _mail, np.int32(8 | (24 << 6) | (4 << 12) | (_flag << 15)))
-apply(_acc, 0, _state, _mail, np.int32(8 | (16 << 6)))
+    # Every flagged form of the incremental path: a quiet move onto an empty square, en
+    # passant, castling and promotion.
+    _move = np.int32(8 | (24 << 6) | (4 << 12) | (_flag << 15))
+    apply(_acc, 0, _state, _mail, _state, _mail, _move)
+apply(_acc, 0, _state, _mail, _state, _mail, np.int32(8 | (16 << 6)))
+# A king move, which takes the rebuild branch rather than the incremental one.
+apply(_acc, 0, _state, _mail, _state, _mail, np.int32(4 | (5 << 6)))

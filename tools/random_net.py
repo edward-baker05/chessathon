@@ -21,7 +21,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--l1", type=int, default=512)
+    parser.add_argument("--features", type=int, default=22528)
+    parser.add_argument("--l1", type=int, default=256)
     parser.add_argument("--buckets", type=int, default=8)
     parser.add_argument("--qa", type=int, default=181)
     parser.add_argument("--qb", type=int, default=64)
@@ -33,7 +34,7 @@ def main() -> None:
     rng = np.random.default_rng(arguments.seed)
     # Small enough that a random accumulator cannot overflow int16 with 32 pieces on the
     # board, and small enough that the output sum stays far inside int32.
-    ft_weight = rng.integers(-24, 25, (768, arguments.l1)).astype(np.int16)
+    ft_weight = rng.integers(-24, 25, (arguments.features, arguments.l1)).astype(np.int16)
     ft_bias = rng.integers(-24, 25, arguments.l1).astype(np.int16)
     out_weight = rng.integers(-8, 9, (arguments.buckets, 2 * arguments.l1)).astype(np.int16)
     out_bias = np.zeros(arguments.buckets, dtype=np.int32)
@@ -50,7 +51,10 @@ def main() -> None:
         scale=np.int32(arguments.scale),
     )
     print(f"{arguments.out} ({arguments.out.stat().st_size:,} bytes)")
-    print(f"  L1={arguments.l1} buckets={arguments.buckets} QA={arguments.qa} QB={arguments.qb}")
+    print(
+        f"  features={arguments.features} L1={arguments.l1} buckets={arguments.buckets} "
+        f"QA={arguments.qa} QB={arguments.qb}"
+    )
 
 
 if __name__ == "__main__":

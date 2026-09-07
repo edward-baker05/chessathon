@@ -436,7 +436,9 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
         make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
         if not legal_after(work.state[ply + 1], black):
             continue
-        nnue_apply(work.acc, ply, state, mail, move)
+        nnue_apply(
+            work.acc, ply, state, mail, work.state[ply + 1], work.mail[ply + 1], move
+        )
         legal += 1
         work.played[ply] = move
         work.moved_piece[ply] = mail[np.int64(move & 63)]
@@ -607,7 +609,9 @@ def negamax(
         make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
         if not legal_after(work.state[ply + 1], black):
             continue
-        nnue_apply(work.acc, ply, state, mail, move)
+        nnue_apply(
+            work.acc, ply, state, mail, work.state[ply + 1], work.mail[ply + 1], move
+        )
         legal += 1
         work.played[ply] = move
         work.moved_piece[ply] = mail[np.int64(move & 63)]
@@ -732,7 +736,7 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
                 make(state, mail, work.state[1], work.mail[1], move)
                 if not legal_after(work.state[1], black):
                     continue
-                nnue_apply(work.acc, 0, state, mail, move)
+                nnue_apply(work.acc, 0, state, mail, work.state[1], work.mail[1], move)
                 legal += 1
                 work.played[0] = move
                 if legal == 1:
