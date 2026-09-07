@@ -397,3 +397,29 @@ def test_the_root_static_evaluation_is_recorded_for_the_improving_test() -> None
     nnue.refresh(search.WORK.acc, 0, search.WORK.state[0], search.WORK.mail[0])
     expected = int(evaluate(search.WORK.acc, 0, search.WORK.state[0]))
     assert recorded == expected, "static_evals[0] is not the root's static evaluation"
+
+
+def test_the_pruning_margins_default_to_the_tuned_values() -> None:
+    """The margins moved from literals inside the jitted functions to module constants so a
+    sweep does not need a code edit per setting. The move has to be behaviour neutral, which
+    means the defaults have to be exactly what the literals were."""
+    assert search.RFP_MARGIN == 75
+    assert search.RAZOR_MARGIN == 200
+    assert search.FUTILITY_BASE == 100
+    assert search.FUTILITY_MARGIN == 90
+    assert search.SEE_QUIET_MARGIN == 50
+    assert search.SEE_CAPTURE_MARGIN == 100
+    assert search.DELTA_MARGIN == 200
+
+
+def test_a_margin_can_be_overridden_from_the_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The sweep depends on this, and it is read once at import, so nothing later in the run
+    would notice if the lookup broke. numba bakes the value in at compile time, so the
+    override only takes effect in a freshly started process; that end to end behaviour was
+    confirmed by hand, and what this guards is the lookup itself."""
+    monkeypatch.setenv("CHESS_RFP_MARGIN", "123")
+    assert search._margin("RFP_MARGIN", 75) == 123
+    monkeypatch.delenv("CHESS_RFP_MARGIN")
+    assert search._margin("RFP_MARGIN", 75) == 75

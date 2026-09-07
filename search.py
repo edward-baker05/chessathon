@@ -9,6 +9,7 @@ An objmode call costs about 1.8 us, so it happens every 2048 nodes: roughly 0.9 
 """
 
 import math
+import os
 import time
 from typing import Any, NamedTuple
 
@@ -67,6 +68,39 @@ INT_SLOTS = 8
 F_HARD, F_SOFT, F_SOFT_SPAN, F_START = 0, 1, 2, 3
 F_STRETCH, F_LAST_ITER, F_PREV_ITER = 4, 5, 6
 FLOAT_SLOTS = 7
+
+# --------------------------------------------------------------------------------------
+# Pruning margins, in centipawns. These were tuned against a material evaluation and mean
+# something different under a network: the same scale, but a different distribution of
+# scores across it, so a margin that cut the right 5% of nodes before may cut 2% or 15% now.
+#
+# They are read from the environment so a sweep does not need a code edit per setting.
+# numba freezes module globals at compile time and compilation happens at import, so a value
+# read here is baked into the jitted code exactly as a hard coded literal would be, and costs
+# nothing at run time. That is what lets `tests/match.py` A/B two settings as two snapshots.
+# --------------------------------------------------------------------------------------
+
+
+def _margin(name: str, default: int) -> int:
+    """One pruning margin, overridable as `CHESS_<name>` for a sweep."""
+    override = os.environ.get(f"CHESS_{name}")
+    return default if override is None else int(override)
+
+
+# Reverse futility: so far ahead that giving back this much per remaining ply still beats
+# beta, so the opponent would have avoided the line.
+RFP_MARGIN = _margin("RFP_MARGIN", 75)
+# Razoring: so far below alpha that only a capture sequence could rescue the position.
+RAZOR_MARGIN = _margin("RAZOR_MARGIN", 200)
+# Futility: a quiet move this far below alpha is not going to close the gap.
+FUTILITY_BASE = _margin("FUTILITY_BASE", 100)
+FUTILITY_MARGIN = _margin("FUTILITY_MARGIN", 90)
+# SEE pruning, per ply of remaining depth, for quiet moves and for captures.
+SEE_QUIET_MARGIN = _margin("SEE_QUIET_MARGIN", 50)
+SEE_CAPTURE_MARGIN = _margin("SEE_CAPTURE_MARGIN", 100)
+# Delta pruning in quiescence: this far below alpha even after the capture wins its victim.
+DELTA_MARGIN = _margin("DELTA_MARGIN", 200)
+
 
 # A depth whose best move changed, or whose score fell by this much, is worth more time.
 INSTABILITY_DROP = 30
@@ -429,7 +463,7 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
             # A capture that loses material cannot rescue a position this far behind.
             victim = np.int64(mail[(move >> 6) & 63])
             gain = SEE_VALUE[victim] if victim >= 0 else 100
-            if stand_pat + gain + 200 < alpha:
+            if stand_pat + gain + DELTA_MARGIN < alpha:
                 continue
             if see(state, mail, move) < 0:
                 continue
@@ -517,11 +551,11 @@ def negamax(
     if prunable:
         # Reverse futility. So far ahead that giving back a margin per remaining ply still
         # beats beta, so the opponent would have avoided this line.
-        if depth <= 8 and static - 75 * depth >= beta:
+        if depth <= 8 and static - RFP_MARGIN * depth >= beta:
             return np.int32(static)
 
         # Razoring. So far behind that only a capture sequence could rescue it.
-        if depth <= 3 and static + 200 * depth < alpha:
+        if depth <= 3 and static + RAZOR_MARGIN * depth < alpha:
             razor = qsearch(work, ply, alpha, beta)
             if razor <= alpha:
                 return razor
@@ -599,11 +633,11 @@ def negamax(
                 if depth <= 8 and quiets_tried >= cap:
                     continue
                 # Futility: too far below alpha for a quiet move to close the gap.
-                if depth <= 6 and static + 100 + 90 * depth <= alpha:
+                if depth <= 6 and static + FUTILITY_BASE + FUTILITY_MARGIN * depth <= alpha:
                     continue
-                if depth <= 8 and see(state, mail, move) < -50 * depth:
+                if depth <= 8 and see(state, mail, move) < -SEE_QUIET_MARGIN * depth:
                     continue
-            elif depth <= 8 and see(state, mail, move) < -100 * depth:
+            elif depth <= 8 and see(state, mail, move) < -SEE_CAPTURE_MARGIN * depth:
                 continue
 
         make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
