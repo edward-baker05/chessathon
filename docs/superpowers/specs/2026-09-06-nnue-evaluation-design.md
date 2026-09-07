@@ -15,7 +15,9 @@ Fetched from `https://aichessathon.com/docs/agent-contract.md` and
 - Training data is unrestricted and explicitly includes positions annotated by an existing
   engine. The ban covers what is inside the zip, not what the net learned from.
 - Weights are not native binaries. `.npz` ships fine.
-- 50 MB unzipped for the whole submission. The net designed here is 800 KB.
+- 50 MB unzipped for the whole submission. The net designed here is 800 KB, and the one
+  actually shipped is 0.53 MB, so almost the whole budget is unspent. That headroom is what
+  makes a king-conditioned feature set affordable later.
 - One core of an AMD EPYC 9V74 at 2.60 GHz, 2 GB, no network, 120 s + 0.5 s per move.
 - 90 s import budget before the clock. numba compilation and weight loading land there.
 
@@ -75,6 +77,16 @@ bucket      = (popcount(occupancy) - 2) >> 2          0..7
   add with no accumulator refresh path anywhere, which removes the single largest source
   of correctness risk. King buckets are a later, weights-shaped change: the accumulator
   code gains only a bucket-change refresh.
+
+  **Superseded on 2026-09-07.** The choice was right for v1 and is wrong for v2. Measured
+  against the training holdout, the trained net beats a plain material count on ranking
+  (r +0.462 against +0.225 inside +/- 400 cp) and barely beats it on absolute error
+  (56.1 cp against 57.5). `feature` never takes the king square, so the network has no way
+  to express that a configuration is dangerous *because* of where a king sits, and the
+  blunders that survived retraining are exactly that: an unsound `Bxh6` from a level
+  position, and quiet positional drift. The size budget makes the fix affordable, since
+  `weights/net.npz` is 0.53 MB of a 50 MB cap and HalfKP at 40960 x 256 int16 is about
+  21 MB. See "Evidence from the rated losses" in the plan.
 - **L1 = 512, SCReLU.** Squared clipped ReLU is worth roughly 20-30 Elo over CReLU in
   published ablations for one extra multiply, measured at 40 ns per node. L1 is a single
   constant so 256 and 1024 can be retrained and A/B tested rather than argued about.
@@ -175,14 +187,31 @@ square, side to move, and an int16 score.
 ## Plan for strength beyond v1
 
 The Lichess file is analysis positions, which skew tactical and critical rather than
-toward the quiet positions a search actually evaluates. After v1 ships and is measured:
+toward the quiet positions a search actually evaluates.
 
-1. v2, the same data at larger L1 or longer training, A/B against v1.
-2. v3, adding positions sampled from our own engine's self-play and labelled by our own
-   search at fixed depth. In-domain, entirely our own, and the standard way to push past
-   the teacher's distribution.
-3. A full sweep of the six centipawn pruning margins, which were tuned against the
-   material evaluation and mean something different under a network.
+The original order was larger L1 or longer training first, then self-play data, then the
+margin sweep. **Reordered on 2026-09-07** after the four rated losses were analysed against
+Stockfish 19. Longer training came off the list: the epoch 30 net fixed four of the five
+moves that lost those games, the two it did not fix are king safety and quiet positional
+judgement, and holdout loss is flattening (0.010735, 0.009784, 0.008602 at epochs 1, 15 and
+30). The full working is in the plan; the current order is:
+
+1. **HalfKP or HalfKA input features at L1 256**, for the reason recorded under
+   Architecture above. This is the item the others are ordered behind.
+2. **Time allocation at the real control**, ahead of the margin sweep, because margins
+   measured under erratic time use are measured against noise.
+3. **The margin sweep**, and correction history alongside it. The evaluation's weakness is
+   now known to be ranking rather than scale, which is the shape of error a correction
+   history is built to absorb.
+4. **Self-play data**, positions from our own engine labelled by our own search at fixed
+   depth. In-domain, entirely our own, and the standard way to push past the teacher's
+   distribution. It buys most once capacity can absorb it, so it follows the feature change.
+
+Two notes for whoever implements item 1. `data/train.bin` needs **no re-extraction**: it
+stores `colour * 6 + piece` per occupied square, so king squares are already recoverable and
+`tools/dataset.py` can derive king-relative indices from the existing file. And
+`tests/test_dataset.py` is the test that stops a net trained under one feature convention
+and played under another, so it changes in the same commit as `nnue.feature`.
 
 Ship whichever version last won its match.
 
@@ -197,7 +226,7 @@ hands both sides the same node count and so hides the 21% of node rate the netwo
 
 ## What the platform costs, measured from a rated game log
 
-`logs/AI Chessathon Round 35 Log.log` is a real rated game and it reports the init time the
+The Round 35 log, a real rated game, reports the init time the
 platform actually charged. That is the only direct measurement of how much slower their
 core is than the development machine, and it turns the 90 second init budget from an
 abstraction into a number.
@@ -215,17 +244,31 @@ is **2.43x slower** at numba compilation than this machine.
 | build | local import | platform | share of the 90 s budget |
 | --- | --- | --- | --- |
 | material | 24.8 s | 60.2 s (measured) | 67% |
-| with the network | 28.2 s | 68.8 s and 69.4 s (measured) | 76% |
+| with the network, v4 | 28.2 s | 68.8 s and 69.4 s (measured) | 76% |
+| with the network, v5 | 28.2 s | 70.7 s and 71.6 s (measured) | 79% |
 
-The prediction from the 2.43x ratio was 68.5 s and the validation log for the network build
-reported 68.8 s and 69.4 s across its two smoke games, so the ratio is confirmed and the
-build validates. It also confirms that Round 35 was the material build, which had been an
-inference from its move quality rather than a fact.
+The prediction from the 2.43x ratio was 68.5 s and the v4 validation log reported 68.8 s and
+69.4 s across its two smoke games, so the ratio held and the build validates. It also
+confirms that Round 35 was the material build, which had been an inference from its move
+quality rather than a fact.
 
-The network fits, with roughly **21 s of platform slack, which is 8.8 s of local import
-time**. That is now a design constraint on everything that follows, because every feature
-that adds a jitted function adds compile time: correction history, input king buckets and a
-larger L1 all spend from those 8.8 s. Missing the init budget loses every game in the round.
+**Revised on 2026-09-07.** `logs/aichessathon-v5-591ad99320da.log`, the validation log for
+the build carrying the time-management fix and the trained network, reports **70.7 s and
+71.6 s**. So the platform ratio is nearer **2.5x** than 2.43x, and the slack is smaller than
+this document claimed:
+
+| | v4 reading | v5 reading |
+| --- | --- | --- |
+| platform init | 68.8 s to 69.4 s | 70.7 s to 71.6 s |
+| platform slack of 90 s | about 21 s | about 18.4 s |
+| equivalent local import time | 8.8 s | **about 7.2 s** |
+
+That is now a design constraint on everything that follows, because every feature that adds
+a jitted function adds compile time: correction history, king-conditioned input features and
+a larger L1 all spend from those 7.2 s. A HalfKP layer also makes `weights/net.npz` about
+21 MB against 0.53 MB today, and that load time lands inside the same budget rather than
+outside it. Missing the init budget loses every game in the round, so measure it early in
+that change rather than at the end.
 
 `cache=True` cannot buy the headroom back. numba bakes the contents of global arrays into
 cached binaries with no warning, and this design keeps the network's weights in globals, so
@@ -239,12 +282,21 @@ Time management for the material build looked healthy: 131.0 s used of the 144.0
 available over 48 moves, 13.0 s left at the end, slowest move 6.8 s, which is 1.2x its soft
 limit.
 
-Under the network it is **not** healthy. The v4 validation log reports slowest moves of
+Under the network it was **not** healthy. The v4 validation log reported slowest moves of
 14.4 s and 11.5 s, and those positions reproduce locally at 10.7 s and 17.8 s against a
 5.69 s soft limit, up to 3.1x over. The soft limit is only sampled between completed depths
 and the aspiration re-search loop sits inside that check, so a single iteration or a failed
-window runs until the hard limit. The plan carries the fix; it is listed ahead of the margin
-sweep because margins measured under erratic time use are measured against noise.
+window runs until the hard limit.
+
+The fix has since landed and reached the platform. `logs/aichessathon-v5-591ad99320da.log`
+reports slowest moves of **10.2 s and 5.7 s** on its two smoke games, against 14.4 s and
+11.5 s for v4. Improved rather than closed: 10.2 s is still a large single move for a smoke
+game.
+
+It stays ahead of the margin sweep, because margins measured under erratic time use are
+measured against noise, and because the clocks in the four rated losses suggest the budget
+is front loaded. R41 reached the move that lost the game with 15.0 s left, having had 59.3 s
+fourteen moves earlier. The plan carries the open items.
 
 ## Risks
 
@@ -253,5 +305,7 @@ sweep because margins measured under erratic time use are measured against noise
 | Incremental accumulator drifts from a true refresh | Differential test over random playouts, asserting equality every ply |
 | int32 overflow in the output sum | Exact worst-case bound computed from the shipped weights at export, hard failure |
 | Sign or perspective error in feature indexing | Test that the evaluation of a position and of its colour-mirrored twin are negatives |
-| Import budget | 28.2 s local, about 68.5 s of the platform's 90 s. Only 8.8 s of local slack left. `tests/bench.py` gates it, and the section above explains why the margin is thinner than it looks |
+| Import budget | 28.2 s local, 70.7 s to 71.6 s of the platform's 90 s as measured in the v5 log. About 7.2 s of local slack left, not the 8.8 s first estimated. `tests/bench.py` gates it, and the section above explains why the margin is thinner than it looks |
+| Evaluation ranks better than it scores | Measured against the holdout: r +0.462 against material's +0.225 inside +/- 400 cp, but 56.1 cp of absolute error against material's 57.5. Addressed by the feature change, not by more epochs |
+| A net trained under one feature convention and played under another | `tests/test_dataset.py`. It is the only thing standing between a plausible training curve and a net that plays close to randomly, and the feature change touches both sides of it |
 | Net trained on the wrong target | Held-out loss plus a fixed-node A/B against `snapshots/material` before anything ships |
