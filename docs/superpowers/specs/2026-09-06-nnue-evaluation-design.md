@@ -198,6 +198,51 @@ judgement, and holdout loss is flattening (0.010735, 0.009784, 0.008602 at epoch
 
 1. **HalfKP or HalfKA input features at L1 256**, for the reason recorded under
    Architecture above. This is the item the others are ordered behind.
+
+   **Measured on 2026-09-07, and the answer was the data pipeline rather than the
+   features.** The HalfKA run reached holdout 0.008612 at epoch 24 against the 768 net's
+   0.008602, which is no improvement at all. Four things came out of taking the
+   checkpoints apart, and the first is the one that mattered:
+
+   - **The training file is grouped, and nothing was shuffling across it.** Over
+     consecutive slabs of two million records the fraction of mate-range scores runs from
+     0.105 to 0.154, a spread of 0.0116 against the 0.0006 of independent sampling.
+     `tools/train.py` shuffled only inside a slab, so every batch was a biased sample and
+     every epoch ended on whichever slab was drawn last. `tools/shuffle.py` now permutes
+     the file on disk once, and training reads the shuffled file.
+   - **The holdout was a tail slice of that grouped file**, so it measured a pocket of the
+     data rather than the data. It is now a random sample, withheld by mask.
+   - **Decisive positions dominate the number, and clipping the label does not help.**
+     16.5% of positions carry `|score| > 1500` and they produce 37.7% of the holdout loss.
+     Clipping the label at 2000 cp was tried and measured against the epoch 24 checkpoint:
+     it moved the holdout loss from 0.008612 to 0.008467, 1.7%, and left the share coming
+     from those positions at 36.7%. It does nothing because the sigmoid has already
+     clipped: `sigmoid(2000/400)` is 0.9933 against `sigmoid(12800/400)` of 1.0, so there
+     is no information above 2000 cp for a clip to remove. The loss there is the network
+     being imperfect on won positions (it predicts 0.930 where the target is 1.0), not the
+     label being extreme. **Not adopted.** What was adopted is reporting the two groups
+     separately every epoch, which is the diagnostic that made the stall below visible.
+
+     The saturation itself is real and worth knowing about: on the holdout the net's
+     median output is +871 cp for labels between 800 and 1500 and +952 cp for labels
+     between 1500 and 5000, so it has all but stopped ranking degrees of winning above
+     about 1000 cp. The lever for that is the temperature of the sigmoid in the loss, not
+     a clip. `SCALE` currently does two jobs, as the engine's centipawns per output unit,
+     which the quantisation identity fixes at 400, and as that temperature, which is free.
+     Separating them buys resolution on won positions at the cost of resolution near
+     equality, where most games are decided, so it is an item for the list below with an
+     A/B at the end of it rather than a change to fold into a pipeline fix.
+   - **The epochs after 5 were doing nothing.** Split out from the saturated targets, the
+     holdout loss on ordinary positions was 0.005830 at epoch 5, 0.006769 at epoch 9,
+     0.005913 at epoch 14 and 0.006422 at epoch 24: the best result was the earliest one.
+     The schedule is now 10 epochs decaying 0.75 per epoch rather than a cosine over 30.
+
+   Two candidate causes were checked and ruled out, so they do not need chasing again: the
+   weight clamps are not binding (about 0.00% of transformer weights sit at +/-1.98, only
+   the maximum reaches it), and AdamW's default decay had not collapsed the king-specific
+   weights (median transformer row norm 3.16 against the factoriser's 2.99). Decay is set
+   to zero regardless, because decaying every row of a sparse embedding on every step is
+   the wrong operation whether or not it did visible harm here.
 2. **Time allocation at the real control**, ahead of the margin sweep, because margins
    measured under erratic time use are measured against noise.
 3. **The margin sweep**, and correction history alongside it. The evaluation's weakness is
@@ -309,3 +354,4 @@ fourteen moves earlier. The plan carries the open items.
 | Evaluation ranks better than it scores | Measured against the holdout: r +0.462 against material's +0.225 inside +/- 400 cp, but 56.1 cp of absolute error against material's 57.5. Addressed by the feature change, not by more epochs |
 | A net trained under one feature convention and played under another | `tests/test_dataset.py`. It is the only thing standing between a plausible training curve and a net that plays close to randomly, and the feature change touches both sides of it |
 | Net trained on the wrong target | Held-out loss plus a fixed-node A/B against `snapshots/material` before anything ships |
+| A holdout that measures a pocket of the data rather than the data | `tools/shuffle.py` permutes the file on disk, and the split is a random sample rather than a slice. `tests/test_train_sampling.py` holds both: that the held-out indices are spread across the file, and that training never yields one of them |

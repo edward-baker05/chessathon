@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: setup play arena zip gate test bench ab replay random-net data train quantise
+.PHONY: setup play arena zip gate test bench ab replay random-net data shuffle train quantise
 
 setup:
 	uv sync
@@ -38,8 +38,14 @@ ab:
 random-net:
 	uv run python tools/random_net.py
 
+# The file tools/extract.py writes is grouped, so a slab of it is not a sample of it.
+# Shuffling once on disk is what makes a sequential read of it an unbiased one, and it has
+# to happen before any training run that expects its holdout to mean anything.
+shuffle:
+	uv run python tools/shuffle.py --data data/train.bin --out data/train.shuffled.bin
+
 train:
-	uv run python tools/train.py $(if $(EPOCHS),--epochs $(EPOCHS))
+	uv run python tools/train.py --data data/train.shuffled.bin $(if $(EPOCHS),--epochs $(EPOCHS))
 
 quantise:
 	uv run python tools/quantise.py

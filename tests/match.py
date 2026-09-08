@@ -82,6 +82,10 @@ def main() -> int:
     parser.add_argument("--agent", type=Path, default=ROOT)
     parser.add_argument("--opponent", type=Path)
     parser.add_argument("--games", type=int, default=200)
+    # Games are indexed, and the index picks both the opening and the colour. Sharding a
+    # run across processes therefore means handing each shard a different first index,
+    # not running the same indices concurrently and counting them twice.
+    parser.add_argument("--start-game", type=int, default=0)
     parser.add_argument("--nodes", type=int, default=0)
     parser.add_argument("--base-ms", type=int, default=FAST_BASE_MS)
     parser.add_argument("--increment-ms", type=int, default=FAST_INCREMENT_MS)
@@ -106,7 +110,8 @@ def main() -> int:
     wins = draws = losses = 0
     terminations: dict[str, int] = {}
 
-    for game in range(arguments.games):
+    first = arguments.start_game
+    for game in range(first, first + arguments.games):
         opening = OPENINGS[(game // 2) % len(OPENINGS)]
         plays_white = game % 2 == 0
         white, black = (agent, opponent) if plays_white else (opponent, agent)
@@ -126,7 +131,7 @@ def main() -> int:
             losses += 1
         elo, low, high = elo_with_interval(wins, draws, losses)
         print(
-            f"game {game + 1}/{arguments.games}: {outcome.result} by {outcome.termination}"
+            f"game {game + 1 - first}/{arguments.games}: {outcome.result} by {outcome.termination}"
             f"  (+{wins} ={draws} -{losses}, {elo:+.0f} Elo [{low:+.0f}, {high:+.0f}])"
         )
 
