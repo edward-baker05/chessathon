@@ -31,6 +31,9 @@ and they change, so fetch them before you rely on a number.
   draw, and the opening position counts toward the 600.
 - Everything in the zip together stays under 50 MB unzipped.
 - Ten uploads per team per day, and the latest one that passed validation is the one that plays.
+- Registration closes **Sep 11 11:00**, the final Swiss is that afternoon and the live final is
+  Sep 12. Verified against the rules page on 2026-09-08; check it again rather than trusting
+  this line.
 - Rated games start from curated opening positions, not the standard start. The set is not
   published.
 - Your process is suspended while the opponent thinks, so nothing you leave running between your
@@ -55,8 +58,11 @@ and they change, so fetch them before you rely on a number.
 - numba is how Python gets fast here. Warm every jitted function once at import so compilation
   lands in the init budget, not on the clock. Cython does not work on the platform.
 - `print` is safe. The runner points file descriptor 1 at stderr before importing the agent, so
-  nothing you write can corrupt the protocol. It is discarded in rated games and shown in the
-  validation log.
+  nothing you write can corrupt the protocol. It is **not** discarded in rated games: the
+  contract says it "appears in your validation log, and after every rated game in a log your
+  dashboard offers alongside the PGN", readable only by your own team. The budget is 8 KB,
+  kept as the first 4 KB and the last 4 KB, so the middle of a long game is dropped and a log
+  line wants to be short. `agent.py` writes one per move and flushes it.
 
 ## Do not
 

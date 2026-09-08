@@ -61,7 +61,10 @@ MAX_DEPTH = 127
 I_NODES, I_ABORT, I_NODE_LIMIT, I_HIST_LEN, I_AGE, I_SELDEPTH, I_NO_PRUNING = 0, 1, 2, 3, 4, 5, 6
 # Consecutive completed iterations whose best move did not change.
 I_STABLE = 7
-INT_SLOTS = 8
+# The last iteration that actually completed, and its score. Written only so that agent.py
+# can log what the search did; nothing in the search reads them back.
+I_DEPTH, I_SCORE = 8, 9
+INT_SLOTS = 10
 
 # Indices into Work.floats. Both arrays are one-dimensional, so adding slots does not
 # change any jitted signature and costs no compile time.
@@ -827,6 +830,9 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
 
         if work.ints[I_ABORT] != 0 or abandoned:
             break
+        # This depth finished and its result was committed, so it is the one to report.
+        work.ints[I_DEPTH] = depth
+        work.ints[I_SCORE] = best_score
         # A forced mate is found; searching deeper cannot improve on it.
         if best_score >= MATE_IN_MAX or best_score <= -MATE_IN_MAX:
             break
@@ -952,6 +958,10 @@ def _prepare(
     work.ints[I_NODE_LIMIT] = node_limit
     work.ints[I_AGE] = (int(work.ints[I_AGE]) + 1) & AGE_MASK
     work.ints[I_STABLE] = 0
+    # Cleared, not carried. A move that aborts before depth 1 commits would otherwise
+    # report the previous move's depth, which is the reading a log is least able to correct.
+    work.ints[I_DEPTH] = 0
+    work.ints[I_SCORE] = 0
     soft, hard = budget_ms(time_left_ms, increment_ms, ply_of(board))
     now = time.time()
     work.floats[F_START] = now
@@ -989,6 +999,27 @@ def search_value(board: chess.Board, depth: int, work: Work = WORK) -> int:
 
 def nodes(work: Work = WORK) -> int:
     return int(work.ints[I_NODES])
+
+
+def last_search(work: Work = WORK) -> tuple[int, int, int, int, float]:
+    """What the search just did: depth, seldepth, score in cp, nodes, seconds.
+
+    For `agent.py` to log. A rated game gives back nothing but the moves, so this is the
+    only channel through which a live game can say what the engine was thinking.
+    """
+    return (
+        int(work.ints[I_DEPTH]),
+        int(work.ints[I_SELDEPTH]),
+        int(work.ints[I_SCORE]),
+        int(work.ints[I_NODES]),
+        time.time() - float(work.floats[F_START]),
+    )
+
+
+def budget_of(work: Work = WORK) -> tuple[float, float]:
+    """The soft and hard limits the last search was given, in seconds from its start."""
+    start = float(work.floats[F_START])
+    return (float(work.floats[F_SOFT]) - start, float(work.floats[F_HARD]) - start)
 
 
 # Warm every jitted function at import, with the argument types the real calls use.
