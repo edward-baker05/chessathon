@@ -121,6 +121,155 @@ def test_quiescence_stalemate() -> None:
     assert search.qsearch(work, 0, np.int32(-32000), np.int32(32000)) == 0
 
 
+# Black is a rook down and has four men: a king with no square and three pawns each
+# blocked head on. A gate that only looked for stalemate with three men or fewer scored
+# this as the static evaluation of a lost position instead of as the draw it is.
+STALEMATE_FOUR_MEN = '7k/7p/7p/7p/7P/8/8/K5R1 b - - 0 1'
+# White is two pawns up on material and stalemated: a king with no square, a rook boxed in
+# behind its own pawn, and four pawns each blocked head on. Six men, and a rook that makes
+# the null move available, which is what lets all three speculative cutoffs fire on it.
+STALEMATE_AHEAD = '5r2/8/8/p2k4/P7/P6p/P6P/6KR w - - 0 1'
+# One move earlier, Black to move. Black is winning here, so nothing forces ...Rf8; it is
+# a legal move into the stalemate, and it is how these tests reach the terminal node the
+# way a game reaches it rather than from the root.
+STALEMATE_AHEAD_PARENT = '4r3/8/8/p2k4/P7/P6p/P6P/6KR b - - 0 1'
+
+
+def descend(board: chess.Board, uci: str, work: Any) -> None:
+    """Make a real move into ply one, accumulator and all, the way the search does.
+
+    A terminal position tested only at the root is tested on the one code path the search
+    never uses. This reaches it the way a game does.
+    """
+    move = encoded_move(board, uci)
+    position.make(work.state[0], work.mail[0], work.state[1], work.mail[1], move)
+    nnue.apply(work.acc, 0, work.state[0], work.mail[0], move)
+
+
+def static_of(work: Any, ply: int = 0) -> int:
+    return int(nnue.forward(work.acc, ply, work.state[ply]))
+
+
+def men_to_move(board: chess.Board) -> int:
+    return sum(1 for piece in board.piece_map().values() if piece.color == board.turn)
+
+
+def test_quiescence_stalemate_with_more_than_three_men() -> None:
+    board, work = prepare(STALEMATE_FOUR_MEN)
+    assert board.is_stalemate() and men_to_move(board) == 4
+    assert static_of(work) < 0, 'the fixture only bites while the static score is wrong'
+    assert search.qsearch(work, 0, np.int32(-32000), np.int32(32000)) == 0
+
+
+def test_quiescence_mate_still_outranks_the_stalemate_test() -> None:
+    """The draw test must not swallow a checkmate with the same number of men."""
+    board, work = prepare('R5k1/5ppp/8/8/8/8/8/K7 b - - 0 1')
+    assert board.is_checkmate() and men_to_move(board) == 4
+    assert search.qsearch(work, 0, np.int32(-32000), np.int32(32000)) == -search.MATE
+
+
+@pytest.mark.parametrize('fen', [STALEMATE_FOUR_MEN, STALEMATE_AHEAD])
+@pytest.mark.parametrize('depth', [1, 2, 5])
+def test_stalemate_scores_zero_in_every_window(fen: str, depth: int) -> None:
+    """Zero is the value of a terminal node, so no window may return anything else.
+
+    A narrow window that straddles the static score is what an interior node of a real
+    search hands down, and it is the case the early returns are reached through.
+    """
+    board, work = prepare(fen)
+    assert board.is_stalemate()
+    static = static_of(work)
+    for alpha in (-31000, static - 200, -1, 0, 1, static + 1000):
+        for is_pv in (False, True):
+            board, work = prepare(fen)
+            got = search.negamax(work, 0, depth, np.int32(alpha), np.int32(alpha + 1), is_pv)
+            assert got == 0, (fen, depth, alpha, is_pv, int(got))
+
+
+def test_stalemate_reached_through_a_legal_move() -> None:
+    board, work = prepare(STALEMATE_AHEAD_PARENT)
+    assert not board.is_stalemate()
+    descend(board, 'e8f8', work)
+    # Windows are kept inside the non-mate range. Outside it the mate-distance clamp at
+    # ply one collapses the window and returns a bound of its own, which is correct and
+    # says nothing about the terminal node below.
+    for alpha in (-2000, -1000, -1, 0, 1, 1000, 2000):
+        work.ints[search.I_ABORT] = 0
+        got = search.negamax(work, 1, 4, np.int32(alpha), np.int32(alpha + 1), False)
+        assert got == 0, (alpha, int(got))
+
+
+def test_reverse_futility_does_not_score_a_stalemate() -> None:
+    """The cutoff returns the static score instead of searching, so it has to look first.
+
+    The window is built from the static score so that the cutoff certainly fires. On this
+    fixture the value it used to return, the static score of a lost position, was a loose
+    lower bound rather than a wrong one; on a stalemate whose static score is above both
+    beta and zero the same cutoff is a wrong bound outright. Establishing the terminal
+    before the cutoff removes the whole class, and the value it returns here is now the
+    value of the position rather than of the pieces standing on it.
+    """
+    _board, work = prepare(STALEMATE_AHEAD)
+    static = static_of(work)
+    beta = np.int32(static - search.RFP_MARGIN)
+    assert static - search.RFP_MARGIN * 1 >= beta, 'the cutoff has to fire for this to test it'
+    assert search.negamax(work, 0, 1, np.int32(beta - 1), beta, False) == 0
+
+
+def test_null_move_does_not_score_a_stalemate() -> None:
+    """Passing the move is only meaningful where there was a move to make.
+
+    This one pins the guard rather than reproducing a failure: before it was added the
+    null search fell through to the move loop and reached zero anyway. It is here because
+    the null move is the third of the three cutoffs that return a score without searching,
+    and it should not be the one left without a terminal test.
+    """
+    _board, work = prepare(STALEMATE_AHEAD)
+    assert position.has_non_pawn_material(work.state[0], 0), 'null move needs a piece'
+    static = static_of(work)
+    # beta = static clears the null-move condition and leaves reverse futility, which
+    # needs a further margin per ply, and razoring, which needs alpha above the static
+    # score, both unfired at depth three.
+    beta = np.int32(static)
+    assert static - search.RFP_MARGIN * 3 < beta <= static
+    assert search.negamax(work, 0, 3, np.int32(beta - 1), beta, False) == 0
+
+
+def test_has_free_move_never_claims_a_move_that_is_not_there() -> None:
+    """The fast legality path is one-sided: True has to mean a legal move exists.
+
+    How often it decides matters too, because every undecided node pays for full move
+    generation instead. The floor is far below what it measures and is there to catch a
+    change that quietly turns the fast path off.
+    """
+    rng = random.Random(20260912)
+    starts = [chess.STARTING_FEN,
+              'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1',
+              '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1',
+              '8/5p2/4k3/8/3K4/8/5P2/8 w - - 0 40',
+              '8/8/4k3/8/2p5/8/B2P2KP/8 w - - 0 1']
+    work = search.WORK
+    asked = decided = 0
+    for start in starts:
+        board = chess.Board(start)
+        for _ in range(1200):
+            if board.is_game_over() or board.ply() > 250:
+                board = chess.Board(start)
+            if not board.is_check():
+                position.encode(board, work.state[0], work.mail[0])
+                certain = bool(movegen.has_free_move(work.state[0]))
+                asked += 1
+                decided += certain
+                if certain:
+                    assert any(board.legal_moves), board.fen()
+            board.push(rng.choice(list(board.legal_moves)))
+    for fen in (STALEMATE_FOUR_MEN, STALEMATE_AHEAD, '7k/5K2/6Q1/8/8/8/8/8 b - - 0 1'):
+        position.encode(chess.Board(fen), work.state[0], work.mail[0])
+        assert not movegen.has_free_move(work.state[0])
+    assert decided / asked > 0.95, decided / asked
+    print(f' {asked} positions, fast path decided {decided / asked:.2%}')
+
+
 @pytest.mark.parametrize('fen', [
     '8/8/8/8/8/5k2/8/R6K w - - 100 1',
     '8/8/8/8/8/5k2/8/6BK w - - 0 1',

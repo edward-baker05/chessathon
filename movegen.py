@@ -44,7 +44,7 @@ from bitboard import (
     lsb,
     rook_attacks,
 )
-from position import attacked, legal_after, make
+from position import attacked, attackers_to, legal_after, make
 
 Bits = Any
 Square = Any
@@ -57,6 +57,8 @@ PROMO_PIECES = "nbrq"
 
 RANK_2 = U(0x000000000000FF00)
 RANK_7 = U(0x00FF000000000000)
+FILE_A = U(0x0101010101010101)
+FILE_H = U(0x8080808080808080)
 
 # Squares that must be empty to castle, and the square the king crosses.
 WK_EMPTY, WQ_EMPTY = U(0x0000000000000060), U(0x000000000000000E)
@@ -308,6 +310,96 @@ def generate_captures(state: Bits, moves: Bits, base: Square) -> Square:
     return n
 
 
+@njit(boolean(uint64[:]), cache=False)
+def has_free_move(state: Bits) -> Any:
+    """True only when the side to move certainly has a legal move. Never makes a move.
+
+    Assumes the side to move is not in check, which the callers all establish first.
+    Under that assumption a piece that is neither the king nor pinned to it can always
+    move: the king is not attacked now, and a piece standing on no pin line cannot expose
+    it. So one such piece with anywhere at all to go settles the question. En passant is
+    the one capture that can expose a king from off the pin lines, and is left out here.
+
+    A pinned piece stands between its king and a slider, so it stands on a rank, file or
+    diagonal through the king. Everything off those lines is unpinned, and that is the
+    test used here: two occupancy-free slider lookups, rather than the sniper walk that
+    `pinned_pieces` needs to say exactly which pieces are pinned. It excludes some pieces
+    that are not pinned either, which costs nothing but completeness.
+
+    False means "not certain", never "no move": the king, the pinned pieces and everything
+    else standing on a king line have moves of their own that this does not look at. The
+    caller falls back on `has_legal_move`, which is exact. That is what makes a piece-count
+    gate unnecessary: this is the cheap path, and the exact test is what decides.
+    """
+    black = int64(state[STM])
+    us = state[BOCC] if black else state[WOCC]
+    them = state[WOCC] if black else state[BOCC]
+    occ = us | them
+    ksq = lsb(state[KING] & us)
+    king_lines = rook_attacks(ksq, ZERO) | bishop_attacks(ksq, ZERO)
+    # Without a slider looking down one of those lines nothing is pinned at all, and the
+    # whole side counts as free. That is the usual case in an endgame, and it is what
+    # keeps the loops below short there.
+    if king_lines & them & (state[BISHOP] | state[ROOK] | state[QUEEN]):
+        free = us & ~king_lines & ~state[KING]
+    else:
+        free = us & ~state[KING]
+
+    # Pawns first, and all of them at once: a push is a shift and a mask, and in most
+    # positions some pawn has a square in front of it, which answers the question before
+    # anything has been looked up.
+    pawns = state[PAWN] & free
+    if black:
+        if (pawns >> U(8)) & ~occ:
+            return True
+        if (((pawns & ~FILE_A) >> U(9)) | ((pawns & ~FILE_H) >> U(7))) & them:
+            return True
+    else:
+        if (pawns << U(8)) & ~occ:
+            return True
+        if (((pawns & ~FILE_H) << U(9)) | ((pawns & ~FILE_A) << U(7))) & them:
+            return True
+
+    bits = state[KNIGHT] & free
+    while bits:
+        frm = lsb(bits)
+        bits &= bits - ONE
+        if KNIGHT_ATT[frm] & ~us:
+            return True
+
+    bits = (state[BISHOP] | state[QUEEN]) & free
+    while bits:
+        frm = lsb(bits)
+        bits &= bits - ONE
+        if bishop_attacks(frm, occ) & ~us:
+            return True
+
+    bits = (state[ROOK] | state[QUEEN]) & free
+    while bits:
+        frm = lsb(bits)
+        bits &= bits - ONE
+        if rook_attacks(frm, occ) & ~us:
+            return True
+
+    # The king last, because it is the one piece whose moves have to be checked square by
+    # square. It is also the piece that answers the question in an endgame with a handful
+    # of men, where every other piece is blocked or standing on a king line: without this
+    # a king and pawn ending falls through to full generation at nearly every leaf.
+    #
+    # The king is lifted out of the occupancy first. A slider otherwise stops on the
+    # square the king stands on, and the square behind it reads as safe when stepping
+    # there walks straight down the same line.
+    lifted = occ ^ (ONE << U(ksq))
+    targets = KING_ATT[ksq] & ~occ
+    while targets:
+        to = lsb(targets)
+        targets &= targets - ONE
+        if not (attackers_to(state, to, lifted) & them):
+            return True
+
+    return False
+
+
 @njit(boolean(uint64[:], int8[:], uint64[:], int8[:], int32[:]), cache=False)
 def has_legal_move(state: Bits, mail: Bits, dst_state: Bits, dst_mail: Bits,
                    moves: Bits) -> Any:
@@ -356,6 +448,7 @@ move_from(np.int32(0))
 move_to(np.int32(0))
 move_promo(np.int32(0))
 move_flag(np.int32(0))
+has_free_move(_state[0])
 has_legal_move(_state[0], _mailbox[0], _state[1], _mailbox[1], _moves)
 _perft_moves = np.zeros(64 * MAX_MOVES, dtype=np.int32)
 perft(_state, _mailbox, _perft_moves, 0, 1)

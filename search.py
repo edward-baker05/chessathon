@@ -17,9 +17,16 @@ import chess
 import numpy as np
 from numba import njit, objmode
 
-from bitboard import BOCC, FLAG_EP, FLAG_PROMO, HALF, KEY, PAWN, STM, WOCC, popcount
+from bitboard import FLAG_EP, FLAG_PROMO, HALF, KEY, PAWN, STM
 from evaluate import evaluate
-from movegen import MAX_MOVES, generate, generate_captures, has_legal_move, move_to_uci
+from movegen import (
+    MAX_MOVES,
+    generate,
+    generate_captures,
+    has_free_move,
+    has_legal_move,
+    move_to_uci,
+)
 from nnue import apply as nnue_apply
 from nnue import copy as nnue_copy
 from nnue import new_accumulator
@@ -465,12 +472,26 @@ def update_history(work: Bits, ply: Square, best_move: Bits, depth: Square, base
         update_continuation(work, ply, np.int64(work.mail[ply][move_from]), move_to, -bonus)
 
 
-# Probing for stalemate at every quiet leaf measured 837 knps against 748, an 11% loss,
-# so it is gated on the side to move having a king and at most two other pieces. That is
-# where stalemate happens: a bare king, a blocked pawn, a trapped rook. A blockade with
-# more material than this can still be misvalued at a quiescence leaf; negamax adjudicates
-# it correctly wherever the main search reaches it.
-STALEMATE_PIECES = 3
+@njit(cache=False, inline="always")
+def any_legal_move(work: Bits, ply: Square, state: Bits, mail: Bits) -> Flag:
+    """Does the side to move have a legal move? Exact, and cheap when the answer is yes.
+
+    Probing for stalemate by generating and filtering every move at each quiet leaf
+    measured 837 knps against 748, an 11% loss, which is what a piece-count gate used to
+    buy back. The gate was an assumption about where stalemate happens rather than a
+    proof: a valid stalemate with four pieces on the side to move walked straight past it
+    and was scored as the static evaluation of a lost position.
+
+    `has_free_move` replaces the assumption with a sound one-sided test that answers
+    almost every node without making a move at all, and the exact generator runs only
+    where that test is undecided. Nothing is traded away: the answer is the same answer
+    `has_legal_move` alone would give.
+
+    The caller must have established that the side to move is not in check.
+    """
+    return has_free_move(state) or has_legal_move(
+        state, mail, work.state[ply + 1], work.mail[ply + 1], work.probe
+    )
 
 
 @njit(cache=False)
@@ -510,11 +531,10 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
             state, mail, work.state[ply + 1], work.mail[ply + 1], work.probe
         ):
             return np.int32(0)
-    elif not checked and popcount(
-        state[BOCC] if state[STM] else state[WOCC]
-    ) <= STALEMATE_PIECES and not has_legal_move(
-        state, mail, work.state[ply + 1], work.mail[ply + 1], work.probe
-    ):
+    elif not checked and not any_legal_move(work, ply, state, mail):
+        # Stalemate. Reached here before the static evaluation is allowed to speak, so a
+        # quiescence leaf cannot report the material on the board as the score of a
+        # position that is over.
         return np.int32(0)
 
     if checked:
@@ -647,6 +667,11 @@ def negamax(
         # Reverse futility. So far ahead that giving back a margin per remaining ply still
         # beats beta, so the opponent would have avoided this line.
         if depth <= 8 and static - RFP_MARGIN * depth >= beta:
+            # A stalemate scores zero however good the pieces on it look, so a cutoff that
+            # stands in for the search has to know that the search had something to do.
+            # `prunable` has already established that the side to move is not in check.
+            if not any_legal_move(work, ply, state, mail):
+                return np.int32(0)
             return np.int32(static)
 
         # Razoring. So far behind that only a capture sequence could rescue it.
@@ -664,6 +689,9 @@ def negamax(
             and static >= beta
             and has_non_pawn_material(state, black)
         ):
+            # Passing the move is only meaningful where there was a move to make.
+            if not any_legal_move(work, ply, state, mail):
+                return np.int32(0)
             reduction = 3 + depth // 4 + min((static - beta) // 200, 3)
             make_null(state, mail, work.state[ply + 1], work.mail[ply + 1])
             nnue_copy(work.acc, ply)
@@ -1131,6 +1159,7 @@ _board = chess.Board()
 _prepare(_board, 1000, 0, 4096, WORK)
 search_root(WORK, 2)
 qsearch(WORK, 0, np.int32(-INF), np.int32(INF))
+any_legal_move(WORK, 0, WORK.state[0], WORK.mail[0])
 is_repetition(WORK, 0)
 WORK.quiets[0] = WORK.moves[0]
 update_history(WORK, 0, np.int32(WORK.moves[0]), 1, 0, 1)
