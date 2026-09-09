@@ -1,0 +1,19 @@
+--- a/bitboard.py
++++ b/bitboard.py
+@@ -12,6 +12,7 @@
+ 
+ import numpy as np
+ from numba import boolean, int64, njit, uint64
++from numba.cpython.unsafe.numbers import trailing_zeros
+ 
+ # The numba signature on each decorator below is the authoritative type contract, and it is
+ # checked at compile time. The Python annotations are deliberately Any: mypy cannot model
+@@ -64,7 +65,7 @@
+ @njit(int64(uint64), cache=False, inline="always")
+ def lsb(b: Bits) -> Square:
+     """Index of the lowest set bit. Undefined for zero, so callers must guard."""
+-    return DEBRUIJN_INDEX[int(((b & (~b + ONE)) * DEBRUIJN) >> U(58))]
++    return int64(trailing_zeros(b))
+ 
+ 
+ @njit(uint64(int64, int64, int64, uint64), cache=False)

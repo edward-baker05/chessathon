@@ -1,0 +1,11 @@
+{
+  "bitboard.py": "ffa0027e5115afd4eed3f8bfb956cf16e7b57a2dfe8460a85ccb9bdd5c44ae7f",
+  "evaluate.py": "047df21af366ff7f7c0046af1c738b7b7bbb224d38a1b8e28706aff1d0d982cb",
+  "movegen.py": "bb64113e217ac201453c01ab8b4cecd000ab0561ca18ac37da04debffaefb84c",
+  "nnue.py": "bddb7e7aa00b2de51afd657b75f3d65954712d31cfda3995fb618295f52be70b",
+  "position.py": "fece7eef812bd188935823892e3398595137ef96b4caee35c22bc77d85238a4d",
+  "tt.py": "6c712dad1a865685935d85e42c88d5779526a600739003703578b41f406f8275",
+  "agent.py": "57ec95c5814fa9b75d33147ad5a35cd77fc38f083ae77ea5dbdf1634a20dba72",
+  "search.py": "bce64b29a3e57ebeabe280a1975b00b1f20ccda091d571e6ddc04c02d84af4ca",
+  "weights/net.npz": "57ab14b41b9f6d664a24c39f948c54c05b1593c2e9a156187b6235ad172d4842"
+}

@@ -40,7 +40,7 @@ def material(board: chess.Board, colour: chess.Color) -> int:
     return sum(len(board.pieces(piece, colour)) * value for piece, value in VALUES)
 
 
-def consider(board: chess.Board, seen: dict[str, str]) -> None:
+def consider(board: chess.Board, cluster: str, seen: dict[str, tuple[str, str]]) -> None:
     if board.is_game_over() or not board.is_valid():
         return
     if chess.popcount(board.occupied) - 2 < MIN_PIECES:
@@ -49,30 +49,40 @@ def consider(board: chess.Board, seen: dict[str, str]) -> None:
         return
     # Keyed on the position and the side to move, not the FEN: two games can reach one
     # position with different clocks and they are still one opening.
-    seen.setdefault(f"{board.board_fen()} {board.turn}", board.fen())
+    seen.setdefault(f"{board.board_fen()} {board.turn}", (board.fen(), cluster))
 
 
 def main() -> int:
-    seen: dict[str, str] = {}
+    seen: dict[str, tuple[str, str]] = {}
     for path in sorted((ROOT / "logs").glob("*.pgn")):
         with path.open() as handle:
             game = chess.pgn.read_game(handle)
         if game is None:
             continue
+        # One cluster per source game. The header position and the positions six and twelve
+        # plies into it are the same game seen three times, not three independent draws,
+        # and a match that treats them as independent reports an interval that is too
+        # narrow for the evidence it has.
+        cluster = path.stem
         board = game.board()
-        consider(board.copy(), seen)
+        consider(board.copy(), cluster, seen)
         for ply, node in enumerate(game.mainline(), 1):
             board.push(node.move)
             if ply in (6, 12):
-                consider(board.copy(), seen)
+                consider(board.copy(), cluster, seen)
 
     positions = json.loads((ROOT / "audit" / "positions.json").read_text())["positions"]
     for row in positions:
-        consider(chess.Board(row["fen"]), seen)
+        # The audit suite grew 43 positions out of eight opening lines, so its own ids
+        # carry the cluster: "g3-p14" is the fourth game line.
+        consider(chess.Board(row["fen"]), "audit-" + row["id"].split("-")[0], seen)
 
-    fens = sorted(seen.values())
-    OUT.write_text(json.dumps({"positions": [{"fen": fen} for fen in fens]}, indent=1) + "\n")
-    print(f"{len(fens)} distinct openings -> {OUT}")
+    rows = sorted(seen.values())
+    OUT.write_text(json.dumps(
+        {"positions": [{"fen": fen, "cluster": cluster} for fen, cluster in rows]}, indent=1
+    ) + "\n")
+    clusters = {cluster for _, cluster in rows}
+    print(f"{len(rows)} openings in {len(clusters)} independent clusters -> {OUT}")
     return 0
 
 
