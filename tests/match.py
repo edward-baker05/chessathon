@@ -35,6 +35,7 @@ it could is how a worse build gets shipped.
 import argparse
 import concurrent.futures
 import hashlib
+import itertools
 import json
 import math
 import os
@@ -118,6 +119,8 @@ def main() -> int:
     parser.add_argument("--rated", action="store_true",
                         help=f"play the real control, {BASE_MS}ms + {INCREMENT_MS}ms")
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--minutes", type=float, default=0.0,
+                        help="stop starting new pairs after this long and report what finished")
     parser.add_argument("--ply-cap", type=int, default=PLY_CAP)
     parser.add_argument("--pgn", type=Path, help="append every game here")
     parser.add_argument("--json", type=Path, help="write the raw per-pair results here")
@@ -164,17 +167,41 @@ def main() -> int:
                             ply_cap=arguments.ply_cap, start_fen=fen)
         return index, score_for(first, True) + score_for(second, False), first, second
 
+    # Pairs are started a few at a time rather than all at once, so a deadline can stop the
+    # run cleanly: everything already started finishes and is counted, and nothing new
+    # begins. A run cut short is a shorter run, not a biased one, because which pair goes
+    # first has nothing to do with how it turns out.
     started = time.perf_counter()
+    deadline = started + arguments.minutes * 60 if arguments.minutes else float("inf")
     results: list[tuple[int, float, Outcome, Outcome]] = []
+    stopped_early = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=arguments.workers) as pool:
-        for done in concurrent.futures.as_completed(
-            [pool.submit(play, index) for index in range(pairs)]
-        ):
-            results.append(done.result())
-            index, pair_score, first, second = results[-1]
-            print(f"pair {len(results)}/{pairs} (opening {index % len(openings)}): "
-                  f"{pair_score:.1f}/2  [{first.termination}, {second.termination}]")
+        queued = iter(range(pairs))
+        running = {pool.submit(play, index)
+                   for index in itertools.islice(queued, arguments.workers)}
+        while running:
+            done, running = concurrent.futures.wait(
+                running, return_when=concurrent.futures.FIRST_COMPLETED
+            )
+            for future in done:
+                results.append(future.result())
+                index, pair_score, first, second = results[-1]
+                elapsed = (time.perf_counter() - started) / 60
+                print(f"[{elapsed:5.1f} min] pair {len(results)}/{pairs} "
+                      f"(opening {index % len(openings)}): {pair_score:.1f}/2  "
+                      f"[{first.termination}, {second.termination}]", flush=True)
+            if time.perf_counter() >= deadline:
+                if not stopped_early:
+                    print(f"\n--- {arguments.minutes:.0f} minute deadline reached, "
+                          "finishing what is running and stopping ---\n", flush=True)
+                stopped_early = True
+                continue
+            running |= {pool.submit(play, index)
+                        for index in itertools.islice(queued, len(done))}
     results.sort()
+    if not results:
+        raise SystemExit("no pair finished")
+    pairs = len(results)
 
     scores = [pair for _, pair, _, _ in results]
     games = [(g, w) for _, _, a, b in results for g, w in ((a, True), (b, False))]
@@ -194,7 +221,8 @@ def main() -> int:
         terminations[outcome.termination] = terminations.get(outcome.termination, 0) + 1
 
     print(f"\n+{wins} ={draws} -{losses} over {len(games)} games "
-          f"in {(time.perf_counter() - started) / 60:.1f} min")
+          f"in {(time.perf_counter() - started) / 60:.1f} min"
+          + (" (deadline, run cut short)" if stopped_early else ""))
     print(f"score {score:.3%} on {len(scores)} pairs")
     print("terminations: " + ", ".join(f"{n} {c}" for n, c in sorted(terminations.items())))
 
