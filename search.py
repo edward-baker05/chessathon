@@ -104,6 +104,19 @@ SEE_CAPTURE_MARGIN = _margin("SEE_CAPTURE_MARGIN", 100)
 # Delta pruning in quiescence: this far below alpha even after the capture wins its victim.
 DELTA_MARGIN = _margin("DELTA_MARGIN", 200)
 
+# Abandon a root iteration the moment the aspiration window fails high. The bound is
+# already established and the depth has to be searched again regardless, so the remaining
+# root moves look like pure waste: an audit measured 5.15% of all nodes spent after the
+# condition already held.
+#
+# Off by default, because measuring it says otherwise. At fixed depth 11 over eight
+# positions the break cost 1,216,532 nodes against 1,152,282, 5.6% MORE work to reach the
+# same depth, and changed the move chosen in three of the eight. The moves searched after
+# a fail-high are not wasted: they fill the transposition table and the history tables
+# that the widened re-search of that same depth then relies on. Set CHESS_ROOT_FAIL_HIGH
+# to 1 to A/B it under a real time control before believing either number.
+ROOT_FAIL_HIGH_BREAK = _margin("ROOT_FAIL_HIGH", 0)
+
 
 # A depth whose best move changed, or whose score fell by this much, is worth more time.
 INSTABILITY_DROP = 30
@@ -463,8 +476,14 @@ STALEMATE_PIECES = 3
 @njit(cache=False)
 def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
     """Search captures until the position is quiet, so the evaluation is not measured
-    halfway through an exchange."""
-    work.ints[I_NODES] += 1
+    halfway through an exchange.
+
+    A node is counted by whoever enters it, once. negamax has already counted the position
+    it hands over here, whether through the depth floor or through razoring, so counting
+    it again on the way in would count one position twice: an audit found 18.6% of all
+    reported nodes were these duplicates, which silently made every node-budgeted
+    comparison a different experiment from the one it claimed to be.
+    """
     check_time(work)
     if work.ints[I_ABORT] != 0:
         return np.int32(0)
@@ -542,6 +561,7 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
         legal += 1
         work.played[ply] = move
         work.moved_piece[ply] = mail[np.int64(move & 63)]
+        work.ints[I_NODES] += 1
         value = -qsearch(work, ply + 1, -beta, -alpha)
         if work.ints[I_ABORT] != 0:
             return np.int32(0)
@@ -872,6 +892,10 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
                     iteration_move = move
                     if value > local_alpha:
                         local_alpha = value
+                        if ROOT_FAIL_HIGH_BREAK and local_alpha >= beta:
+                            # Failed high. See ROOT_FAIL_HIGH_BREAK: this looks like free
+                            # work to skip and measured as the opposite.
+                            break
 
             if work.ints[I_ABORT] != 0:
                 break

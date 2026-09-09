@@ -236,7 +236,45 @@ def build_leapers() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return knight, king, pawn
 
 
+@njit(cache=False)
+def build_lines() -> tuple[np.ndarray, np.ndarray]:
+    """`BETWEEN[a, b]`: the squares strictly between two aligned squares, else empty.
+    `LINE[a, b]`: the whole rank, file or diagonal through two aligned squares, else empty.
+
+    A piece pinned against its king may only move along the line the two of them share,
+    which is one lookup in LINE. Finding the pin is one lookup in BETWEEN: a slider pins
+    exactly when it has a single piece between itself and the king.
+    """
+    between = np.zeros((64, 64), dtype=np.uint64)
+    line = np.zeros((64, 64), dtype=np.uint64)
+    for a in range(64):
+        ra = a // 8
+        fa = a % 8
+        for dr, df in ((1, 0), (0, 1), (1, 1), (1, -1)):
+            whole = ONE << U(a)
+            for sign in (1, -1):
+                r = ra + dr * sign
+                f = fa + df * sign
+                while 0 <= r <= 7 and 0 <= f <= 7:
+                    whole |= ONE << U(r * 8 + f)
+                    r += dr * sign
+                    f += df * sign
+            for sign in (1, -1):
+                seen = ZERO
+                r = ra + dr * sign
+                f = fa + df * sign
+                while 0 <= r <= 7 and 0 <= f <= 7:
+                    b = r * 8 + f
+                    between[a, b] = seen
+                    line[a, b] = whole
+                    seen |= ONE << U(b)
+                    r += dr * sign
+                    f += df * sign
+    return between, line
+
+
 KNIGHT_ATT, KING_ATT, PAWN_ATT = build_leapers()
+BETWEEN, LINE = build_lines()
 RMAGIC, RMASK, RSHIFT, ROFF, RTABLE = build_magics(True, 0x1234567)
 BMAGIC, BMASK, BSHIFT, BOFF, BTABLE = build_magics(False, 0x89ABCDEF)
 

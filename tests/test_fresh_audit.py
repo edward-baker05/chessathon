@@ -136,7 +136,51 @@ def test_see_promotion() -> None:
     assert position.see(work.state[0], work.mail[0], encoded_move(board, 'a7a8q')) == 800
 
 
-@pytest.mark.xfail(strict=True, reason='SEE treats an absolutely pinned knight as a recapturer')
+def test_node_counted_once_on_the_qsearch_handover() -> None:
+    """One position entered is one node counted.
+
+    White is in check with a single legal reply, so a depth-one search visits exactly one
+    position below the root: negamax at ply one, which has no depth left and hands over to
+    quiescence. Counting that handover as a second node is what inflated every reported
+    node total and made node-budgeted comparisons incomparable.
+    """
+    board, _work = prepare('7k/8/8/8/8/8/6PP/6rK w - - 0 1')
+    assert [move.uci() for move in board.legal_moves] == ['h1g1']
+    assert search.think(board, 3_600_000, 0, max_depth=1) == 'h1g1'
+    assert search.nodes() == 1
+
+
+def test_pinned_pieces_matches_python_chess() -> None:
+    """Every absolutely pinned piece, over random play from four different shapes."""
+    rng = random.Random(20260910)
+    starts = [chess.STARTING_FEN,
+              'r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1',
+              '4k3/4r3/8/b7/8/3N4/8/4RK2 b - - 0 1',
+              '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1']
+    positions = pinned_seen = 0
+    work = search.WORK
+    for start in starts:
+        board = chess.Board(start)
+        for _ in range(600):
+            if board.is_game_over() or board.ply() > 300:
+                board = chess.Board(start)
+            position.encode(board, work.state[0], work.mail[0])
+            for colour in (chess.WHITE, chess.BLACK):
+                mask = int(position.pinned_pieces(work.state[0], int(not colour)))
+                for square in chess.SQUARES:
+                    piece = board.piece_at(square)
+                    if piece is None or piece.color != colour:
+                        assert not mask >> square & 1, (board.fen(), square)
+                        continue
+                    expected = board.is_pinned(colour, square)
+                    assert bool(mask >> square & 1) is expected, (board.fen(), square)
+                    pinned_seen += expected
+            board.push(rng.choice(list(board.legal_moves)))
+            positions += 1
+    assert pinned_seen > 50, pinned_seen
+    print(f' checked pins on {positions} positions, {pinned_seen} pinned pieces')
+
+
 def test_see_pinned_recapture() -> None:
     board, work = prepare('4k3/4n3/8/3p4/2B5/8/8/K3R3 w - - 0 1')
     assert position.see(work.state[0], work.mail[0], encoded_move(board, 'c4d5')) == 100
@@ -190,14 +234,25 @@ def test_root_continuation_piece() -> None:
     assert work.moved_piece[0] == piece - 1
 
 
-@pytest.mark.xfail(strict=True, reason='EP hash considers pseudo-legal, not legal capture')
-def test_pinned_ep_repetition_key() -> None:
-    board, work = prepare('k3r3/8/8/3pP3/8/8/8/4K3 w - d6 0 1')
-    assert not board.has_legal_en_passant()
+@pytest.mark.parametrize(('fen', 'legal'), [
+    # The capturing pawn is the only thing between the king and the rook on the e-file.
+    ('k3r3/8/8/3pP3/8/8/8/4K3 w - d6 0 1', False),
+    # The classic horizontal case: taking removes both pawns from the fifth rank at
+    # once, and neither square alone was blocking the rook.
+    ('8/8/8/K2pP2r/8/8/8/7k w - d6 0 1', False),
+    # A rook on the file the pawn leaves, with the king off that file.
+    ('4r3/8/8/3pP3/8/8/8/k5K1 w - d6 0 1', True),
+    ('8/8/8/3pP3/8/8/8/k3K3 w - d6 0 1', True),
+])
+def test_ep_hash_follows_legality(fen: str, legal: bool) -> None:
+    board, work = prepare(fen)
+    assert board.has_legal_en_passant() is legal
+    assert bool(position.ep_is_capturable(work.state[0], chess.D6)) is legal
+    # The key may only carry the en passant term when the capture is really available.
     key = int(work.state[0, bb.KEY])
     board.ep_square = None
     position.encode(board, work.state[0], work.mail[0])
-    assert int(work.state[0, bb.KEY]) == key
+    assert (int(work.state[0, bb.KEY]) == key) is not legal
 
 
 def test_mate_precedes_fifty_move_draw() -> None:

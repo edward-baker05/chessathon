@@ -15,6 +15,7 @@ import numpy as np
 from numba import boolean, int8, int32, int64, njit, uint64, void
 
 from bitboard import (
+    BETWEEN,
     BISHOP,
     BLACK_KINGSIDE,
     BLACK_QUEENSIDE,
@@ -32,6 +33,7 @@ from bitboard import (
     KING_ATT,
     KNIGHT,
     KNIGHT_ATT,
+    LINE,
     NFIELDS,
     ONE,
     PAWN,
@@ -88,10 +90,32 @@ def ep_is_capturable(state: Bits, ep_square: Square) -> Flag:
     """
     black_to_move = state[STM] != ZERO
     us = state[BOCC] if black_to_move else state[WOCC]
+    them = state[WOCC] if black_to_move else state[BOCC]
     # Same inverted index as in attacked(): the squares a BLACK pawn could capture from
     # are the squares a WHITE pawn on ep_square would attack, so black uses PAWN_ATT[0].
-    attackers = PAWN_ATT[0 if black_to_move else 1, ep_square]
-    return (attackers & state[PAWN] & us) != ZERO
+    attackers = PAWN_ATT[0 if black_to_move else 1, ep_square] & state[PAWN] & us
+    if attackers == ZERO:
+        return False
+
+    # Geometry is not enough. An en passant capture is the only move that vacates two
+    # squares at once, so it can expose its own king along a rank or a diagonal that
+    # neither square alone was blocking. A right that cannot legally be exercised is not
+    # a right, and hashing it makes two identical positions hash differently.
+    ksq = lsb(state[KING] & us)
+    captured = ONE << U(ep_square + 8 if black_to_move else ep_square - 8)
+    target = ONE << U(ep_square)
+    occupancy = (state[WOCC] | state[BOCC]) & ~captured
+    straight = them & (state[ROOK] | state[QUEEN])
+    diagonal = them & (state[BISHOP] | state[QUEEN])
+    while attackers != ZERO:
+        after = (occupancy & ~(ONE << U(lsb(attackers)))) | target
+        attackers &= attackers - ONE
+        if (rook_attacks(ksq, after) & straight) != ZERO:
+            continue
+        if (bishop_attacks(ksq, after) & diagonal) != ZERO:
+            continue
+        return True
+    return False
 
 
 @njit(uint64(uint64[:]), cache=False)
@@ -394,6 +418,34 @@ def attackers_to(state: Bits, sq: Square, occ: Bits) -> Bits:
     ) & occ
 
 
+@njit(uint64(uint64[:], int64), cache=False)
+def pinned_pieces(state: Bits, black: Square) -> Bits:
+    """One side's pieces that stand alone between their king and an enemy slider.
+
+    Each of them may still move, but only along the line it shares with its king, so a
+    recapture on any square off that line is not available however the geometry looks.
+    """
+    us = state[BOCC] if black else state[WOCC]
+    them = state[WOCC] if black else state[BOCC]
+    ksq = lsb(state[KING] & us)
+    # Sliders that would see the king on an empty board. When there are none there is no
+    # pin to look for, and the call costs two lookups and stops.
+    snipers = (rook_attacks(ksq, ZERO) & them & (state[ROOK] | state[QUEEN])) | (
+        bishop_attacks(ksq, ZERO) & them & (state[BISHOP] | state[QUEEN])
+    )
+    if snipers == ZERO:
+        return ZERO
+
+    occupancy = state[WOCC] | state[BOCC]
+    pinned = ZERO
+    while snipers != ZERO:
+        blockers = BETWEEN[ksq, lsb(snipers)] & occupancy
+        snipers &= snipers - ONE
+        if popcount(blockers) == 1:
+            pinned |= blockers
+    return pinned & us
+
+
 @njit(int32(uint64[:], int8[:], int32), cache=False)
 def see(state: Bits, mail: Bits, move: Bits) -> Bits:
     """Static exchange evaluation: the material outcome of the capture sequence on `to`.
@@ -432,6 +484,16 @@ def see(state: Bits, mail: Bits, move: Bits) -> Bits:
     side_black = int64(state[STM])
     attacks = attackers_to(state, to, occ)
 
+    # Pins are read from the starting position and cached per side, because they are a
+    # property of the position rather than of the exchange, and because most calls never
+    # ask for either side. They are not re-derived as the exchange consumes pieces, so a
+    # pin that only appears once a blocker has been taken is still missed. That is a
+    # strictly smaller error than counting an attacker that cannot legally move at all.
+    pins_white = ZERO
+    pins_black = ZERO
+    known_white = False
+    known_black = False
+
     depth = 0
     while True:
         side_black = 1 - side_black
@@ -439,6 +501,28 @@ def see(state: Bits, mail: Bits, move: Bits) -> Bits:
         mine = attacks & side_pieces & occ
         if mine == ZERO:
             break
+
+        if side_black:
+            if not known_black:
+                pins_black = pinned_pieces(state, 1)
+                known_black = True
+            blocked = mine & pins_black
+        else:
+            if not known_white:
+                pins_white = pinned_pieces(state, 0)
+                known_white = True
+            blocked = mine & pins_white
+        if blocked != ZERO:
+            ksq = lsb(state[KING] & side_pieces)
+            while blocked != ZERO:
+                square = lsb(blocked)
+                blocked &= blocked - ONE
+                # A pinned piece may capture on `to` only if `to` lies on the line it
+                # already shares with its king.
+                if (LINE[ksq, square] >> U(to)) & ONE == ZERO:
+                    mine &= ~(ONE << U(square))
+            if mine == ZERO:
+                break
 
         # Recapture with the least valuable attacker available.
         piece = -1
@@ -508,6 +592,7 @@ make(_state[0], _mailbox[0], _state[1], _mailbox[1], _warm_move)
 legal_after(_state[1], 0)
 make_null(_state[0], _mailbox[0], _state[1], _mailbox[1])
 attackers_to(_state[0], 0, _state[0][WOCC] | _state[0][BOCC])
+pinned_pieces(_state[0], 0)
 see(_state[0], _mailbox[0], _warm_move)
 has_non_pawn_material(_state[0], 0)
 insufficient_material(_state[0])
