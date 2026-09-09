@@ -167,6 +167,9 @@ def main() -> int:
                              "wall-time games")
     parser.add_argument("--shuffle-seed", type=int, default=20260909,
                         help="seed for the opening order, so a short run is a random subset")
+    parser.add_argument("--stagger", type=float, default=15.0,
+                        help="seconds between each worker's first pair, so their agents do "
+                             "not all compile at once and blow the 90s init budget")
     parser.add_argument("--ply-cap", type=int, default=PLY_CAP)
     parser.add_argument("--pgn", type=Path, help="append every game here")
     parser.add_argument("--json", type=Path, help="write the raw per-pair results here")
@@ -213,7 +216,7 @@ def main() -> int:
         "ply_cap": arguments.ply_cap, "workers": arguments.workers,
         "openings_file": str(arguments.openings),
         "clusters": len({cluster for _, cluster in openings}),
-        "shuffle_seed": arguments.shuffle_seed,
+        "shuffle_seed": arguments.shuffle_seed, "stagger_s": arguments.stagger,
         "pinned_cores": cores[:arguments.workers] if cores else None,
     }
     print(json.dumps(provenance, indent=2))
@@ -226,11 +229,21 @@ def main() -> int:
     for cpu in cores[:arguments.workers]:
         free_cores.put(cpu)
     pinned = threading.local()
+    stagger_slot = itertools.count()
 
     def play(index: int) -> tuple[int, float, Outcome, Outcome]:
-        if cores and not getattr(pinned, "done", False):
-            os.sched_setaffinity(0, {free_cores.get()})
-            pinned.done = True
+        if not getattr(pinned, "started", False):
+            if cores:
+                os.sched_setaffinity(0, {free_cores.get()})
+            # Every agent spends most of a minute compiling before it can move, and the
+            # harness holds it to the platform's 90 second init budget. Starting every
+            # worker at once puts two compilations per worker on the machine
+            # simultaneously, which on a small box takes them all past that budget and
+            # scores a pile of games as init failures. Spreading the first pairs out costs
+            # a few minutes once and nothing afterwards, because workers finish at
+            # different times and stay spread out on their own.
+            time.sleep(arguments.stagger * next(stagger_slot))
+            pinned.started = True
         fen, _cluster = openings[index % len(openings)]
         first = play_match(local(agent), local(opponent), base_ms, increment_ms,
                            ply_cap=arguments.ply_cap, start_fen=fen)
@@ -305,7 +318,14 @@ def main() -> int:
     print(f"score {score:.3%} on {len(scores)} pairs in {len(units)} clusters")
     print("terminations: " + ", ".join(f"{n} {c}" for n, c in sorted(terminations.items())))
 
-    if len(units) < MIN_CLUSTERS_FOR_A_VERDICT:
+    broken = {n: c for n, c in terminations.items() if n in FAILED_TERMINATIONS}
+    if broken:
+        print("\nRUN INVALID. " + ", ".join(f"{n} {c}" for n, c in sorted(broken.items()))
+              + ".\nA game that ended this way was decided by something other than chess, "
+              "and its result\nis in the score above. Fix the cause and run again; do not "
+              "read the number.\nAn init failure under a parallel run usually means too "
+              "many agents compiled at once:\nlower --workers or raise --stagger.")
+    elif len(units) < MIN_CLUSTERS_FOR_A_VERDICT:
         print(f"\n{len(units)} independent clusters is a smoke test, not a measurement. An\n"
               f"interval over this few is arithmetic on noise, so none is reported and there\n"
               f"is no verdict here. Run at least {MIN_CLUSTERS_FOR_A_VERDICT} clusters before "
@@ -321,10 +341,6 @@ def main() -> int:
         else:
             print("\nThe interval contains equality. This run did not resolve the difference; "
                   "it is not evidence of a gain.")
-
-    broken = {n: c for n, c in terminations.items() if n in FAILED_TERMINATIONS}
-    if broken:
-        print("FAILURES: " + ", ".join(f"{n} {c}" for n, c in broken.items()))
 
     if arguments.pgn:
         arguments.pgn.write_text(
