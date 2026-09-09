@@ -28,6 +28,7 @@ def prepare(fen: str) -> tuple[chess.Board, Any]:
     search.clear_tables(work)
     search.set_game_history([], work)
     search.set_pruning(True, work)
+    search.set_mechanisms(None, work)
     search._prepare(board, 3_600_000, 0, 0, work)
     return board, work
 
@@ -412,6 +413,28 @@ def test_mate_still_beats_the_clock_at_the_threshold() -> None:
     board, _work = prepare('7k/1R6/8/8/8/8/8/R6K w - - 99 1')
     assert 'a1a8' in {move.uci() for move in board.legal_moves}
     assert search.search_value(board, 2) >= search.MATE_IN_MAX
+
+
+def test_each_switch_turns_off_exactly_one_mechanism() -> None:
+    """One bit and one counter per mechanism, and neither leaks into the others.
+
+    `set_pruning(False)` removes the check extension and the transposition cutoffs along
+    with the prunings, so a difference it produces names three things at once. These
+    switches exist so a difference names one.
+    """
+    fen = 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1'
+    _board, work = prepare(fen)
+    search.search_root(work, 7)
+    baseline = search.mechanism_counts(work)
+    assert all(baseline[name] > 0 for name in search.MECHANISMS), baseline
+    for name in search.MECHANISMS:
+        _board, work = prepare(fen)
+        search.without_mechanism(name, work)
+        search.search_root(work, 7)
+        counts = search.mechanism_counts(work)
+        assert counts[name] == 0, (name, counts)
+        assert sum(counts.values()) > 0, name
+    search.set_mechanisms(None, work)
 
 
 def test_see_promotion() -> None:

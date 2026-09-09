@@ -1,0 +1,864 @@
+[
+  {
+    "case": {
+      "name": "quiet-mate",
+      "fen": "rrrrr2k/8/5KQ1/8/8/8/8/8 w - - 0 1",
+      "move": "g6g7",
+      "depth": 1,
+      "alpha": 1210,
+      "beta": 1211,
+      "is_pv": false,
+      "note": "Qg7 mates. Artificial material, so this is a fixture and not a frequency."
+    },
+    "oracle": 29999,
+    "runs": {
+      "all on": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "razor": 1
+        },
+        "pv": []
+      },
+      "oracle": {
+        "score": 29999,
+        "nodes": 21,
+        "fired": {},
+        "pv": [
+          "g6g7"
+        ]
+      },
+      "-rfp": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "razor": 1
+        },
+        "pv": []
+      },
+      "-razor": {
+        "score": -3580,
+        "nodes": 2,
+        "fired": {
+          "futility": 22,
+          "see": 1
+        },
+        "pv": [
+          "g6b1"
+        ]
+      },
+      "-null": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "razor": 1
+        },
+        "pv": []
+      },
+      "-futility": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "razor": 1
+        },
+        "pv": []
+      },
+      "-lmp": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "razor": 1
+        },
+        "pv": []
+      },
+      "-see": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "razor": 1
+        },
+        "pv": []
+      },
+      "-lmr": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "razor": 1
+        },
+        "pv": []
+      },
+      "-iir": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "razor": 1
+        },
+        "pv": []
+      }
+    },
+    "blamed": [
+      "no single mechanism; the bound needs more than one of them off"
+    ]
+  },
+  {
+    "case": {
+      "name": "quiet-mate-valid-window",
+      "fen": "rrrrr2k/8/5KQ1/8/8/8/8/8 w - - 0 1",
+      "move": "g6g7",
+      "depth": 1,
+      "alpha": 0,
+      "beta": 1,
+      "is_pv": false,
+      "note": "The same node in a window the static score fails high in. Not a failure."
+    },
+    "oracle": 29999,
+    "runs": {
+      "all on": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "rfp": 1
+        },
+        "pv": []
+      },
+      "oracle": {
+        "score": 29999,
+        "nodes": 21,
+        "fired": {},
+        "pv": [
+          "g6g7"
+        ]
+      },
+      "-rfp": {
+        "score": -562,
+        "nodes": 6,
+        "fired": {
+          "lmp": 16,
+          "see": 4
+        },
+        "pv": [
+          "g6h5",
+          "h8g8"
+        ]
+      },
+      "-razor": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "rfp": 1
+        },
+        "pv": []
+      },
+      "-null": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "rfp": 1
+        },
+        "pv": []
+      },
+      "-futility": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "rfp": 1
+        },
+        "pv": []
+      },
+      "-lmp": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "rfp": 1
+        },
+        "pv": []
+      },
+      "-see": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "rfp": 1
+        },
+        "pv": []
+      },
+      "-lmr": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "rfp": 1
+        },
+        "pv": []
+      },
+      "-iir": {
+        "score": 210,
+        "nodes": 1,
+        "fired": {
+          "rfp": 1
+        },
+        "pv": []
+      }
+    },
+    "blamed": []
+  },
+  {
+    "case": {
+      "name": "quiet-sacrifice-check",
+      "fen": "1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - 0 1",
+      "move": "d6d1",
+      "depth": 5,
+      "alpha": 300,
+      "beta": 301,
+      "is_pv": false,
+      "note": "...Qd1+ mates in three and lands on an empty square, so every quiet pruning sees a queen thrown away and none of them knows it gives check."
+    },
+    "oracle": 29995,
+    "runs": {
+      "all on": {
+        "score": -611,
+        "nodes": 2,
+        "fired": {
+          "rfp": 1,
+          "futility": 39,
+          "iir": 1
+        },
+        "pv": [
+          "e5e4"
+        ]
+      },
+      "oracle": {
+        "score": 29995,
+        "nodes": 10675,
+        "fired": {},
+        "pv": [
+          "d6d1",
+          "c1d1",
+          "d7g4",
+          "d1c1",
+          "d8d1"
+        ]
+      },
+      "-rfp": {
+        "score": -351,
+        "nodes": 3,
+        "fired": {
+          "null": 1,
+          "futility": 39,
+          "iir": 1
+        },
+        "pv": [
+          "e5e4"
+        ]
+      },
+      "-razor": {
+        "score": -611,
+        "nodes": 2,
+        "fired": {
+          "rfp": 1,
+          "futility": 39,
+          "iir": 1
+        },
+        "pv": [
+          "e5e4"
+        ]
+      },
+      "-null": {
+        "score": -611,
+        "nodes": 2,
+        "fired": {
+          "rfp": 1,
+          "futility": 39,
+          "iir": 1
+        },
+        "pv": [
+          "e5e4"
+        ]
+      },
+      "-futility": {
+        "score": -362,
+        "nodes": 20,
+        "fired": {
+          "rfp": 19,
+          "lmp": 10,
+          "see": 11,
+          "lmr": 17,
+          "iir": 1
+        },
+        "pv": [
+          "g6g5"
+        ]
+      },
+      "-lmp": {
+        "score": -611,
+        "nodes": 2,
+        "fired": {
+          "rfp": 1,
+          "futility": 39,
+          "iir": 1
+        },
+        "pv": [
+          "e5e4"
+        ]
+      },
+      "-see": {
+        "score": -611,
+        "nodes": 2,
+        "fired": {
+          "rfp": 1,
+          "futility": 39,
+          "iir": 1
+        },
+        "pv": [
+          "e5e4"
+        ]
+      },
+      "-lmr": {
+        "score": -611,
+        "nodes": 2,
+        "fired": {
+          "rfp": 1,
+          "futility": 39,
+          "iir": 1
+        },
+        "pv": [
+          "e5e4"
+        ]
+      },
+      "-iir": {
+        "score": -611,
+        "nodes": 2,
+        "fired": {
+          "rfp": 1,
+          "futility": 39
+        },
+        "pv": [
+          "e5e4"
+        ]
+      }
+    },
+    "blamed": [
+      "no single mechanism; the bound needs more than one of them off"
+    ]
+  },
+  {
+    "case": {
+      "name": "kiwipete",
+      "fen": "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+      "depth": 7,
+      "alpha": -200,
+      "beta": -199,
+      "is_pv": false
+    },
+    "oracle": -199,
+    "runs": {
+      "all on": {
+        "score": -121,
+        "nodes": 178,
+        "fired": {
+          "rfp": 52,
+          "razor": 1,
+          "futility": 30,
+          "lmp": 247,
+          "see": 27,
+          "lmr": 19,
+          "iir": 2
+        },
+        "pv": [
+          "e2a6",
+          "b4c3",
+          "d2c3",
+          "e6d5",
+          "e1g1"
+        ]
+      },
+      "oracle": {
+        "score": -199,
+        "nodes": 411578,
+        "fired": {},
+        "pv": [
+          "e2a6",
+          "b4c3",
+          "d2c3",
+          "e7c5",
+          "g2h3",
+          "e8g8",
+          "d5e6"
+        ]
+      },
+      "-rfp": {
+        "score": -192,
+        "nodes": 614,
+        "fired": {
+          "razor": 5,
+          "null": 2,
+          "futility": 61,
+          "lmp": 247,
+          "see": 27,
+          "lmr": 19,
+          "iir": 2
+        },
+        "pv": [
+          "e2a6",
+          "f6d5",
+          "e4d5",
+          "g7e5",
+          "g2h3"
+        ]
+      },
+      "-razor": {
+        "score": -121,
+        "nodes": 182,
+        "fired": {
+          "rfp": 57,
+          "futility": 61,
+          "lmp": 247,
+          "see": 27,
+          "lmr": 19,
+          "iir": 2
+        },
+        "pv": [
+          "e2a6",
+          "b4c3",
+          "d2c3",
+          "e6d5",
+          "e1g1"
+        ]
+      },
+      "-null": {
+        "score": -121,
+        "nodes": 155,
+        "fired": {
+          "rfp": 52,
+          "razor": 1,
+          "futility": 30,
+          "lmp": 247,
+          "see": 27,
+          "lmr": 19,
+          "iir": 2
+        },
+        "pv": [
+          "e2a6",
+          "b4c3",
+          "d2c3",
+          "e6d5",
+          "e1g1"
+        ]
+      },
+      "-futility": {
+        "score": -121,
+        "nodes": 181,
+        "fired": {
+          "rfp": 55,
+          "razor": 1,
+          "lmp": 274,
+          "see": 27,
+          "lmr": 19,
+          "iir": 2
+        },
+        "pv": [
+          "e2a6",
+          "b4c3",
+          "d2c3",
+          "e6d5",
+          "e1g1"
+        ]
+      },
+      "-lmp": {
+        "score": -121,
+        "nodes": 432,
+        "fired": {
+          "rfp": 98,
+          "razor": 1,
+          "futility": 30,
+          "see": 85,
+          "lmr": 26,
+          "iir": 2
+        },
+        "pv": [
+          "e2a6",
+          "b4c3",
+          "d2c3",
+          "e6d5",
+          "e1g1"
+        ]
+      },
+      "-see": {
+        "score": -121,
+        "nodes": 222,
+        "fired": {
+          "rfp": 57,
+          "razor": 1,
+          "futility": 30,
+          "lmp": 253,
+          "lmr": 19,
+          "iir": 2
+        },
+        "pv": [
+          "e2a6",
+          "b4c3",
+          "d2c3",
+          "e6d5",
+          "e1g1"
+        ]
+      },
+      "-lmr": {
+        "score": -121,
+        "nodes": 178,
+        "fired": {
+          "rfp": 52,
+          "razor": 1,
+          "futility": 30,
+          "lmp": 247,
+          "see": 27,
+          "iir": 2
+        },
+        "pv": [
+          "e2a6",
+          "b4c3",
+          "d2c3",
+          "e6d5",
+          "e1g1"
+        ]
+      },
+      "-iir": {
+        "score": -184,
+        "nodes": 1026,
+        "fired": {
+          "rfp": 219,
+          "razor": 17,
+          "null": 2,
+          "futility": 91,
+          "lmp": 908,
+          "see": 75,
+          "lmr": 108
+        },
+        "pv": [
+          "e2a6",
+          "b4c3",
+          "d2c3",
+          "e8g8",
+          "g2h3",
+          "e6d5",
+          "e1c1"
+        ]
+      }
+    },
+    "blamed": []
+  },
+  {
+    "case": {
+      "name": "rook-endgame",
+      "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+      "depth": 8,
+      "alpha": 200,
+      "beta": 201,
+      "is_pv": false
+    },
+    "oracle": 201,
+    "runs": {
+      "all on": {
+        "score": 217,
+        "nodes": 92,
+        "fired": {
+          "rfp": 16,
+          "razor": 4,
+          "null": 1,
+          "lmp": 99,
+          "see": 14,
+          "lmr": 26,
+          "iir": 4
+        },
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4c4",
+          "h5h7",
+          "e2e4"
+        ]
+      },
+      "oracle": {
+        "score": 201,
+        "nodes": 15101,
+        "fired": {},
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4c4",
+          "h5h7",
+          "e2e4",
+          "g3g2",
+          "a5a6",
+          "g2f1"
+        ]
+      },
+      "-rfp": {
+        "score": 217,
+        "nodes": 113,
+        "fired": {
+          "razor": 4,
+          "null": 1,
+          "lmp": 99,
+          "see": 14,
+          "lmr": 26,
+          "iir": 4
+        },
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4c4",
+          "h5h7",
+          "e2e4"
+        ]
+      },
+      "-razor": {
+        "score": 217,
+        "nodes": 96,
+        "fired": {
+          "rfp": 16,
+          "null": 1,
+          "futility": 68,
+          "lmp": 99,
+          "see": 16,
+          "lmr": 26,
+          "iir": 4
+        },
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4c4",
+          "h5h7",
+          "e2e4"
+        ]
+      },
+      "-null": {
+        "score": 217,
+        "nodes": 87,
+        "fired": {
+          "rfp": 16,
+          "razor": 5,
+          "lmp": 99,
+          "see": 14,
+          "lmr": 26,
+          "iir": 4
+        },
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4c4",
+          "h5h7",
+          "e2e4"
+        ]
+      },
+      "-futility": {
+        "score": 217,
+        "nodes": 92,
+        "fired": {
+          "rfp": 16,
+          "razor": 4,
+          "null": 1,
+          "lmp": 99,
+          "see": 14,
+          "lmr": 26,
+          "iir": 4
+        },
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4c4",
+          "h5h7",
+          "e2e4"
+        ]
+      },
+      "-lmp": {
+        "score": 217,
+        "nodes": 262,
+        "fired": {
+          "rfp": 35,
+          "razor": 2,
+          "null": 1,
+          "see": 60,
+          "lmr": 31,
+          "iir": 4
+        },
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4c4",
+          "h5h7",
+          "e2e4",
+          "g3g2"
+        ]
+      },
+      "-see": {
+        "score": 280,
+        "nodes": 93,
+        "fired": {
+          "rfp": 13,
+          "razor": 7,
+          "null": 1,
+          "lmp": 110,
+          "lmr": 27,
+          "iir": 4
+        },
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4c4",
+          "h5g5"
+        ]
+      },
+      "-lmr": {
+        "score": 217,
+        "nodes": 91,
+        "fired": {
+          "rfp": 8,
+          "razor": 23,
+          "null": 3,
+          "lmp": 92,
+          "see": 14,
+          "iir": 5
+        },
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4c4",
+          "h5h7",
+          "e2e4",
+          "g3g2"
+        ]
+      },
+      "-iir": {
+        "score": 201,
+        "nodes": 337,
+        "fired": {
+          "rfp": 43,
+          "razor": 23,
+          "null": 24,
+          "futility": 106,
+          "lmp": 223,
+          "see": 30,
+          "lmr": 101
+        },
+        "pv": [
+          "b4f4",
+          "h4g3",
+          "f4f3",
+          "g3h2",
+          "f3c3",
+          "c7c5"
+        ]
+      }
+    },
+    "blamed": []
+  },
+  {
+    "case": {
+      "name": "near-fifty",
+      "fen": "7k/8/8/8/8/8/8/KR6 w - - 99 1",
+      "depth": 3,
+      "alpha": -100,
+      "beta": 100,
+      "is_pv": false,
+      "note": "Inside the rule-clock band, so the prunings are off by construction."
+    },
+    "oracle": 0,
+    "runs": {
+      "all on": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {
+          "lmr": 13
+        },
+        "pv": [
+          "b1c1"
+        ]
+      },
+      "oracle": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {},
+        "pv": [
+          "b1c1"
+        ]
+      },
+      "-rfp": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {
+          "lmr": 13
+        },
+        "pv": [
+          "b1c1"
+        ]
+      },
+      "-razor": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {
+          "lmr": 13
+        },
+        "pv": [
+          "b1c1"
+        ]
+      },
+      "-null": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {
+          "lmr": 13
+        },
+        "pv": [
+          "b1c1"
+        ]
+      },
+      "-futility": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {
+          "lmr": 13
+        },
+        "pv": [
+          "b1c1"
+        ]
+      },
+      "-lmp": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {
+          "lmr": 13
+        },
+        "pv": [
+          "b1c1"
+        ]
+      },
+      "-see": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {
+          "lmr": 13
+        },
+        "pv": [
+          "b1c1"
+        ]
+      },
+      "-lmr": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {},
+        "pv": [
+          "b1c1"
+        ]
+      },
+      "-iir": {
+        "score": 0,
+        "nodes": 16,
+        "fired": {
+          "lmr": 13
+        },
+        "pv": [
+          "b1c1"
+        ]
+      }
+    },
+    "blamed": []
+  }
+]

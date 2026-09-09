@@ -11,6 +11,7 @@ An objmode call costs about 1.8 us, so it happens every 2048 nodes: roughly 0.9 
 import math
 import os
 import time
+from collections.abc import Iterable
 from typing import Any, NamedTuple
 
 import chess
@@ -71,7 +72,34 @@ I_STABLE = 7
 # The last iteration that actually completed, and its score. Written only so that agent.py
 # can log what the search did; nothing in the search reads them back.
 I_DEPTH, I_SCORE = 8, 9
-INT_SLOTS = 10
+# One bit per selective mechanism; see MECHANISMS.
+I_MECHANISMS = 10
+# One counter per mechanism, from here. They live in `ints` rather than in an array of
+# their own because every jitted function takes the whole `Work` tuple, and a tuple with
+# one more field in it measured slower than the counters themselves cost.
+I_COUNTS = 11
+INT_SLOTS = I_COUNTS + 8
+
+# --------------------------------------------------------------------------------------
+# Selectivity switches and counters.
+#
+# `set_pruning(False)` turns everything off at once, and on the way also turns off the
+# check extension and the transposition cutoffs. That makes it an oracle for "what does
+# plain alpha-beta say", and it makes it useless for "which mechanism lost this move":
+# three things changed, so the answer names none of them.
+#
+# These are the individual switches. Each mechanism reads one bit, and each writes one
+# counter every time it actually removes work, so a diagnostic can turn exactly one off,
+# leave the rest running, and see both what changed and how often the mechanism fired.
+# The order of the names is the order of the bits and of the counter slots.
+MECHANISMS = ("rfp", "razor", "null", "futility", "lmp", "see", "lmr", "iir")
+M_RFP, M_RAZOR, M_NULL, M_FUTILITY, M_LMP, M_SEE, M_LMR, M_IIR = (
+    1 << index for index in range(len(MECHANISMS))
+)
+C_RFP, C_RAZOR, C_NULL, C_FUTILITY, C_LMP, C_SEE, C_LMR, C_IIR = (
+    I_COUNTS + index for index in range(len(MECHANISMS))
+)
+ALL_MECHANISMS = (1 << len(MECHANISMS)) - 1
 
 # Indices into Work.floats. Both arrays are one-dimensional, so adding slots does not
 # change any jitted signature and costs no compile time.
@@ -244,7 +272,7 @@ class Work(NamedTuple):
 
 def new_work(table: np.ndarray = TT) -> Work:
     state, mail = new_stacks()
-    return Work(
+    work = Work(
         state=state,
         mail=mail,
         moves=np.zeros(STACK_PLIES * MAX_MOVES, dtype=np.int32),
@@ -270,6 +298,10 @@ def new_work(table: np.ndarray = TT) -> Work:
         # The network's per-ply accumulator. C-contiguous so acc[ply, p] vectorises.
         acc=new_accumulator(STACK_PLIES),
     )
+    # Every mechanism on. A Work whose switches defaulted to zero would search plain
+    # alpha-beta and look like a bug somewhere else entirely.
+    work.ints[I_MECHANISMS] = ALL_MECHANISMS
+    return work
 
 
 WORK = new_work()
@@ -720,6 +752,9 @@ def negamax(
     work.static_evals[ply] = static
 
     black = np.int64(state[STM])
+    # Each mechanism's own switch is the last clause of its condition, not the first, so
+    # that the test costs nothing at a node the mechanism was not going to fire on.
+    mechanisms = work.ints[I_MECHANISMS]
     # Every pruning below returns or skips a score without searching for the draw the
     # halfmove clock is about to force, so near the threshold none of them may run.
     near_fifty = near_fifty_move(state, depth)
@@ -735,18 +770,20 @@ def negamax(
     if prunable:
         # Reverse futility. So far ahead that giving back a margin per remaining ply still
         # beats beta, so the opponent would have avoided this line.
-        if depth <= 8 and static - RFP_MARGIN * depth >= beta:
+        if depth <= 8 and static - RFP_MARGIN * depth >= beta and mechanisms & M_RFP:
             # A stalemate scores zero however good the pieces on it look, so a cutoff that
             # stands in for the search has to know that the search had something to do.
             # `prunable` has already established that the side to move is not in check.
             if not any_legal_move(work, ply, state, mail):
                 return np.int32(0)
+            work.ints[C_RFP] += 1
             return np.int32(static)
 
         # Razoring. So far behind that only a capture sequence could rescue it.
-        if depth <= 3 and static + RAZOR_MARGIN * depth < alpha:
+        if depth <= 3 and static + RAZOR_MARGIN * depth < alpha and mechanisms & M_RAZOR:
             razor = qsearch(work, ply, alpha, beta)
             if razor <= alpha:
+                work.ints[C_RAZOR] += 1
                 return razor
 
         # Null move. Skipping a turn and still failing high means the real move will too.
@@ -757,6 +794,7 @@ def negamax(
             and depth >= 3
             and static >= beta
             and has_non_pawn_material(state, black)
+            and mechanisms & M_NULL
         ):
             # Passing the move is only meaningful where there was a move to make.
             if not any_legal_move(work, ply, state, mail):
@@ -776,6 +814,7 @@ def negamax(
                 if null_value >= MATE_IN_MAX:
                     null_value = beta
                 if depth < 10:
+                    work.ints[C_NULL] += 1
                     return np.int32(null_value)
                 # Deep enough that zugzwang is worth ruling out explicitly.
                 verify = negamax(
@@ -784,6 +823,7 @@ def negamax(
                 if work.ints[I_ABORT] != 0:
                     return np.int32(0)
                 if verify >= beta:
+                    work.ints[C_NULL] += 1
                     return np.int32(null_value)
 
     base = ply * MAX_MOVES
@@ -797,7 +837,13 @@ def negamax(
 
     # Internal iterative reduction: with no TT move the ordering is poor, so a full-depth
     # search here is mostly wasted. Search shallower and let the TT move guide the retry.
-    if work.ints[I_NO_PRUNING] == 0 and depth >= 4 and not (hit and tt_move != 0):
+    if (
+        work.ints[I_NO_PRUNING] == 0
+        and depth >= 4
+        and not (hit and tt_move != 0)
+        and work.ints[I_MECHANISMS] & M_IIR
+    ):
+        work.ints[C_IIR] += 1
         depth -= 1
 
     quiets_tried = 0
@@ -824,14 +870,30 @@ def negamax(
                 cap = 3 + depth * depth
                 if not improving:
                     cap //= 2
-                if depth <= 8 and quiets_tried >= cap:
+                if depth <= 8 and quiets_tried >= cap and mechanisms & M_LMP:
+                    work.ints[C_LMP] += 1
                     continue
                 # Futility: too far below alpha for a quiet move to close the gap.
-                if depth <= 6 and static + FUTILITY_BASE + FUTILITY_MARGIN * depth <= alpha:
+                if (
+                    depth <= 6
+                    and static + FUTILITY_BASE + FUTILITY_MARGIN * depth <= alpha
+                    and mechanisms & M_FUTILITY
+                ):
+                    work.ints[C_FUTILITY] += 1
                     continue
-                if depth <= 8 and see(state, mail, move) < -SEE_QUIET_MARGIN * depth:
+                if (
+                    depth <= 8
+                    and see(state, mail, move) < -SEE_QUIET_MARGIN * depth
+                    and mechanisms & M_SEE
+                ):
+                    work.ints[C_SEE] += 1
                     continue
-            elif depth <= 8 and see(state, mail, move) < -SEE_CAPTURE_MARGIN * depth:
+            elif (
+                depth <= 8
+                and see(state, mail, move) < -SEE_CAPTURE_MARGIN * depth
+                and mechanisms & M_SEE
+            ):
+                work.ints[C_SEE] += 1
                 continue
 
         make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
@@ -851,7 +913,13 @@ def negamax(
             value = -negamax(work, ply + 1, depth - 1, -beta, -alpha, is_pv)
         else:
             reduction = 0
-            if work.ints[I_NO_PRUNING] == 0 and depth >= 3 and legal >= 3 and not is_capture:
+            if (
+                work.ints[I_NO_PRUNING] == 0
+                and depth >= 3
+                and legal >= 3
+                and not is_capture
+                and mechanisms & M_LMR
+            ):
                 reduction = LMR_TABLE[min(depth, 63), min(legal, 63)]
                 if is_pv:
                     reduction -= 1
@@ -864,6 +932,8 @@ def negamax(
                 if reduction > depth - 2:
                     reduction = depth - 2 if depth >= 2 else 0
 
+            if reduction > 0:
+                work.ints[C_LMR] += 1
             value = -negamax(
                 work, ply + 1, depth - 1 - reduction, -alpha - 1, -alpha, False
             )
@@ -1127,8 +1197,33 @@ def ply_of(board: chess.Board) -> int:
 
 
 def set_pruning(enabled: bool, work: Work = WORK) -> None:
-    """Turn every heuristic off, so the search can be compared with plain alpha-beta."""
+    """Turn every heuristic off, so the search can be compared with plain alpha-beta.
+
+    This is the oracle switch, not an experiment: it also removes the check extension and
+    the transposition cutoffs. Use `set_mechanisms` to change one thing at a time.
+    """
     work.ints[I_NO_PRUNING] = 0 if enabled else 1
+
+
+def set_mechanisms(names: Iterable[str] | None = None, work: Work = WORK) -> None:
+    """Enable exactly these selective mechanisms and no others. None means all of them."""
+    if names is None:
+        work.ints[I_MECHANISMS] = ALL_MECHANISMS
+        return
+    mask = 0
+    for name in names:
+        mask |= 1 << MECHANISMS.index(name)
+    work.ints[I_MECHANISMS] = mask
+
+
+def without_mechanism(name: str, work: Work = WORK) -> None:
+    """Everything on except this one. The single-variable form of `set_pruning(False)`."""
+    work.ints[I_MECHANISMS] = ALL_MECHANISMS & ~(1 << MECHANISMS.index(name))
+
+
+def mechanism_counts(work: Work = WORK) -> dict[str, int]:
+    """How often each mechanism removed work in the last search."""
+    return {name: int(work.ints[I_COUNTS + i]) for i, name in enumerate(MECHANISMS)}
 
 
 def set_game_history(keys: list[int], work: Work = WORK) -> None:
@@ -1154,6 +1249,7 @@ def _prepare(
     encode(board, work.state[0], work.mail[0])
     # The only full rebuild. Every ply below this is reached incrementally.
     nnue_refresh(work.acc, 0, work.state[0], work.mail[0])
+    work.ints[I_COUNTS:I_COUNTS + len(MECHANISMS)] = 0
     work.ints[I_NODES] = 0
     work.ints[I_ABORT] = 0
     work.ints[I_SELDEPTH] = 0
