@@ -112,19 +112,27 @@ SEE_CAPTURE_MARGIN = _margin("SEE_CAPTURE_MARGIN", 100)
 DELTA_MARGIN = _margin("DELTA_MARGIN", 200)
 
 # --------------------------------------------------------------------------------------
-# The fifty-move rule decides games and is not in the position key. A score cached in the
-# transposition table was searched under whatever halfmove clock the position had at the
-# time; the same board hashes identically at clock 3 and at clock 99 and is worth a rook
-# at one and nothing at the other. The entry therefore carries one bit saying which side
-# of this band it was searched on, and a cached score may only be reused when the entry
-# and the node asking both sit outside it. Inside it, two clocks are two different
-# distances from the draw, so nothing is reused however the bits compare.
+# The fifty-move rule is the one thing that decides a game and is not in the position key.
+# Two consequences, and this constant is the scope of the answer to both.
 #
-# Correctness scope: a score computed outside the band is only clock-independent while no
-# line below it shuffles the sixteen plies to the threshold. A node that does is still
-# scored without the draw in view, and an entry made from it still says so. Widening the
-# band is the fix for that if it ever matters, and it costs table hits in exactly the
-# endgames where the clock is already high.
+# A score cached in the transposition table was searched under whatever halfmove clock the
+# position had at the time. The same position hashes identically at clock 3 and at clock
+# 99, and it is worth +2100 at one and zero at the other, so the entry carries one bit
+# saying which side of this band it was searched on, and a score may only be reused when
+# the entry and the node asking both sit outside it.
+#
+# A cutoff that returns a score instead of searching cannot stand in for a search that was
+# about to find the draw, so inside the band the speculative prunings are off and the
+# search runs.
+#
+# Correctness scope. Reverse futility runs to depth 8 and razoring to depth 3, so a line
+# either of them replaces cannot reach the draw from outside a band of sixteen plies. The
+# null move is not bounded that way, because make_null zeroes the clock underneath it, so
+# the pruning test widens to the remaining depth where that is larger. What is left
+# outside the scope is a node more than sixteen plies from the threshold whose own search
+# shuffles all the way to it; that node's score, and any entry made from it, is still
+# computed without the draw in view. Widening the band is the fix for that if it ever
+# matters, and it costs pruning in exactly the endgames where the clock is already high.
 RULE50_BAND = 16
 # The counter the rule fires on, in plies. FIDE counts fifty moves by each side.
 RULE50_LIMIT = 100
@@ -502,6 +510,18 @@ def rule50_context(state: Bits) -> Square:
 
 
 @njit(cache=False, inline="always")
+def near_fifty_move(state: Bits, depth: Square) -> Flag:
+    """Can a search of this depth from this node run into the fifty-move draw?
+
+    The band is the floor. A null move search reaches further than the band on its own,
+    because `make_null` zeroes the clock under it and it cannot see the draw at all, so
+    the remaining depth widens the test when it is the larger of the two.
+    """
+    horizon = depth if depth > RULE50_BAND else RULE50_BAND
+    return np.int64(state[HALF]) + horizon >= RULE50_LIMIT
+
+
+@njit(cache=False, inline="always")
 def any_legal_move(work: Bits, ply: Square, state: Bits, mail: Bits) -> Flag:
     """Does the side to move have a legal move? Exact, and cheap when the answer is yes.
 
@@ -681,12 +701,6 @@ def negamax(
     # the band "the same one" is not good enough, because two clocks in there are two
     # different distances from the draw. So the score is reused only when the entry and
     # this node both sit outside the band. See RULE50_BAND.
-    #
-    # Repetition is the other way a score depends on the path rather than the position,
-    # and this does not cover it: a node scored zero because its line repeated is stored
-    # as an ordinary exact score and can be handed to a line that does not repeat. Closing
-    # that needs a second bit and a way to carry it up from the node that saw the
-    # repetition, and it is not closed here.
     if (
         hit
         and not is_pv
@@ -706,12 +720,16 @@ def negamax(
     work.static_evals[ply] = static
 
     black = np.int64(state[STM])
+    # Every pruning below returns or skips a score without searching for the draw the
+    # halfmove clock is about to force, so near the threshold none of them may run.
+    near_fifty = near_fifty_move(state, depth)
     prunable = (
         work.ints[I_NO_PRUNING] == 0
         and not is_pv
         and not checked
         and beta < MATE_IN_MAX
         and beta > -MATE_IN_MAX
+        and not near_fifty
     )
 
     if prunable:
@@ -798,6 +816,7 @@ def negamax(
             and not checked
             and legal > 0
             and best > -MATE_IN_MAX
+            and not near_fifty
         ):
             if not is_capture:
                 # Late move pruning: this far down a well-ordered list, at low depth,

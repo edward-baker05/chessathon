@@ -333,11 +333,7 @@ def test_a_score_from_a_low_clock_is_not_reused_at_a_high_one() -> None:
     cold = int(search.negamax(work, 0, 1, np.int32(-100), np.int32(100), False))
     tt.tt_clear(work.table)
     cold_wide = wide(work, 1, is_pv=False)
-    # The narrow window still returns the static score here, because reverse futility
-    # takes it before the search reaches the draw. What this commit fixes is that the
-    # table has stopped being the thing that decides: warm and cold now agree.
-    assert warm == cold, (warm, cold)
-    assert warm_wide == cold_wide == 0, (warm_wide, cold_wide)
+    assert (warm, cold, warm_wide, cold_wide) == (0, 0, 0, 0)
 
 
 def test_a_score_from_a_high_clock_is_not_reused_at_a_low_one() -> None:
@@ -360,6 +356,7 @@ def test_the_rule_clock_band_boundary(halfmove: int, inside: int) -> None:
     board, work = prepare(RULE50_ROOK_FRESH)
     reclock(board, work, halfmove)
     assert int(search.rule50_context(work.state[0])) == inside
+    assert bool(search.near_fifty_move(work.state[0], 1)) is bool(inside)
 
 
 def test_repetition_from_the_real_game_history_is_a_draw() -> None:
@@ -387,6 +384,34 @@ def test_repetition_from_the_real_game_history_is_a_draw() -> None:
         work.ints[search.I_ABORT] = 0
         got = search.negamax(work, 1, 4, np.int32(alpha), np.int32(alpha + 1), False)
         assert got == 0, (alpha, int(got))
+
+
+def test_speculative_pruning_does_not_step_over_the_fifty_move_draw() -> None:
+    """Reverse futility returned +2200 here on an empty table: the static score of a rook
+    ending, one reversible ply from a draw it never looked for."""
+    for depth in (1, 2, 3, 6):
+        for alpha in (-100, -1, 0, 1, 100, 1000, 2000):
+            _board, work = prepare(RULE50_ROOK)
+            got = search.negamax(work, 0, depth, np.int32(alpha), np.int32(alpha + 1), False)
+            assert got == 0, (depth, alpha, int(got))
+
+
+@pytest.mark.parametrize(('fen', 'why'), [
+    ('7k/8/8/8/8/8/P7/KR6 w - - 99 1', 'a pawn move resets the clock'),
+    ('7k/8/8/8/8/8/1n6/KR6 w - - 99 1', 'a capture resets the clock'),
+])
+def test_an_irreversible_move_at_the_threshold_is_not_a_draw(fen: str, why: str) -> None:
+    """The band turns pruning off; it must not turn the position into a draw."""
+    board, _work = prepare(fen)
+    assert board.is_valid()
+    assert search.search_value(board, 2) > 100, why
+
+
+def test_mate_still_beats_the_clock_at_the_threshold() -> None:
+    """Ra8 mates and takes the halfmove clock to 100 doing it. Mate outranks the draw."""
+    board, _work = prepare('7k/1R6/8/8/8/8/8/R6K w - - 99 1')
+    assert 'a1a8' in {move.uci() for move in board.legal_moves}
+    assert search.search_value(board, 2) >= search.MATE_IN_MAX
 
 
 def test_see_promotion() -> None:
