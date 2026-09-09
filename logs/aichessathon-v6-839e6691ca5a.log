@@ -1,0 +1,52 @@
+[20:09:50Z] building
+[20:09:51Z] upload expands to 646,371 bytes
+[20:09:51Z] docker build
+Sending build context to Docker daemon  655.9kB
+
+Step 1/2 : FROM aichessathon/agent-base:latest
+ ---> eeaf64b96a67
+Step 2/2 : COPY . /agent
+ ---> 39f1dacd3f38
+Successfully built 39f1dacd3f38
+Successfully tagged aichessathon/agent:3990b2b0-bbda-482d-aaef-45b9908c39ab
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+[20:11:05Z] pushed aichessathon.azurecr.io/agents:3990b2b0-bbda-482d-aaef-45b9908c39ab
+[20:11:05Z] image aichessathon.azurecr.io/agents@sha256:39f1dacd3f38e273f7e0a4a0f5a10fe30b668e6aa4aba62f814dac3ecf6653f1
+[20:11:05Z] smoke
+[20:11:05Z] your process is suspended while your opponent moves, so anything you compute between your own moves does not run
+[20:11:05Z] smoke game: 20 plies as white from r1bqkb1r/pp1p1ppp/2n1pn2/8/3NP3/2NQ4/PPP2PPP/R1B1KB1R b KQkq - 4 6
+[20:12:41Z] ready in 71.6 s of the 90 s init budget
+[20:12:41Z] played 8 moves, slowest 4.5 s
+[20:12:41Z] game ended white by checkmate
+[20:12:41Z] your agent wrote to stderr
+ready | net 57ab14b41b9f L1 512 x 8 buckets, 768 features, QA 255 | increment 500ms
+new game, we are white, from r1b1kb1r/ppqp1ppp/2n1pn2/8/3NP3/2NQ4/PPP2PPP/R1B1KB1R w KQkq - 5 7
+7w f1e2 d16/27 +10cp 2115kn 2.62/2.48s clk120.0s
+new game, we are white, from r1b1kb1r/ppqp1pp1/2n1pn2/7p/3NP3/2NQ4/PPP1BPPP/R1B1K2R w KQkq - 0 8
+8w c1g5 d15/28 +58cp 1363kn 1.73/2.29s clk117.9s
+9w d4b5 d19/29 +596cp 3797kn 4.53/2.35s clk116.6s
+10w b5c7 d19/28 +832cp 2702kn 3.19/2.85s clk112.6s
+11w c7a8 d17/28 +1533cp 3991kn 4.52/2.36s clk109.9s
+12w c3e4 d19/27 +1845cp 3432kn 4.06/2.60s clk105.9s
+13w d3d6 d17/30 +2647cp 1934kn 2.33/2.33s clk102.3s
+14w a8c7 d1/2 +29999cp 0kn 0.00/3.36s clk100.5s
+[20:12:41Z] smoke game: 20 plies as black from r1bq1rk1/pp1pppbp/2n2np1/2p5/2PP4/2N2NP1/PP2PPBP/R1BQ1RK1 b - - 0 7
+[20:14:28Z] ready in 70.1 s of the 90 s init budget
+[20:14:28Z] played 10 moves, slowest 10.0 s
+[20:14:28Z] game ended black by checkmate
+[20:14:28Z] your agent wrote to stderr
+ready | net 57ab14b41b9f L1 512 x 8 buckets, 768 features, QA 255 | increment 500ms
+new game, we are black, from r1bq1rk1/pp1pppbp/2n2np1/2p5/2PP4/2N2NP1/PP2PPBP/R1BQ1RK1 b - - 0 7
+7b c6d4 d18/29 -21cp 2469kn 2.85/2.78s clk120.0s
+8b f6e4 d21/33 +199cp 2249kn 2.54/2.33s clk117.6s
+9b d4f3 d18/30 +773cp 4313kn 4.74/2.37s clk115.6s
+10b f3g5 d19/31 +946cp 3107kn 3.53/2.36s clk111.4s
+11b g7d4 d22/28 +1216cp 2758kn 2.89/3.13s clk108.3s
+12b g6f5 d18/28 +1851cp 4523kn 5.09/2.38s clk105.9s
+13b e4g3 d24/40 +2384cp 9243kn 10.03/2.34s clk101.3s
+14b d8b6 d23/35 +2490cp 3802kn 4.22/4.69s clk91.8s
+15b b6h6 d1/5 +29997cp 0kn 0.00/3.07s clk88.1s
+16b h6h3 d1/6 +29999cp 0kn 0.00/3.15s clk88.6s
+[20:14:28Z] valid

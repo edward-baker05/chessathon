@@ -1,0 +1,20 @@
+game 1/14: white by checkmate  (+1 =0 -0, +2400 Elo [-676, +2400])
+game 2/14: draw by threefold_repetition  (+1 =1 -0, +191 Elo [-68, +2400])
+game 3/14: draw by threefold_repetition  (+1 =2 -0, +120 Elo [-70, +459])
+game 4/14: draw by insufficient_material  (+1 =3 -0, +89 Elo [-61, +284])
+game 5/14: white by checkmate  (+2 =3 -0, +147 Elo [-10, +412])
+game 6/14: draw by fifty_moves  (+2 =4 -0, +120 Elo [-15, +309])
+game 7/14: draw by insufficient_material  (+2 =5 -0, +102 Elo [-17, +252])
+game 8/14: white by checkmate  (+2 =5 -1, +44 Elo [-104, +210])
+game 9/14: black by checkmate  (+2 =5 -2, -0 Elo [-162, +162])
+game 10/14: draw by threefold_repetition  (+2 =6 -2, -0 Elo [-144, +144])
+game 11/14: white by checkmate  (+3 =6 -2, +32 Elo [-109, +184])
+game 12/14: draw by threefold_repetition  (+3 =7 -2, +29 Elo [-100, +166])
+game 13/14: draw by threefold_repetition  (+3 =8 -2, +27 Elo [-92, +152])
+game 14/14: draw by fifty_moves  (+3 =9 -2, +25 Elo [-85, +140])
+
+snapshots/halfka-v3-e18 vs snapshots/net768 over 14 games (10000ms)
++3 =9 -2, score 53.6%
+Elo +25, 95% interval [-85, +140]
+verdict: not resolved, the interval spans zero. More games, or drop the change
+terminations: checkmate 5, threefold_repetition 5, insufficient_material 2, fifty_moves 2
