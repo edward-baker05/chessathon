@@ -44,9 +44,15 @@ SCORE_BIAS = 32768
 #   42..47  age
 #   48..63  static evaluation, biased
 #
-# The depth field gave up its eighth bit for the rule-clock context. MAX_DEPTH is 127, so
-# seven bits hold every depth the search can ask for. A larger depth than that wraps to a
-# smaller one, which loses a cutoff and never invents one.
+# The depth field gave up its eighth bit for the rule-clock context. Seven bits hold every
+# depth iterative deepening can produce: the root asks for at most MAX_DEPTH, which is 127,
+# and every ply below subtracts one before the check extension can add one back, so the
+# depth never climbs on the way down.
+#
+# One caller can still exceed it. A direct `negamax` or `search_value` at MAX_DEPTH whose
+# root is in check extends to 128. `tt_store` saturates rather than truncating, so such an
+# entry claims 127 for work done at 128: less than was done, which loses a cutoff, where
+# truncation to zero would lose the entry entirely and, on the way, evict a good one.
 SCORE_SHIFT, SCORE_BITS = 0, 16
 MOVE_SHIFT, MOVE_BITS = 16, 16
 DEPTH_SHIFT, DEPTH_BITS = 32, 7
@@ -156,6 +162,8 @@ def tt_store(
     clock 99 while its score does not. The caller decides what to do with the bit; it is
     stored so that a later probe can tell the two apart at all.
     """
+    if depth > DEPTH_MASK:
+        depth = DEPTH_MASK
     adjusted = score
     if score >= MATE_IN_MAX:
         adjusted = np.int32(score + ply)

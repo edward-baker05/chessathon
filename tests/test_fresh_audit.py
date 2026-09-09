@@ -236,39 +236,83 @@ def test_null_move_does_not_score_a_stalemate() -> None:
     assert search.negamax(work, 0, 3, np.int32(beta - 1), beta, False) == 0
 
 
+# The only legal move is b5xa6 en passant. `has_free_move` does not consider en passant,
+# because it is the one capture that can expose a king from off the pin lines, so this is
+# the shape that has to fall through to the exact generator rather than be answered.
+EN_PASSANT_ONLY = '7k/8/1p6/pP6/8/1pp5/2p5/K7 w - a6 0 1'
+# Every legal move is the pinned rook sliding along the rank it is pinned on. The king has
+# no square, and a pinned piece is exactly what the fast path excludes, so this falls
+# through as well and the exact generator has to find the four rook moves.
+PINNED_ROOK_ONLY = '7k/8/8/8/8/1pp5/8/KR3r2 w - - 0 1'
+
+
 def test_has_free_move_never_claims_a_move_that_is_not_there() -> None:
     """The fast legality path is one-sided: True has to mean a legal move exists.
 
-    How often it decides matters too, because every undecided node pays for full move
-    generation instead. The floor is far below what it measures and is there to catch a
-    change that quietly turns the fast path off.
+    The starts are chosen for the two things that can break the reasoning behind it. A
+    pinned piece may not leave its line, so the path has to exclude everything standing on
+    a line through its own king; and an en passant capture removes two pawns from one rank
+    at once, so it can expose a king from a square no pin covers, and is left out.
+
+    The exact generator is checked against python-chess on the same positions, because the
+    fast path is only allowed to be a shortcut past something that is right.
+
+    How often it decides matters too, since every undecided node pays for full move
+    generation. The floor is far below what it measures and is there to catch a change
+    that quietly turns the fast path off.
     """
     rng = random.Random(20260912)
     starts = [chess.STARTING_FEN,
               'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1',
+              '4k3/P6p/8/3pP3/8/8/p6P/4K3 w - d6 0 1',
+              '4k3/4r3/8/b7/8/3N4/8/4RK2 b - - 0 1',
               '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1',
               '8/5p2/4k3/8/3K4/8/5P2/8 w - - 0 40',
-              '8/8/4k3/8/2p5/8/B2P2KP/8 w - - 0 1']
+              '8/8/4k3/8/2p5/8/B2P2KP/8 w - - 0 1',
+              '8/1p1p1p1p/8/P1P1P1P1/1p1p1p1p/8/P1P1P1P1/4K2k w - - 0 1']
     work = search.WORK
     asked = decided = 0
     for start in starts:
         board = chess.Board(start)
+        assert board.is_valid(), start
         for _ in range(1200):
             if board.is_game_over() or board.ply() > 250:
                 board = chess.Board(start)
+            moves = list(board.legal_moves)
             if not board.is_check():
                 position.encode(board, work.state[0], work.mail[0])
                 certain = bool(movegen.has_free_move(work.state[0]))
+                exact = bool(movegen.has_legal_move(
+                    work.state[0], work.mail[0], work.state[1], work.mail[1], work.probe))
                 asked += 1
                 decided += certain
+                assert exact is bool(moves), board.fen()
                 if certain:
-                    assert any(board.legal_moves), board.fen()
-            board.push(rng.choice(list(board.legal_moves)))
+                    assert moves, board.fen()
+            board.push(rng.choice(moves))
     for fen in (STALEMATE_FOUR_MEN, STALEMATE_AHEAD, '7k/5K2/6Q1/8/8/8/8/8 b - - 0 1'):
         position.encode(chess.Board(fen), work.state[0], work.mail[0])
         assert not movegen.has_free_move(work.state[0])
     assert decided / asked > 0.95, decided / asked
     print(f' {asked} positions, fast path decided {decided / asked:.2%}')
+
+
+@pytest.mark.parametrize('fen', [EN_PASSANT_ONLY, PINNED_ROOK_ONLY])
+def test_the_fast_path_gives_way_where_it_cannot_answer(fen: str) -> None:
+    """Undecided, and the exact generator finds the move the fast path does not look for."""
+    board, work = prepare(fen)
+    assert board.is_valid() and not board.is_check() and any(board.legal_moves)
+    assert not movegen.has_free_move(work.state[0])
+    assert movegen.has_legal_move(
+        work.state[0], work.mail[0], work.state[1], work.mail[1], work.probe)
+    assert search.any_legal_move(work, 0, work.state[0], work.mail[0])
+
+
+def test_the_only_move_being_en_passant_is_not_a_stalemate() -> None:
+    """The whole point of leaving en passant out of the fast path."""
+    board, work = prepare(EN_PASSANT_ONLY)
+    assert [move.uci() for move in board.legal_moves] == ['b5a6']
+    assert search.qsearch(work, 0, np.int32(-32000), np.int32(32000)) != 0
 
 
 @pytest.mark.parametrize('fen', [
@@ -358,6 +402,69 @@ def test_the_rule_clock_band_boundary(halfmove: int, inside: int) -> None:
     reclock(board, work, halfmove)
     assert int(search.rule50_context(work.state[0])) == inside
     assert bool(search.near_fifty_move(work.state[0], 1)) is bool(inside)
+
+
+@pytest.mark.parametrize('halfmove', [93, 94, 95, 96, 97, 98, 99])
+def test_the_fifty_move_horizon_is_exact(halfmove: int) -> None:
+    """Every legal move here is reversible and none mates, so the draw is at a known ply.
+
+    A search one ply short of it must not see a draw, and a search exactly deep enough
+    must return one. That is a sharper statement than comparing against the unpruned
+    search, which also drops the check extension and the table cutoffs and is therefore a
+    different search rather than a ground truth.
+
+    This is the test that caught the internal iterative reduction: at halfmove 94 the draw
+    is six plies away, and a depth-six search returned +2368 because the root had been
+    reduced to five and nothing re-searched it.
+    """
+    distance = 100 - halfmove
+    board, work = prepare(RULE50_ROOK_FRESH)
+    reclock(board, work, halfmove)
+    assert wide(work, distance) == 0, 'the draw is inside the horizon and must be found'
+    if distance > 1:
+        board, work = prepare(RULE50_ROOK_FRESH)
+        reclock(board, work, halfmove)
+        assert wide(work, distance - 1) != 0, 'one ply short, the draw is not yet forced'
+
+
+def test_the_band_test_covers_a_deep_search_from_outside_the_band() -> None:
+    """A node outside the band whose own horizon reaches the threshold is still protected.
+
+    The clock alone puts halfmove 83 outside the band, which is what the table context
+    uses. The pruning test adds the remaining depth, so a seventeen-ply search from there
+    is treated as near the draw even though a four-ply search from the same node is not.
+    That difference is the whole reason the two predicates are not the same function.
+    """
+    board, work = prepare(RULE50_ROOK_FRESH)
+    reclock(board, work, 83)
+    assert int(search.rule50_context(work.state[0])) == 0
+    assert not search.near_fifty_move(work.state[0], 4)
+    assert search.near_fifty_move(work.state[0], 17)
+    reclock(board, work, 60)
+    assert int(search.rule50_context(work.state[0])) == 0
+    assert not search.near_fifty_move(work.state[0], 20)
+    assert search.near_fifty_move(work.state[0], 40)
+
+
+def test_the_depth_field_never_claims_more_work_than_was_done() -> None:
+    """Seven bits, and the eighth went to the rule-clock context.
+
+    Iterative deepening cannot ask for more than MAX_DEPTH, but a direct search at
+    MAX_DEPTH whose root is in check extends past it, so the field saturates instead of
+    wrapping. Saturating understates the work, which loses a cutoff; wrapping to zero
+    would have thrown the entry away and evicted something useful on the way.
+    """
+    assert search.MAX_DEPTH <= tt.DEPTH_MASK
+    tt.tt_clear(tt.TT)
+    for depth in range(256):
+        key = np.uint64(0x9E3779B97F4A7C15 + depth)
+        tt.tt_store(tt.TT, key, 0, np.int32(-1234), np.int32(0), depth,
+                    tt.BOUND_UPPER, np.int32(77), 3, depth & 1)
+        hit, score, _move, stored, bound, static, rule50 = tt.tt_probe(tt.TT, key, 0)
+        assert hit and score == -1234 and bound == tt.BOUND_UPPER and static == 77
+        assert rule50 == depth & 1
+        assert stored == min(depth, tt.DEPTH_MASK), depth
+    tt.tt_clear(tt.TT)
 
 
 def test_repetition_from_the_real_game_history_is_a_draw() -> None:

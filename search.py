@@ -843,10 +843,19 @@ def negamax(
 
     # Internal iterative reduction: with no TT move the ordering is poor, so a full-depth
     # search here is mostly wasted. Search shallower and let the TT move guide the retry.
+    #
+    # Off inside the fifty-move band as well. This is the one reduction with no re-search
+    # behind it, so a ply taken off here is a ply the node never gets back, and near the
+    # threshold that ply is the difference between seeing the forced draw and scoring the
+    # material. Measured on `7k/8/8/8/8/8/8/KR6 w`: at halfmove 94 and depth 6 the draw is
+    # exactly six plies away, and the reduction to five returned +2368 instead of zero.
+    # Late move reductions do not have this problem: a reduced search that misses the draw
+    # returns a score above alpha, which is what triggers the full-depth re-search.
     if (
         work.ints[I_NO_PRUNING] == 0
         and depth >= 4
         and not (hit and tt_move != 0)
+        and not near_fifty
         and work.ints[I_MECHANISMS] & M_IIR
     ):
         work.ints[C_IIR] += 1
