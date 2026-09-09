@@ -733,6 +733,12 @@ def negamax(
     # the band "the same one" is not good enough, because two clocks in there are two
     # different distances from the draw. So the score is reused only when the entry and
     # this node both sit outside the band. See RULE50_BAND.
+    #
+    # Repetition is the other way a score depends on the path rather than the position,
+    # and this does not cover it: a node scored zero because its line repeated is stored
+    # as an ordinary exact score and can be handed to a line that does not repeat. Closing
+    # that needs a second bit and a way to carry it up from the node that saw the
+    # repetition, and it is not closed here.
     if (
         hit
         and not is_pv
