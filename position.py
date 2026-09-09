@@ -418,6 +418,23 @@ def attackers_to(state: Bits, sq: Square, occ: Bits) -> Bits:
     ) & occ
 
 
+@njit(uint64(uint64[:], int64, uint64), cache=False)
+def king_snipers(state: Bits, black: Square, exclude: Bits) -> Bits:
+    """Enemy sliders that would see this king on an empty board, `exclude` left out.
+
+    This is the half of a pin that cannot change while an exchange runs: the king stays
+    where it is and no piece changes type or colour, so only whether a line is blocked
+    varies from one capture to the next. Splitting it out is what lets `see` cache the
+    expensive half and still count blockers against the occupancy it actually has.
+    """
+    us = state[BOCC] if black else state[WOCC]
+    them = (state[WOCC] if black else state[BOCC]) & ~exclude
+    ksq = lsb(state[KING] & us)
+    return (rook_attacks(ksq, ZERO) & them & (state[ROOK] | state[QUEEN])) | (
+        bishop_attacks(ksq, ZERO) & them & (state[BISHOP] | state[QUEEN])
+    )
+
+
 @njit(uint64(uint64[:], int64), cache=False)
 def pinned_pieces(state: Bits, black: Square) -> Bits:
     """One side's pieces that stand alone between their king and an enemy slider.
@@ -425,17 +442,14 @@ def pinned_pieces(state: Bits, black: Square) -> Bits:
     Each of them may still move, but only along the line it shares with its king, so a
     recapture on any square off that line is not available however the geometry looks.
     """
-    us = state[BOCC] if black else state[WOCC]
-    them = state[WOCC] if black else state[BOCC]
-    ksq = lsb(state[KING] & us)
-    # Sliders that would see the king on an empty board. When there are none there is no
-    # pin to look for, and the call costs two lookups and stops.
-    snipers = (rook_attacks(ksq, ZERO) & them & (state[ROOK] | state[QUEEN])) | (
-        bishop_attacks(ksq, ZERO) & them & (state[BISHOP] | state[QUEEN])
-    )
+    # When there are no snipers there is no pin to look for, and the call costs two
+    # lookups and stops.
+    snipers = king_snipers(state, black, ZERO)
     if snipers == ZERO:
         return ZERO
 
+    us = state[BOCC] if black else state[WOCC]
+    ksq = lsb(state[KING] & us)
     occupancy = state[WOCC] | state[BOCC]
     pinned = ZERO
     while snipers != ZERO:
@@ -469,7 +483,11 @@ def see(state: Bits, mail: Bits, move: Bits) -> Bits:
     if flag == FLAG_EP:
         gain[0] = SEE_VALUE[PAWN]
 
-    occ = (state[WOCC] | state[BOCC]) & ~(ONE << U(frm))
+    # `to` is set unconditionally because the mover now stands there. For a capture it was
+    # occupied already; for a quiet move it was not, and leaving it clear lets a slider
+    # trace straight through the square the moving piece is standing on, which is how the
+    # pin test below would miss a line the move itself has just blocked.
+    occ = ((state[WOCC] | state[BOCC]) & ~(ONE << U(frm))) | (ONE << U(to))
     if flag == FLAG_EP:
         occ &= ~(ONE << U(to + 8 if state[STM] else to - 8))
 
@@ -484,13 +502,21 @@ def see(state: Bits, mail: Bits, move: Bits) -> Bits:
     side_black = int64(state[STM])
     attacks = attackers_to(state, to, occ)
 
-    # Pins are read from the starting position and cached per side, because they are a
-    # property of the position rather than of the exchange, and because most calls never
-    # ask for either side. They are not re-derived as the exchange consumes pieces, so a
-    # pin that only appears once a blocker has been taken is still missed. That is a
-    # strictly smaller error than counting an attacker that cannot legally move at all.
-    pins_white = ZERO
-    pins_black = ZERO
+    # Which enemy sliders see each king is fixed for the whole exchange, so it is computed
+    # at most once per side and only for the sides that are actually asked. Whether any of
+    # them is pinning is not fixed, and is counted below against the occupancy the exchange
+    # has reached. Reading a finished pin set once, as this did, is wrong in both
+    # directions: the piece that left `frm` may have been the pinner, so a pin can vanish,
+    # and a blocker may be consumed as a recapture, so a pin can appear. The first way
+    # round is the damaging one, because it hides a legal recapture and turns a losing
+    # capture into a winning one.
+    #
+    # The square `to` is left out of both sniper sets. Whatever stands there is the piece
+    # being captured, and capturing the pinner is always legal: the capturer ends up on the
+    # pinner's own square, still on the line, still blocking it.
+    target = ONE << U(to)
+    snipers_white = ZERO
+    snipers_black = ZERO
     known_white = False
     known_black = False
 
@@ -504,23 +530,35 @@ def see(state: Bits, mail: Bits, move: Bits) -> Bits:
 
         if side_black:
             if not known_black:
-                pins_black = pinned_pieces(state, 1)
+                snipers_black = king_snipers(state, 1, target)
                 known_black = True
-            blocked = mine & pins_black
+            snipers = snipers_black
         else:
             if not known_white:
-                pins_white = pinned_pieces(state, 0)
+                snipers_white = king_snipers(state, 0, target)
                 known_white = True
-            blocked = mine & pins_white
-        if blocked != ZERO:
-            ksq = lsb(state[KING] & side_pieces)
-            while blocked != ZERO:
+            snipers = snipers_white
+        # A king that has already recaptured no longer stands on its own square, so the
+        # geometry cached above no longer describes it and the filter is skipped.
+        king_bits = state[KING] & side_pieces & occ
+        if snipers != ZERO and king_bits != ZERO:
+            ksq = lsb(king_bits)
+            rest = snipers
+            while rest != ZERO:
+                sniper = lsb(rest)
+                rest &= rest - ONE
+                # A pinner that has been captured, or that was the piece which moved to
+                # `to` in the first place, is no longer pinning anything.
+                if (occ >> U(sniper)) & ONE == ZERO:
+                    continue
+                blocked = BETWEEN[ksq, sniper] & occ
+                if popcount(blocked) != 1:
+                    continue
                 square = lsb(blocked)
-                blocked &= blocked - ONE
                 # A pinned piece may capture on `to` only if `to` lies on the line it
                 # already shares with its king.
                 if (LINE[ksq, square] >> U(to)) & ONE == ZERO:
-                    mine &= ~(ONE << U(square))
+                    mine &= ~blocked
             if mine == ZERO:
                 break
 
@@ -533,14 +571,32 @@ def see(state: Bits, mail: Bits, move: Bits) -> Bits:
         if piece < 0:
             break
 
+        square = lsb(mine & state[piece])
+        # A king may only recapture onto a square the other side has stopped attacking,
+        # and a pinned defender still controls its squares, so this cannot be folded into
+        # the pin filter above. The attacker set is re-derived without the king because a
+        # slider standing behind it attacks through the square it is leaving.
+        if piece == KING:
+            vacated = occ & ~(ONE << U(square))
+            enemy = state[WOCC] if side_black else state[BOCC]
+            if (attackers_to(state, to, vacated) & enemy) != ZERO:
+                break
+
         depth += 1
         if depth >= 31:
             break
+        # A recapturing pawn that lands on the last rank queens, exactly as the opening
+        # move does. Only a pawn of the right colour can reach either back rank at all, so
+        # the rank alone settles it. Left out, the exchange keeps calling the new queen a
+        # pawn: it under-counts the material by the promotion and then offers the opponent
+        # a pawn to win back instead of a queen.
+        promotes = piece == PAWN and (to >> 3 == 7 or to >> 3 == 0)
         gain[depth] = SEE_VALUE[on_square] - gain[depth - 1]
+        if promotes:
+            gain[depth] += SEE_VALUE[QUEEN] - SEE_VALUE[PAWN]
 
-        square = lsb(mine & state[piece])
         occ &= ~(ONE << U(square))
-        on_square = piece
+        on_square = QUEEN if promotes else piece
         # Re-derive attackers so sliders behind the piece just consumed are included.
         attacks = attackers_to(state, to, occ)
 
@@ -592,6 +648,7 @@ make(_state[0], _mailbox[0], _state[1], _mailbox[1], _warm_move)
 legal_after(_state[1], 0)
 make_null(_state[0], _mailbox[0], _state[1], _mailbox[1])
 attackers_to(_state[0], 0, _state[0][WOCC] | _state[0][BOCC])
+king_snipers(_state[0], 0, ZERO)
 pinned_pieces(_state[0], 0)
 see(_state[0], _mailbox[0], _warm_move)
 has_non_pawn_material(_state[0], 0)

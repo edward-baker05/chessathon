@@ -186,6 +186,146 @@ def test_see_pinned_recapture() -> None:
     assert position.see(work.state[0], work.mail[0], encoded_move(board, 'c4d5')) == 100
 
 
+def test_see_pin_released_by_the_capture() -> None:
+    """Rxd1 unpins the knight that was pinned by the rook itself.
+
+    Re1 pins Ne3 to Ke8 down the e-file. The moment the rook steps off that file to take
+    on d1 the pin is gone and ...Nxd1 is legal, so the capture loses the exchange. Reading
+    the pins once from the starting position keeps the knight excluded and reports a clean
+    win of a bishop instead.
+    """
+    board, work = prepare('4k3/8/8/8/8/4n3/8/K2bR3 w - - 0 1')
+    assert position.see(work.state[0], work.mail[0], encoded_move(board, 'e1d1')) == -170
+
+
+def test_see_recapture_that_promotes() -> None:
+    """Rxa1 wins a bishop and loses a rook to a pawn that queens on the recapture."""
+    board, work = prepare('8/7k/8/8/8/R7/1p6/b6K w - - 0 1')
+    assert position.see(work.state[0], work.mail[0], encoded_move(board, 'a3a1')) == -970
+
+
+def test_see_pin_created_by_the_capture() -> None:
+    """Nxc5 pins the bishop that would have recaptured.
+
+    Be7 and Ne4 both stand between Ke8 and Re1, so neither is pinned to begin with. The
+    knight is also the piece that captures on c5, and the moment it leaves the e-file the
+    bishop is pinned and ...Bxc5 is illegal. Reading the pins once from the starting
+    position lets the bishop recapture and turns a won pawn into a lost knight.
+    """
+    board, work = prepare('4k3/4b3/8/2p5/4N3/8/8/4R2K w - - 0 1')
+    assert position.see(work.state[0], work.mail[0], encoded_move(board, 'e4c5')) == 100
+
+
+@pytest.mark.parametrize(('fen', 'expected'), [
+    # d5 is covered by Nc3, so ...Kxd5 is illegal and the pawn is simply won.
+    ('8/8/2k5/3p4/4P3/2N5/8/4K3 w - - 0 1', 100),
+    # Nothing covers d5, so ...Kxd5 is legal and the exchange is even.
+    ('8/8/2k5/3p4/4P3/8/8/4K3 w - - 0 1', 0),
+])
+def test_see_king_recapture(fen: str, expected: int) -> None:
+    """A king may only recapture onto a square the other side no longer attacks."""
+    board, work = prepare(fen)
+    assert position.see(work.state[0], work.mail[0], encoded_move(board, 'e4d5')) == expected
+
+
+SEE_VALUES = dict(zip(range(1, 7), (int(v) for v in position.SEE_VALUE), strict=True))
+
+
+def see_oracle(board: chess.Board, move: chess.Move) -> tuple[int, set[str]]:
+    """The same swap algorithm, but with every recapture checked by python-chess.
+
+    This is the independent reference for `see`. It resolves each recapture by asking for
+    legal moves rather than by reasoning about pins, so it is right by construction on the
+    geometry and wrong only where the swap algorithm itself is an approximation. The tags
+    name the two places that happens, so the test can hold the rest to exact agreement.
+    """
+    target = move.to_square
+    replay = board.copy(stack=False)
+    victim = replay.piece_at(target)
+    first = SEE_VALUES[victim.piece_type] if victim else 0
+    if replay.is_en_passant(move):
+        first = SEE_VALUES[chess.PAWN]
+    if move.promotion:
+        first += SEE_VALUES[move.promotion] - SEE_VALUES[chess.PAWN]
+    gains = [first]
+    replay.push(move)
+    tags: set[str] = set()
+    while True:
+        # SEE never asks whether the side to move is in check, so a recapture that is only
+        # illegal because a check is outstanding is outside what it can express.
+        if replay.is_check():
+            tags.add('in-check')
+        moves = [m for m in replay.legal_moves
+                 if m.to_square == target and m.promotion in (None, chess.QUEEN)]
+        if not moves:
+            break
+        moves.sort(key=lambda m: (SEE_VALUES[_piece_type(replay, m)], 0 if m.promotion else 1))
+        cheapest = SEE_VALUES[_piece_type(replay, moves[0])]
+        # Two attackers of the same value are not interchangeable: which one recaptures
+        # decides which lines stay blocked. The swap algorithm commits to one of them.
+        if sum(SEE_VALUES[_piece_type(replay, m)] == cheapest for m in moves) > 1:
+            tags.add('equal-attackers')
+        standing = replay.piece_at(target)
+        assert standing is not None
+        gain = SEE_VALUES[standing.piece_type] - gains[-1]
+        if moves[0].promotion:
+            gain += SEE_VALUES[chess.QUEEN] - SEE_VALUES[chess.PAWN]
+        gains.append(gain)
+        replay.push(moves[0])
+    for index in range(len(gains) - 1, 0, -1):
+        gains[index - 1] = -max(-gains[index - 1], gains[index])
+    return gains[0], tags
+
+
+def _piece_type(board: chess.Board, move: chess.Move) -> int:
+    piece = board.piece_at(move.from_square)
+    assert piece is not None
+    return piece.piece_type
+
+
+def test_see_matches_a_legality_checked_oracle() -> None:
+    """Every capture and queen promotion over random play, against the oracle above.
+
+    Disagreements are allowed only where the swap algorithm cannot represent the position:
+    an outstanding check, or a choice between two attackers of equal value. Anything else
+    is a defect in the pin handling or in the material bookkeeping.
+    """
+    rng = random.Random(20260911)
+    starts = [chess.STARTING_FEN,
+              'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1',
+              '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1',
+              '4k3/4r3/8/b7/8/3N4/8/4RK2 b - - 0 1',
+              '8/7k/8/8/8/R7/1p6/b6K w - - 0 1']
+    work = search.WORK
+    checked = unexplained = excused = 0
+    for index in range(35):
+        board = chess.Board(starts[index % len(starts)])
+        for _ in range(120):
+            if board.is_game_over():
+                break
+            position.encode(board, work.state[0], work.mail[0])
+            for move in board.legal_moves:
+                if board.is_castling(move) or move.promotion not in (None, chess.QUEEN):
+                    continue
+                if not (board.is_capture(move) or move.promotion):
+                    continue
+                checked += 1
+                got = int(position.see(work.state[0], work.mail[0],
+                                       encoded_move(board, move.uci())))
+                want, tags = see_oracle(board, move)
+                if got == want:
+                    continue
+                if tags:
+                    excused += 1
+                    continue
+                unexplained += 1
+                assert got == want, (board.fen(), move.uci(), got, want)
+            board.push(rng.choice(list(board.legal_moves)))
+    assert checked > 6000, checked
+    assert unexplained == 0
+    print(f' checked {checked} captures, {excused} excused by an approximation')
+
+
 def test_history_does_not_penalise_captures() -> None:
     board, work = prepare('7k/8/8/3p4/4P3/8/8/7K w - - 0 1')
     capture = encoded_move(board, 'e4d5')
