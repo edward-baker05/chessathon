@@ -1,0 +1,3235 @@
+{
+  "import_seconds": 51.13991689599061,
+  "engine": "/tmp/chessathon-audit-variants/root-context",
+  "weights_sha256": "57ab14b41b9f6d664a24c39f948c54c05b1593c2e9a156187b6235ad172d4842",
+  "l1": 512,
+  "qa": 255,
+  "positions": [
+    {
+      "id": "g0-p14",
+      "fen": "r2qk2r/1bppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1 w kq - 2 8",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "c2c3",
+          "depth": 7,
+          "seldepth": 16,
+          "score": 43,
+          "nodes": 16384,
+          "seconds": 0.01974410300317686,
+          "counters": [
+            7639,
+            0,
+            219,
+            1,
+            10676,
+            3527
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d2d4",
+          "depth": 9,
+          "seldepth": 23,
+          "score": 39,
+          "nodes": 65536,
+          "seconds": 0.07712858599552419,
+          "counters": [
+            29361,
+            0,
+            272,
+            2,
+            34635,
+            12562
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d2d4",
+          "depth": 12,
+          "seldepth": 23,
+          "score": 46,
+          "nodes": 262145,
+          "seconds": 0.3269688989967108,
+          "counters": [
+            116907,
+            0,
+            353,
+            2,
+            186455,
+            45469
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d2d4",
+          "depth": 15,
+          "seldepth": 31,
+          "score": 50,
+          "nodes": 1048576,
+          "seconds": 1.3608251479890896,
+          "counters": [
+            475244,
+            0,
+            438,
+            2,
+            642076,
+            170924
+          ]
+        }
+      ],
+      "static": 67
+    },
+    {
+      "id": "g0-p26",
+      "fen": "4r1kr/1bqpb1pp/p4n2/1pp1N3/4P3/2Q5/PPPN1PPP/R1B1R1K1 w - - 4 14",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "a2a4",
+          "depth": 7,
+          "seldepth": 19,
+          "score": 95,
+          "nodes": 16384,
+          "seconds": 0.021255522995488718,
+          "counters": [
+            7146,
+            0,
+            345,
+            3,
+            13453,
+            3474
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "a2a4",
+          "depth": 9,
+          "seldepth": 19,
+          "score": 89,
+          "nodes": 65536,
+          "seconds": 0.08865787800459657,
+          "counters": [
+            28226,
+            0,
+            468,
+            5,
+            59230,
+            13254
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "a2a4",
+          "depth": 12,
+          "seldepth": 24,
+          "score": 67,
+          "nodes": 262146,
+          "seconds": 0.35320597598911263,
+          "counters": [
+            108486,
+            0,
+            638,
+            8,
+            165429,
+            45292
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "a2a4",
+          "depth": 15,
+          "seldepth": 28,
+          "score": 83,
+          "nodes": 1048577,
+          "seconds": 1.4225794999947539,
+          "counters": [
+            430030,
+            0,
+            850,
+            12,
+            789215,
+            164164
+          ]
+        }
+      ],
+      "static": 95
+    },
+    {
+      "id": "g0-p42",
+      "fen": "4r1kr/1b1p2p1/1b3n2/1p5p/1PpNP1qP/2Q3P1/1BPN1P2/R3R1K1 w - - 1 22",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "c3f3",
+          "depth": 7,
+          "seldepth": 17,
+          "score": 23,
+          "nodes": 16384,
+          "seconds": 0.021794692991534248,
+          "counters": [
+            9188,
+            0,
+            302,
+            0,
+            15700,
+            2682
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "c3f3",
+          "depth": 10,
+          "seldepth": 19,
+          "score": 31,
+          "nodes": 65538,
+          "seconds": 0.08703510899795219,
+          "counters": [
+            30681,
+            0,
+            475,
+            2,
+            56501,
+            8926
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "c3f3",
+          "depth": 13,
+          "seldepth": 21,
+          "score": 44,
+          "nodes": 262145,
+          "seconds": 0.34661516699998174,
+          "counters": [
+            111215,
+            0,
+            651,
+            6,
+            204046,
+            32908
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "c3f3",
+          "depth": 16,
+          "seldepth": 26,
+          "score": 31,
+          "nodes": 1048577,
+          "seconds": 1.415232269995613,
+          "counters": [
+            402121,
+            0,
+            867,
+            10,
+            710320,
+            128999
+          ]
+        }
+      ],
+      "static": 90
+    },
+    {
+      "id": "g0-p62",
+      "fen": "5k2/6p1/1b2p3/8/bPp3pP/N5P1/1B3P2/5K2 w - - 4 32",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "f1e1",
+          "depth": 8,
+          "seldepth": 11,
+          "score": 117,
+          "nodes": 16384,
+          "seconds": 0.017170143997645937,
+          "counters": [
+            5508,
+            0,
+            173,
+            2,
+            13443,
+            4391
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "f1e1",
+          "depth": 11,
+          "seldepth": 16,
+          "score": 94,
+          "nodes": 65537,
+          "seconds": 0.06746503400790971,
+          "counters": [
+            20909,
+            0,
+            250,
+            4,
+            39746,
+            16596
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f1e1",
+          "depth": 14,
+          "seldepth": 19,
+          "score": 63,
+          "nodes": 262144,
+          "seconds": 0.2802870330051519,
+          "counters": [
+            80539,
+            0,
+            337,
+            6,
+            210798,
+            63255
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f1e1",
+          "depth": 18,
+          "seldepth": 24,
+          "score": 110,
+          "nodes": 1048579,
+          "seconds": 1.1612607010029024,
+          "counters": [
+            320783,
+            0,
+            406,
+            9,
+            703789,
+            246995
+          ]
+        }
+      ],
+      "static": 34
+    },
+    {
+      "id": "g0-p86",
+      "fen": "8/6pk/4p3/6Bb/1P4p1/6P1/3K1P2/8 w - - 0 44",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d2d3",
+          "depth": 8,
+          "seldepth": 11,
+          "score": 164,
+          "nodes": 16384,
+          "seconds": 0.015415624002343975,
+          "counters": [
+            4794,
+            0,
+            206,
+            9,
+            11006,
+            4321
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d2d3",
+          "depth": 13,
+          "seldepth": 17,
+          "score": 279,
+          "nodes": 65537,
+          "seconds": 0.0644929419941036,
+          "counters": [
+            17297,
+            0,
+            320,
+            13,
+            59034,
+            15514
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d2c3",
+          "depth": 17,
+          "seldepth": 21,
+          "score": 371,
+          "nodes": 262145,
+          "seconds": 0.26589717000024393,
+          "counters": [
+            59472,
+            0,
+            431,
+            18,
+            239784,
+            51437
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d2c3",
+          "depth": 22,
+          "seldepth": 27,
+          "score": 376,
+          "nodes": 1048580,
+          "seconds": 1.0623738510039402,
+          "counters": [
+            222165,
+            0,
+            615,
+            27,
+            722604,
+            186207
+          ]
+        }
+      ],
+      "static": 239
+    },
+    {
+      "id": "g0-p114",
+      "fen": "8/1KB1k3/8/6p1/4p1p1/6P1/5P2/8 w - - 2 58",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "b7c6",
+          "depth": 12,
+          "seldepth": 15,
+          "score": 2077,
+          "nodes": 16384,
+          "seconds": 0.016100049004307948,
+          "counters": [
+            3237,
+            0,
+            285,
+            17,
+            12966,
+            2686
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "b7c6",
+          "depth": 16,
+          "seldepth": 18,
+          "score": 2576,
+          "nodes": 65536,
+          "seconds": 0.0638537219929276,
+          "counters": [
+            9608,
+            0,
+            435,
+            28,
+            63823,
+            8030
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "b7c6",
+          "depth": 20,
+          "seldepth": 23,
+          "score": 2449,
+          "nodes": 262145,
+          "seconds": 0.26367886300431564,
+          "counters": [
+            21058,
+            0,
+            566,
+            35,
+            208530,
+            17157
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "b7c6",
+          "depth": 24,
+          "seldepth": 28,
+          "score": 2504,
+          "nodes": 1048576,
+          "seconds": 1.0355830769985914,
+          "counters": [
+            68706,
+            0,
+            650,
+            40,
+            964029,
+            58277
+          ]
+        }
+      ],
+      "static": 1077
+    },
+    {
+      "id": "g1-p14",
+      "fen": "rnbqkb1r/5ppp/p2ppn2/1p6/3NP1P1/2N4P/PPP2P2/R1BQKB1R w KQkq - 0 8",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "g4g5",
+          "depth": 7,
+          "seldepth": 14,
+          "score": 31,
+          "nodes": 16384,
+          "seconds": 0.019283522007754073,
+          "counters": [
+            6402,
+            0,
+            362,
+            3,
+            15293,
+            3670
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "g4g5",
+          "depth": 9,
+          "seldepth": 18,
+          "score": 19,
+          "nodes": 65536,
+          "seconds": 0.08201596200524364,
+          "counters": [
+            24575,
+            0,
+            451,
+            5,
+            52349,
+            13051
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "g4g5",
+          "depth": 12,
+          "seldepth": 21,
+          "score": 64,
+          "nodes": 262144,
+          "seconds": 0.34464948798995465,
+          "counters": [
+            93728,
+            0,
+            630,
+            7,
+            164752,
+            47649
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "g4g5",
+          "depth": 15,
+          "seldepth": 26,
+          "score": 24,
+          "nodes": 1048576,
+          "seconds": 1.4361238130077254,
+          "counters": [
+            387078,
+            0,
+            766,
+            9,
+            1000077,
+            190458
+          ]
+        }
+      ],
+      "static": 48
+    },
+    {
+      "id": "g1-p26",
+      "fen": "rn2k2r/1bq2p1p/p2pp3/4b3/3NP3/2P4P/P1P2P2/1RBQKBR1 w kq - 5 14",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "c1d2",
+          "depth": 6,
+          "seldepth": 13,
+          "score": 44,
+          "nodes": 16384,
+          "seconds": 0.021736583003075793,
+          "counters": [
+            6547,
+            0,
+            344,
+            1,
+            16266,
+            3962
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "c1d2",
+          "depth": 8,
+          "seldepth": 17,
+          "score": 27,
+          "nodes": 65536,
+          "seconds": 0.09244665699952748,
+          "counters": [
+            25635,
+            0,
+            449,
+            3,
+            49789,
+            13488
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f1d3",
+          "depth": 11,
+          "seldepth": 23,
+          "score": 43,
+          "nodes": 262144,
+          "seconds": 0.3737304550013505,
+          "counters": [
+            101449,
+            0,
+            643,
+            5,
+            219887,
+            48664
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f1d3",
+          "depth": 14,
+          "seldepth": 25,
+          "score": 76,
+          "nodes": 1048577,
+          "seconds": 1.4872693130018888,
+          "counters": [
+            403060,
+            0,
+            889,
+            8,
+            954597,
+            189610
+          ]
+        }
+      ],
+      "static": 185
+    },
+    {
+      "id": "g2-p14",
+      "fen": "rnbq1rk1/ppp1nppp/4p3/8/3P4/2N1P3/PP3PPP/R2QKBNR w KQ - 0 8",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "g1f3",
+          "depth": 7,
+          "seldepth": 14,
+          "score": 55,
+          "nodes": 16384,
+          "seconds": 0.017700566997518763,
+          "counters": [
+            6774,
+            0,
+            330,
+            2,
+            15285,
+            4990
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "g1f3",
+          "depth": 8,
+          "seldepth": 15,
+          "score": 62,
+          "nodes": 65537,
+          "seconds": 0.0747835100046359,
+          "counters": [
+            26744,
+            0,
+            372,
+            3,
+            46706,
+            19261
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "g1f3",
+          "depth": 11,
+          "seldepth": 21,
+          "score": 73,
+          "nodes": 262144,
+          "seconds": 0.3089570430020103,
+          "counters": [
+            102669,
+            0,
+            498,
+            3,
+            153790,
+            71438
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "g1f3",
+          "depth": 14,
+          "seldepth": 23,
+          "score": 69,
+          "nodes": 1048577,
+          "seconds": 1.308940300004906,
+          "counters": [
+            390629,
+            0,
+            651,
+            3,
+            593387,
+            271802
+          ]
+        }
+      ],
+      "static": 62
+    },
+    {
+      "id": "g2-p26",
+      "fen": "rqr3k1/pbpnnpp1/1p2p2p/8/3P4/2N1PN2/PPQ1BPPP/2RR2K1 w - - 6 14",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "b2b4",
+          "depth": 5,
+          "seldepth": 12,
+          "score": 42,
+          "nodes": 16384,
+          "seconds": 0.019265868002548814,
+          "counters": [
+            7446,
+            0,
+            290,
+            2,
+            7269,
+            4530
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "e3e4",
+          "depth": 8,
+          "seldepth": 17,
+          "score": 63,
+          "nodes": 65536,
+          "seconds": 0.08243918301013764,
+          "counters": [
+            30567,
+            0,
+            436,
+            2,
+            38881,
+            16190
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "c3e4",
+          "depth": 11,
+          "seldepth": 23,
+          "score": 53,
+          "nodes": 262145,
+          "seconds": 0.33903970499522984,
+          "counters": [
+            117814,
+            0,
+            582,
+            3,
+            187846,
+            57907
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "c3e4",
+          "depth": 15,
+          "seldepth": 26,
+          "score": 50,
+          "nodes": 1048576,
+          "seconds": 1.380090046004625,
+          "counters": [
+            441756,
+            0,
+            750,
+            3,
+            909029,
+            210238
+          ]
+        }
+      ],
+      "static": 142
+    },
+    {
+      "id": "g2-p42",
+      "fen": "rq4k1/1b3pp1/1pn1pn1p/pN6/3P4/Q2BPN1P/P4PP1/2R3K1 w - - 3 22",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d3e2",
+          "depth": 7,
+          "seldepth": 12,
+          "score": 86,
+          "nodes": 16385,
+          "seconds": 0.020427345007192343,
+          "counters": [
+            6269,
+            0,
+            385,
+            2,
+            14308,
+            4659
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d3f1",
+          "depth": 10,
+          "seldepth": 17,
+          "score": 47,
+          "nodes": 65536,
+          "seconds": 0.08353423500375357,
+          "counters": [
+            24157,
+            0,
+            571,
+            3,
+            49587,
+            15837
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d3f1",
+          "depth": 12,
+          "seldepth": 25,
+          "score": 50,
+          "nodes": 262145,
+          "seconds": 0.3521815479907673,
+          "counters": [
+            97237,
+            0,
+            676,
+            4,
+            127132,
+            58445
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d3e2",
+          "depth": 15,
+          "seldepth": 25,
+          "score": 54,
+          "nodes": 1048578,
+          "seconds": 1.3697516760003055,
+          "counters": [
+            376956,
+            0,
+            873,
+            5,
+            779061,
+            213799
+          ]
+        }
+      ],
+      "static": 63
+    },
+    {
+      "id": "g2-p62",
+      "fen": "6k1/n3qpp1/1p2pn1p/p7/3PP2P/2QB1N2/P4PP1/6K1 w - - 5 32",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d4d5",
+          "depth": 7,
+          "seldepth": 13,
+          "score": 105,
+          "nodes": 16384,
+          "seconds": 0.017147721009678207,
+          "counters": [
+            6541,
+            0,
+            348,
+            2,
+            14381,
+            4727
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "c3c2",
+          "depth": 8,
+          "seldepth": 15,
+          "score": 65,
+          "nodes": 65536,
+          "seconds": 0.07452535099582747,
+          "counters": [
+            25842,
+            0,
+            405,
+            3,
+            56215,
+            17909
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "g2g3",
+          "depth": 12,
+          "seldepth": 21,
+          "score": 62,
+          "nodes": 262144,
+          "seconds": 0.3145320400071796,
+          "counters": [
+            97118,
+            0,
+            582,
+            4,
+            260466,
+            65686
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "g2g3",
+          "depth": 16,
+          "seldepth": 24,
+          "score": 67,
+          "nodes": 1048576,
+          "seconds": 1.2717899369890802,
+          "counters": [
+            358315,
+            0,
+            736,
+            4,
+            709774,
+            236751
+          ]
+        }
+      ],
+      "static": 84
+    },
+    {
+      "id": "g2-p86",
+      "fen": "6k1/6p1/1Qn1p2p/p7/2NPq1nP/P5P1/5P2/5BK1 w - - 1 44",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "c4d2",
+          "depth": 8,
+          "seldepth": 13,
+          "score": 81,
+          "nodes": 16384,
+          "seconds": 0.01903772700461559,
+          "counters": [
+            5525,
+            0,
+            331,
+            3,
+            12166,
+            3316
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "c4d2",
+          "depth": 11,
+          "seldepth": 18,
+          "score": 129,
+          "nodes": 65536,
+          "seconds": 0.07885153600363992,
+          "counters": [
+            20910,
+            0,
+            472,
+            6,
+            37323,
+            13662
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d4d5",
+          "depth": 15,
+          "seldepth": 23,
+          "score": 101,
+          "nodes": 262144,
+          "seconds": 0.32958690098894294,
+          "counters": [
+            77955,
+            0,
+            580,
+            6,
+            242267,
+            51402
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d4d5",
+          "depth": 17,
+          "seldepth": 30,
+          "score": 116,
+          "nodes": 1048576,
+          "seconds": 1.352315098993131,
+          "counters": [
+            322643,
+            0,
+            709,
+            9,
+            855537,
+            217514
+          ]
+        }
+      ],
+      "static": 285
+    },
+    {
+      "id": "g2-p114",
+      "fen": "8/6p1/5k1p/1B2p3/P2N3P/2n3P1/3n2K1/8 w - - 0 58",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d4e2",
+          "depth": 9,
+          "seldepth": 13,
+          "score": 80,
+          "nodes": 16384,
+          "seconds": 0.017382605001330376,
+          "counters": [
+            6451,
+            0,
+            280,
+            3,
+            16003,
+            3985
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d4e2",
+          "depth": 13,
+          "seldepth": 19,
+          "score": 59,
+          "nodes": 65536,
+          "seconds": 0.06587306200526655,
+          "counters": [
+            20110,
+            0,
+            443,
+            6,
+            46744,
+            14387
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d4e2",
+          "depth": 17,
+          "seldepth": 22,
+          "score": 79,
+          "nodes": 262144,
+          "seconds": 0.2721806479967199,
+          "counters": [
+            74006,
+            0,
+            593,
+            9,
+            224021,
+            55305
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d4e2",
+          "depth": 22,
+          "seldepth": 30,
+          "score": 62,
+          "nodes": 1048576,
+          "seconds": 1.1014705760026118,
+          "counters": [
+            281884,
+            0,
+            759,
+            13,
+            869333,
+            207990
+          ]
+        }
+      ],
+      "static": 103
+    },
+    {
+      "id": "g3-p14",
+      "fen": "r1bq1rk1/p1pnppbp/1p1p1np1/8/2PPP3/2N2N2/PP2BPPP/R1BQ1RK1 w - - 0 8",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "e4e5",
+          "depth": 6,
+          "seldepth": 17,
+          "score": 69,
+          "nodes": 16384,
+          "seconds": 0.020466289002797566,
+          "counters": [
+            7784,
+            0,
+            282,
+            3,
+            6754,
+            3969
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d1c2",
+          "depth": 9,
+          "seldepth": 17,
+          "score": 62,
+          "nodes": 65537,
+          "seconds": 0.0794617400097195,
+          "counters": [
+            29026,
+            0,
+            388,
+            4,
+            55309,
+            16186
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d1c2",
+          "depth": 11,
+          "seldepth": 22,
+          "score": 70,
+          "nodes": 262144,
+          "seconds": 0.3305961309961276,
+          "counters": [
+            115648,
+            0,
+            458,
+            4,
+            156014,
+            62922
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d1c2",
+          "depth": 14,
+          "seldepth": 27,
+          "score": 73,
+          "nodes": 1048576,
+          "seconds": 1.4297155490057776,
+          "counters": [
+            462735,
+            0,
+            586,
+            4,
+            730396,
+            224719
+          ]
+        }
+      ],
+      "static": 88
+    },
+    {
+      "id": "g3-p26",
+      "fen": "1rbqnrk1/p3p1b1/1p1ppnpp/1Np3N1/2PP4/5B2/PP3PPP/R1BQR1K1 w - - 0 14",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "g5e6",
+          "depth": 7,
+          "seldepth": 14,
+          "score": 17,
+          "nodes": 16384,
+          "seconds": 0.020256432006135583,
+          "counters": [
+            7933,
+            0,
+            437,
+            3,
+            10787,
+            2327
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "g5e6",
+          "depth": 11,
+          "seldepth": 24,
+          "score": 89,
+          "nodes": 65536,
+          "seconds": 0.0803010079980595,
+          "counters": [
+            30164,
+            0,
+            603,
+            6,
+            61284,
+            9770
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "g5e6",
+          "depth": 14,
+          "seldepth": 25,
+          "score": 112,
+          "nodes": 262144,
+          "seconds": 0.33950660900154617,
+          "counters": [
+            117057,
+            0,
+            774,
+            6,
+            171589,
+            38841
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "g5e6",
+          "depth": 18,
+          "seldepth": 28,
+          "score": 94,
+          "nodes": 1048576,
+          "seconds": 1.3652098849997856,
+          "counters": [
+            443100,
+            0,
+            1017,
+            8,
+            1034357,
+            151613
+          ]
+        }
+      ],
+      "static": 23
+    },
+    {
+      "id": "g3-p42",
+      "fen": "1r1q1r2/2nnp1bk/3p2pp/1p6/P7/2NQ1B2/1P2RPPP/R1B3K1 w - - 1 22",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "f3h5",
+          "depth": 5,
+          "seldepth": 14,
+          "score": 76,
+          "nodes": 16385,
+          "seconds": 0.021268546988721937,
+          "counters": [
+            7469,
+            0,
+            366,
+            3,
+            8049,
+            3971
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "a4b5",
+          "depth": 8,
+          "seldepth": 20,
+          "score": 45,
+          "nodes": 65537,
+          "seconds": 0.0919974759890465,
+          "counters": [
+            24174,
+            0,
+            678,
+            6,
+            40636,
+            11583
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "a4b5",
+          "depth": 12,
+          "seldepth": 21,
+          "score": 82,
+          "nodes": 262144,
+          "seconds": 0.36628378700697795,
+          "counters": [
+            92057,
+            0,
+            888,
+            8,
+            243892,
+            41492
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f3e4",
+          "depth": 14,
+          "seldepth": 24,
+          "score": 47,
+          "nodes": 1048577,
+          "seconds": 1.4304105149931274,
+          "counters": [
+            379989,
+            0,
+            1096,
+            10,
+            906524,
+            163693
+          ]
+        }
+      ],
+      "static": 160
+    },
+    {
+      "id": "g3-p62",
+      "fen": "r4r2/P4qbk/6pp/1pNnp3/1P1p3P/3Q4/4RPP1/R1B3K1 w - - 2 32",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "h4h5",
+          "depth": 8,
+          "seldepth": 17,
+          "score": 145,
+          "nodes": 16384,
+          "seconds": 0.023554130995762534,
+          "counters": [
+            7225,
+            0,
+            499,
+            3,
+            14514,
+            2771
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "h4h5",
+          "depth": 10,
+          "seldepth": 23,
+          "score": 160,
+          "nodes": 65538,
+          "seconds": 0.09239424699626397,
+          "counters": [
+            27590,
+            0,
+            694,
+            7,
+            39652,
+            10094
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "h4h5",
+          "depth": 13,
+          "seldepth": 23,
+          "score": 107,
+          "nodes": 262144,
+          "seconds": 0.35955906499293633,
+          "counters": [
+            103458,
+            0,
+            963,
+            10,
+            243870,
+            38370
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "h4h5",
+          "depth": 17,
+          "seldepth": 25,
+          "score": 84,
+          "nodes": 1048576,
+          "seconds": 1.4014572290034266,
+          "counters": [
+            377037,
+            0,
+            1279,
+            13,
+            975038,
+            136555
+          ]
+        }
+      ],
+      "static": 98
+    },
+    {
+      "id": "g3-p86",
+      "fen": "3r4/6bk/7p/8/1P2q3/2N5/4RPP1/6K1 w - - 0 44",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "c3e4",
+          "depth": 10,
+          "seldepth": 16,
+          "score": 90,
+          "nodes": 16384,
+          "seconds": 0.016524791994015686,
+          "counters": [
+            5086,
+            0,
+            266,
+            3,
+            13475,
+            4217
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "c3e4",
+          "depth": 13,
+          "seldepth": 20,
+          "score": 75,
+          "nodes": 65538,
+          "seconds": 0.06936788400344085,
+          "counters": [
+            21139,
+            0,
+            355,
+            5,
+            51595,
+            17537
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "c3e4",
+          "depth": 17,
+          "seldepth": 25,
+          "score": 98,
+          "nodes": 262147,
+          "seconds": 0.28255521498795133,
+          "counters": [
+            81605,
+            0,
+            444,
+            6,
+            234049,
+            66630
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "c3e4",
+          "depth": 20,
+          "seldepth": 31,
+          "score": 96,
+          "nodes": 1048577,
+          "seconds": 1.1537014000059571,
+          "counters": [
+            327952,
+            0,
+            510,
+            6,
+            790841,
+            266116
+          ]
+        }
+      ],
+      "static": -812
+    },
+    {
+      "id": "g3-p114",
+      "fen": "8/6k1/7p/5K2/1b3P2/5N2/6P1/8 w - - 3 58",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "f5e6",
+          "depth": 10,
+          "seldepth": 15,
+          "score": 299,
+          "nodes": 16384,
+          "seconds": 0.0162222799990559,
+          "counters": [
+            4766,
+            0,
+            207,
+            3,
+            9289,
+            4240
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "f5e6",
+          "depth": 12,
+          "seldepth": 17,
+          "score": 418,
+          "nodes": 65537,
+          "seconds": 0.06203346900292672,
+          "counters": [
+            17849,
+            0,
+            260,
+            7,
+            43684,
+            15273
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f5e6",
+          "depth": 17,
+          "seldepth": 27,
+          "score": 468,
+          "nodes": 262144,
+          "seconds": 0.27100060500379186,
+          "counters": [
+            64028,
+            0,
+            400,
+            14,
+            189743,
+            49576
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f5e6",
+          "depth": 22,
+          "seldepth": 34,
+          "score": 452,
+          "nodes": 1048576,
+          "seconds": 1.0513350370019907,
+          "counters": [
+            247945,
+            0,
+            556,
+            21,
+            737753,
+            175299
+          ]
+        }
+      ],
+      "static": 231
+    },
+    {
+      "id": "g4-p14",
+      "fen": "rnb2rk1/pppnqppp/4p3/3pP3/3P4/2N5/PPPQ1PPP/R3KBNR w KQ - 2 8",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "c3b5",
+          "depth": 7,
+          "seldepth": 12,
+          "score": 41,
+          "nodes": 16384,
+          "seconds": 0.01910127700830344,
+          "counters": [
+            6188,
+            0,
+            283,
+            0,
+            10325,
+            3951
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "f2f4",
+          "depth": 10,
+          "seldepth": 17,
+          "score": 12,
+          "nodes": 65538,
+          "seconds": 0.07669200000236742,
+          "counters": [
+            24706,
+            0,
+            391,
+            0,
+            60672,
+            14517
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f2f4",
+          "depth": 13,
+          "seldepth": 20,
+          "score": 3,
+          "nodes": 262147,
+          "seconds": 0.3115591859968845,
+          "counters": [
+            92099,
+            0,
+            508,
+            0,
+            224766,
+            54364
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f2f4",
+          "depth": 16,
+          "seldepth": 26,
+          "score": 33,
+          "nodes": 1048576,
+          "seconds": 1.292208575992845,
+          "counters": [
+            377531,
+            0,
+            656,
+            0,
+            790332,
+            205510
+          ]
+        }
+      ],
+      "static": 63
+    },
+    {
+      "id": "g4-p26",
+      "fen": "r1b2rk1/1p1nqpp1/p1n1p2p/3pP3/5P2/P1N1QN2/1PP3PP/2KR1B1R w - - 0 14",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "g2g4",
+          "depth": 6,
+          "seldepth": 13,
+          "score": 54,
+          "nodes": 16384,
+          "seconds": 0.022288747000857256,
+          "counters": [
+            6311,
+            0,
+            392,
+            2,
+            12152,
+            3810
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "g2g4",
+          "depth": 10,
+          "seldepth": 18,
+          "score": 73,
+          "nodes": 65537,
+          "seconds": 0.08534916800272185,
+          "counters": [
+            23579,
+            0,
+            542,
+            3,
+            59462,
+            12561
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "g2g4",
+          "depth": 13,
+          "seldepth": 24,
+          "score": 94,
+          "nodes": 262145,
+          "seconds": 0.34788653199211694,
+          "counters": [
+            105055,
+            0,
+            679,
+            5,
+            204877,
+            45103
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "g2g4",
+          "depth": 16,
+          "seldepth": 27,
+          "score": 106,
+          "nodes": 1048576,
+          "seconds": 1.3911418030038476,
+          "counters": [
+            401746,
+            0,
+            899,
+            7,
+            760404,
+            175481
+          ]
+        }
+      ],
+      "static": 108
+    },
+    {
+      "id": "g4-p42",
+      "fen": "r1b3k1/3n2p1/p1n2r2/1p1pp1p1/1P3P2/P2B1N2/2P1N2P/2KR2R1 w - - 0 22",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "f3e5",
+          "depth": 8,
+          "seldepth": 14,
+          "score": 113,
+          "nodes": 16384,
+          "seconds": 0.01878674200270325,
+          "counters": [
+            6598,
+            0,
+            383,
+            4,
+            13444,
+            2256
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "f3e5",
+          "depth": 11,
+          "seldepth": 17,
+          "score": 80,
+          "nodes": 65536,
+          "seconds": 0.08032196799467783,
+          "counters": [
+            23660,
+            0,
+            548,
+            8,
+            55589,
+            9389
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f3e5",
+          "depth": 14,
+          "seldepth": 22,
+          "score": 104,
+          "nodes": 262144,
+          "seconds": 0.3334360440057935,
+          "counters": [
+            88634,
+            0,
+            710,
+            10,
+            193454,
+            39339
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f3e5",
+          "depth": 18,
+          "seldepth": 26,
+          "score": 131,
+          "nodes": 1048576,
+          "seconds": 1.3294922610075446,
+          "counters": [
+            344379,
+            0,
+            874,
+            12,
+            978405,
+            163606
+          ]
+        }
+      ],
+      "static": 27
+    },
+    {
+      "id": "g4-p62",
+      "fen": "r1b3k1/5rp1/p7/1p1R4/1P1N4/P1R5/1KP5/8 w - - 9 32",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d5d8",
+          "depth": 7,
+          "seldepth": 13,
+          "score": 85,
+          "nodes": 16384,
+          "seconds": 0.019377057993551716,
+          "counters": [
+            6184,
+            0,
+            233,
+            0,
+            8350,
+            4368
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d5d8",
+          "depth": 9,
+          "seldepth": 18,
+          "score": 91,
+          "nodes": 65536,
+          "seconds": 0.07930405200750101,
+          "counters": [
+            23401,
+            0,
+            311,
+            1,
+            46010,
+            16096
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d5d6",
+          "depth": 12,
+          "seldepth": 19,
+          "score": 105,
+          "nodes": 262145,
+          "seconds": 0.32237076001183596,
+          "counters": [
+            91405,
+            0,
+            446,
+            4,
+            242215,
+            60536
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d5d6",
+          "depth": 15,
+          "seldepth": 21,
+          "score": 101,
+          "nodes": 1048576,
+          "seconds": 1.3038884820125531,
+          "counters": [
+            355344,
+            0,
+            576,
+            6,
+            967235,
+            233040
+          ]
+        }
+      ],
+      "static": 89
+    },
+    {
+      "id": "g4-p86",
+      "fen": "2r1r3/6p1/p1N3k1/1pR5/1P3R2/P6b/1KP5/8 w - - 33 44",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "f4f2",
+          "depth": 6,
+          "seldepth": 14,
+          "score": 90,
+          "nodes": 16384,
+          "seconds": 0.020050904000527225,
+          "counters": [
+            6917,
+            0,
+            290,
+            3,
+            13980,
+            3824
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "f4f2",
+          "depth": 10,
+          "seldepth": 18,
+          "score": 84,
+          "nodes": 65536,
+          "seconds": 0.0824671159934951,
+          "counters": [
+            26512,
+            0,
+            429,
+            5,
+            60779,
+            13656
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f4f2",
+          "depth": 12,
+          "seldepth": 23,
+          "score": 103,
+          "nodes": 262146,
+          "seconds": 0.31870360200991854,
+          "counters": [
+            96199,
+            0,
+            537,
+            6,
+            104247,
+            52961
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f4f3",
+          "depth": 15,
+          "seldepth": 26,
+          "score": 100,
+          "nodes": 1048576,
+          "seconds": 1.2631292620062595,
+          "counters": [
+            381683,
+            0,
+            718,
+            9,
+            831079,
+            213589
+          ]
+        }
+      ],
+      "static": 134
+    },
+    {
+      "id": "g4-p114",
+      "fen": "1r6/2r5/7k/8/6R1/1K6/2P5/5R2 w - - 2 58",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "b3a3",
+          "depth": 8,
+          "seldepth": 15,
+          "score": 119,
+          "nodes": 16384,
+          "seconds": 0.017879275997984223,
+          "counters": [
+            5289,
+            0,
+            376,
+            7,
+            13442,
+            4464
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "g4b4",
+          "depth": 11,
+          "seldepth": 17,
+          "score": 44,
+          "nodes": 65536,
+          "seconds": 0.06749224499799311,
+          "counters": [
+            21724,
+            0,
+            599,
+            11,
+            60001,
+            19345
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "b3a3",
+          "depth": 16,
+          "seldepth": 23,
+          "score": 37,
+          "nodes": 262145,
+          "seconds": 0.2709781320008915,
+          "counters": [
+            75962,
+            0,
+            789,
+            11,
+            216816,
+            69615
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "b3a3",
+          "depth": 20,
+          "seldepth": 28,
+          "score": 12,
+          "nodes": 1048578,
+          "seconds": 1.0733018150058342,
+          "counters": [
+            284371,
+            0,
+            969,
+            12,
+            978430,
+            267023
+          ]
+        }
+      ],
+      "static": 339
+    },
+    {
+      "id": "g5-p14",
+      "fen": "rn1qkb1r/p3pppp/2p2nb1/1p6/2BP4/6N1/PPP1QPPP/R1B1K1NR w KQkq - 0 8",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "c4b3",
+          "depth": 8,
+          "seldepth": 14,
+          "score": 79,
+          "nodes": 16386,
+          "seconds": 0.020305305006331764,
+          "counters": [
+            6319,
+            0,
+            389,
+            2,
+            12900,
+            4181
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "c4b3",
+          "depth": 11,
+          "seldepth": 18,
+          "score": 91,
+          "nodes": 65537,
+          "seconds": 0.08313926801201887,
+          "counters": [
+            23786,
+            0,
+            518,
+            2,
+            50885,
+            13535
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "c4b3",
+          "depth": 14,
+          "seldepth": 23,
+          "score": 83,
+          "nodes": 262146,
+          "seconds": 0.3397488769987831,
+          "counters": [
+            94222,
+            0,
+            647,
+            2,
+            197837,
+            49029
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "c4b3",
+          "depth": 17,
+          "seldepth": 32,
+          "score": 71,
+          "nodes": 1048578,
+          "seconds": 1.3697391929890728,
+          "counters": [
+            396937,
+            0,
+            776,
+            2,
+            908363,
+            191879
+          ]
+        }
+      ],
+      "static": -1
+    },
+    {
+      "id": "g5-p26",
+      "fen": "rn1qk2r/5pp1/2p1pnb1/p3b2p/B2P3P/6N1/1PP1QPP1/R1B1K2R w KQkq - 0 14",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d4e5",
+          "depth": 8,
+          "seldepth": 14,
+          "score": 181,
+          "nodes": 16385,
+          "seconds": 0.01897825401101727,
+          "counters": [
+            6207,
+            0,
+            355,
+            2,
+            12122,
+            4016
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d4e5",
+          "depth": 10,
+          "seldepth": 17,
+          "score": 149,
+          "nodes": 65537,
+          "seconds": 0.08010635999380611,
+          "counters": [
+            22278,
+            0,
+            576,
+            6,
+            50824,
+            13610
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d4e5",
+          "depth": 13,
+          "seldepth": 22,
+          "score": 108,
+          "nodes": 262144,
+          "seconds": 0.32998277099977713,
+          "counters": [
+            90433,
+            0,
+            776,
+            7,
+            212345,
+            49409
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d4e5",
+          "depth": 17,
+          "seldepth": 27,
+          "score": 127,
+          "nodes": 1048576,
+          "seconds": 1.3605754059972242,
+          "counters": [
+            350591,
+            0,
+            959,
+            10,
+            841955,
+            173700
+          ]
+        }
+      ],
+      "static": -144
+    },
+    {
+      "id": "g5-p42",
+      "fen": "r3k2r/3n1pp1/1Rp1p3/p3P1Bp/b6P/6N1/5PP1/R5K1 w kq - 2 22",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "b6b7",
+          "depth": 8,
+          "seldepth": 12,
+          "score": 88,
+          "nodes": 16384,
+          "seconds": 0.02186660900770221,
+          "counters": [
+            6291,
+            0,
+            471,
+            7,
+            15696,
+            3994
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "b6b7",
+          "depth": 11,
+          "seldepth": 17,
+          "score": 58,
+          "nodes": 65536,
+          "seconds": 0.07510174199705943,
+          "counters": [
+            21792,
+            0,
+            723,
+            12,
+            56793,
+            12663
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "b6b7",
+          "depth": 14,
+          "seldepth": 24,
+          "score": -9,
+          "nodes": 262146,
+          "seconds": 0.31471423400216736,
+          "counters": [
+            84090,
+            0,
+            906,
+            16,
+            166023,
+            44157
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "b6b7",
+          "depth": 17,
+          "seldepth": 28,
+          "score": -24,
+          "nodes": 1048578,
+          "seconds": 1.292049155003042,
+          "counters": [
+            334582,
+            0,
+            1088,
+            20,
+            660161,
+            175799
+          ]
+        }
+      ],
+      "static": 21
+    },
+    {
+      "id": "g5-p62",
+      "fen": "r5k1/3b4/5R2/5pB1/p6P/8/6P1/6K1 w - - 0 32",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "f6g6",
+          "depth": 9,
+          "seldepth": 15,
+          "score": -33,
+          "nodes": 16384,
+          "seconds": 0.01697271000011824,
+          "counters": [
+            4936,
+            0,
+            267,
+            5,
+            15067,
+            4112
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "f6g6",
+          "depth": 11,
+          "seldepth": 19,
+          "score": -17,
+          "nodes": 65539,
+          "seconds": 0.06912765000015497,
+          "counters": [
+            19374,
+            0,
+            324,
+            6,
+            49736,
+            16210
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f6g6",
+          "depth": 14,
+          "seldepth": 23,
+          "score": -4,
+          "nodes": 262145,
+          "seconds": 0.2868105759989703,
+          "counters": [
+            74480,
+            0,
+            406,
+            6,
+            140592,
+            61719
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "h4h5",
+          "depth": 19,
+          "seldepth": 25,
+          "score": 0,
+          "nodes": 1048576,
+          "seconds": 1.1598139540001284,
+          "counters": [
+            297516,
+            0,
+            518,
+            7,
+            960827,
+            250923
+          ]
+        }
+      ],
+      "static": -41
+    },
+    {
+      "id": "g5-p86",
+      "fen": "8/R7/6k1/3b1p2/3B3P/5KP1/8/2r5 w - - 5 44",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "f3f4",
+          "depth": 7,
+          "seldepth": 13,
+          "score": 54,
+          "nodes": 16384,
+          "seconds": 0.018524275001254864,
+          "counters": [
+            5735,
+            0,
+            282,
+            2,
+            13925,
+            4889
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "f3f2",
+          "depth": 9,
+          "seldepth": 16,
+          "score": 56,
+          "nodes": 65537,
+          "seconds": 0.07652715899166651,
+          "counters": [
+            22587,
+            0,
+            353,
+            3,
+            63351,
+            19293
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f3e2",
+          "depth": 12,
+          "seldepth": 20,
+          "score": 71,
+          "nodes": 262144,
+          "seconds": 0.3080423020001035,
+          "counters": [
+            85932,
+            0,
+            462,
+            4,
+            199146,
+            71986
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f3f2",
+          "depth": 14,
+          "seldepth": 24,
+          "score": 84,
+          "nodes": 1048576,
+          "seconds": 1.3082227319973754,
+          "counters": [
+            329628,
+            0,
+            535,
+            5,
+            1015402,
+            275957
+          ]
+        }
+      ],
+      "static": -268
+    },
+    {
+      "id": "g5-p114",
+      "fen": "8/1r5k/3R4/5pBP/5K2/6P1/2b5/8 w - - 7 58",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "f4e5",
+          "depth": 8,
+          "seldepth": 13,
+          "score": 264,
+          "nodes": 16384,
+          "seconds": 0.016239753007539548,
+          "counters": [
+            5155,
+            0,
+            316,
+            4,
+            13356,
+            4438
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "f4e5",
+          "depth": 11,
+          "seldepth": 17,
+          "score": 256,
+          "nodes": 65536,
+          "seconds": 0.07114912400720641,
+          "counters": [
+            19400,
+            0,
+            436,
+            8,
+            58123,
+            15949
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f4e5",
+          "depth": 14,
+          "seldepth": 23,
+          "score": 215,
+          "nodes": 262145,
+          "seconds": 0.2848917350056581,
+          "counters": [
+            72046,
+            0,
+            571,
+            10,
+            249286,
+            59228
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f4e5",
+          "depth": 18,
+          "seldepth": 28,
+          "score": 214,
+          "nodes": 1048576,
+          "seconds": 1.1964583399967523,
+          "counters": [
+            261126,
+            0,
+            679,
+            10,
+            934276,
+            208903
+          ]
+        }
+      ],
+      "static": 254
+    },
+    {
+      "id": "g6-p14",
+      "fen": "r1bqkb1r/1pp2ppp/1nn5/p3p3/8/P1N2NP1/1P1PPPBP/R1BQK2R w KQkq - 0 8",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d2d3",
+          "depth": 8,
+          "seldepth": 15,
+          "score": 25,
+          "nodes": 16384,
+          "seconds": 0.019524898001691326,
+          "counters": [
+            5916,
+            0,
+            322,
+            3,
+            15795,
+            4363
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d2d3",
+          "depth": 11,
+          "seldepth": 22,
+          "score": 26,
+          "nodes": 65537,
+          "seconds": 0.08526252499723341,
+          "counters": [
+            24121,
+            0,
+            418,
+            3,
+            58302,
+            14888
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d2d3",
+          "depth": 13,
+          "seldepth": 23,
+          "score": 7,
+          "nodes": 262145,
+          "seconds": 0.34283498500008136,
+          "counters": [
+            106158,
+            0,
+            482,
+            3,
+            198854,
+            52394
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d2d3",
+          "depth": 15,
+          "seldepth": 29,
+          "score": 10,
+          "nodes": 1048578,
+          "seconds": 1.3828720780002186,
+          "counters": [
+            432178,
+            0,
+            546,
+            3,
+            709952,
+            211989
+          ]
+        }
+      ],
+      "static": 27
+    },
+    {
+      "id": "g6-p26",
+      "fen": "r2q1rk1/1p2bppp/1pn5/p7/3pbB1P/P4NP1/1P2PPB1/R2Q1RK1 w - - 0 14",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "e2e3",
+          "depth": 6,
+          "seldepth": 16,
+          "score": 2,
+          "nodes": 16386,
+          "seconds": 0.01921930001117289,
+          "counters": [
+            9153,
+            0,
+            271,
+            2,
+            14132,
+            3625
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "a1c1",
+          "depth": 7,
+          "seldepth": 18,
+          "score": -49,
+          "nodes": 65536,
+          "seconds": 0.08109566099301446,
+          "counters": [
+            33763,
+            0,
+            373,
+            3,
+            42060,
+            14488
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "e2e3",
+          "depth": 10,
+          "seldepth": 19,
+          "score": -47,
+          "nodes": 262145,
+          "seconds": 0.3354259390034713,
+          "counters": [
+            124181,
+            0,
+            481,
+            4,
+            196831,
+            50586
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f3e1",
+          "depth": 14,
+          "seldepth": 25,
+          "score": -66,
+          "nodes": 1048577,
+          "seconds": 1.378288927997346,
+          "counters": [
+            469776,
+            0,
+            638,
+            4,
+            825810,
+            179579
+          ]
+        }
+      ],
+      "static": 5
+    },
+    {
+      "id": "g6-p42",
+      "fen": "r4rk1/1p3ppp/2n2b2/1p6/p3NB1P/Pb1pP1P1/1P3PB1/1R1R2K1 w - - 2 22",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d1d2",
+          "depth": 6,
+          "seldepth": 13,
+          "score": -32,
+          "nodes": 16384,
+          "seconds": 0.018286185004399158,
+          "counters": [
+            7877,
+            0,
+            234,
+            2,
+            11526,
+            3854
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "e4f6",
+          "depth": 9,
+          "seldepth": 17,
+          "score": -51,
+          "nodes": 65537,
+          "seconds": 0.07714390598994214,
+          "counters": [
+            25686,
+            0,
+            357,
+            3,
+            33059,
+            11958
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d1d2",
+          "depth": 13,
+          "seldepth": 21,
+          "score": -98,
+          "nodes": 262144,
+          "seconds": 0.3137603999930434,
+          "counters": [
+            104057,
+            0,
+            523,
+            5,
+            250277,
+            42561
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d1d2",
+          "depth": 16,
+          "seldepth": 24,
+          "score": -99,
+          "nodes": 1048577,
+          "seconds": 1.282545686000958,
+          "counters": [
+            402985,
+            0,
+            650,
+            10,
+            871314,
+            164381
+          ]
+        }
+      ],
+      "static": -86
+    },
+    {
+      "id": "g6-p62",
+      "fen": "3r2k1/5p1p/1p6/1pn1rp2/pBb3PP/P1RpPB2/1P3P1K/3R4 w - - 0 32",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d1g1",
+          "depth": 7,
+          "seldepth": 17,
+          "score": -34,
+          "nodes": 16384,
+          "seconds": 0.020519129000604153,
+          "counters": [
+            6391,
+            0,
+            294,
+            2,
+            13144,
+            3078
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d1g1",
+          "depth": 9,
+          "seldepth": 20,
+          "score": -94,
+          "nodes": 65537,
+          "seconds": 0.08493402300518937,
+          "counters": [
+            24525,
+            0,
+            406,
+            4,
+            49292,
+            11074
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d1g1",
+          "depth": 12,
+          "seldepth": 21,
+          "score": -98,
+          "nodes": 262145,
+          "seconds": 0.3392553029989358,
+          "counters": [
+            95158,
+            0,
+            557,
+            6,
+            217209,
+            41968
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "c3c1",
+          "depth": 14,
+          "seldepth": 23,
+          "score": -120,
+          "nodes": 1048577,
+          "seconds": 1.3742428429977736,
+          "counters": [
+            387668,
+            0,
+            722,
+            10,
+            968541,
+            168062
+          ]
+        }
+      ],
+      "static": -27
+    },
+    {
+      "id": "g6-p86",
+      "fen": "3r2r1/5p2/1p5k/1p3p1P/p2Bn2K/Pb2PB2/1P1p1P2/1R1R4 w - - 4 44",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "f3e4",
+          "depth": 9,
+          "seldepth": 15,
+          "score": -324,
+          "nodes": 16385,
+          "seconds": 0.01951870700577274,
+          "counters": [
+            7498,
+            0,
+            290,
+            4,
+            14956,
+            2722
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d1g1",
+          "depth": 10,
+          "seldepth": 20,
+          "score": -403,
+          "nodes": 65536,
+          "seconds": 0.08498298600898124,
+          "counters": [
+            30769,
+            0,
+            340,
+            7,
+            39562,
+            10115
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d1g1",
+          "depth": 12,
+          "seldepth": 24,
+          "score": -466,
+          "nodes": 262144,
+          "seconds": 0.3491703619947657,
+          "counters": [
+            118192,
+            0,
+            460,
+            10,
+            211305,
+            44214
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d1f1",
+          "depth": 15,
+          "seldepth": 29,
+          "score": -514,
+          "nodes": 1048577,
+          "seconds": 1.2914048060047207,
+          "counters": [
+            426336,
+            0,
+            588,
+            14,
+            581976,
+            154205
+          ]
+        }
+      ],
+      "static": -487
+    },
+    {
+      "id": "g6-p114",
+      "fen": "8/8/8/1p2Bpk1/pP2p3/4P1K1/1P6/3r4 w - - 4 58",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "e5c7",
+          "depth": 8,
+          "seldepth": 13,
+          "score": -1116,
+          "nodes": 16385,
+          "seconds": 0.01629926600435283,
+          "counters": [
+            4710,
+            0,
+            210,
+            4,
+            15858,
+            3964
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "g3f2",
+          "depth": 10,
+          "seldepth": 18,
+          "score": -1206,
+          "nodes": 65536,
+          "seconds": 0.06517004201305099,
+          "counters": [
+            17287,
+            0,
+            342,
+            11,
+            43261,
+            13641
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "e5f4",
+          "depth": 15,
+          "seldepth": 22,
+          "score": -1353,
+          "nodes": 262146,
+          "seconds": 0.26478041800146457,
+          "counters": [
+            57335,
+            0,
+            492,
+            19,
+            250022,
+            43234
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "e5f4",
+          "depth": 19,
+          "seldepth": 28,
+          "score": -1514,
+          "nodes": 1048576,
+          "seconds": 1.0531151949980995,
+          "counters": [
+            197379,
+            0,
+            708,
+            31,
+            934736,
+            146429
+          ]
+        }
+      ],
+      "static": -1011
+    },
+    {
+      "id": "g7-p14",
+      "fen": "rnbq1rk1/1p2bppp/2p1pn2/p2p4/2PP4/1P3NP1/P3PPBP/RNBQ1RK1 w - - 0 8",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "b1c3",
+          "depth": 7,
+          "seldepth": 15,
+          "score": 20,
+          "nodes": 16384,
+          "seconds": 0.025111568000284024,
+          "counters": [
+            8680,
+            0,
+            232,
+            0,
+            15610,
+            4073
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "b1c3",
+          "depth": 9,
+          "seldepth": 19,
+          "score": 16,
+          "nodes": 65537,
+          "seconds": 0.08189756999490783,
+          "counters": [
+            32750,
+            0,
+            298,
+            0,
+            58409,
+            15900
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "b1c3",
+          "depth": 11,
+          "seldepth": 26,
+          "score": 23,
+          "nodes": 262144,
+          "seconds": 0.31767120900622103,
+          "counters": [
+            135649,
+            0,
+            368,
+            0,
+            195254,
+            57441
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "c1a3",
+          "depth": 13,
+          "seldepth": 28,
+          "score": 16,
+          "nodes": 1048577,
+          "seconds": 1.2772060529969167,
+          "counters": [
+            551659,
+            0,
+            430,
+            0,
+            867600,
+            220545
+          ]
+        }
+      ],
+      "static": 39
+    },
+    {
+      "id": "g7-p26",
+      "fen": "r1bq1rk1/4bppp/np2p3/p2p4/P1P1nB2/1P1N2P1/2Q1PPBP/RN3RK1 w - - 2 14",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "c4d5",
+          "depth": 7,
+          "seldepth": 14,
+          "score": -41,
+          "nodes": 16385,
+          "seconds": 0.01964036600838881,
+          "counters": [
+            7103,
+            0,
+            338,
+            2,
+            14481,
+            3651
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "b1c3",
+          "depth": 9,
+          "seldepth": 20,
+          "score": -32,
+          "nodes": 65536,
+          "seconds": 0.07971427800657693,
+          "counters": [
+            29650,
+            0,
+            464,
+            3,
+            59176,
+            12889
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "b1c3",
+          "depth": 12,
+          "seldepth": 24,
+          "score": 33,
+          "nodes": 262144,
+          "seconds": 0.3229611769929761,
+          "counters": [
+            124606,
+            0,
+            592,
+            5,
+            220974,
+            50262
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "b1c3",
+          "depth": 15,
+          "seldepth": 26,
+          "score": 20,
+          "nodes": 1048578,
+          "seconds": 1.3114779809984611,
+          "counters": [
+            510558,
+            0,
+            760,
+            6,
+            1019547,
+            181723
+          ]
+        }
+      ],
+      "static": -5
+    },
+    {
+      "id": "g7-p42",
+      "fen": "2r2rk1/5ppp/1p2p3/p1b5/P7/1P4P1/3BPP1P/R4RK1 w - - 0 22",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "g1g2",
+          "depth": 8,
+          "seldepth": 13,
+          "score": 1,
+          "nodes": 16385,
+          "seconds": 0.018029860002570786,
+          "counters": [
+            5811,
+            0,
+            263,
+            1,
+            12937,
+            4362
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "g1g2",
+          "depth": 10,
+          "seldepth": 17,
+          "score": -8,
+          "nodes": 65539,
+          "seconds": 0.07727675599744543,
+          "counters": [
+            25274,
+            0,
+            320,
+            1,
+            58301,
+            15456
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "f1c1",
+          "depth": 13,
+          "seldepth": 21,
+          "score": 5,
+          "nodes": 262146,
+          "seconds": 0.3048248959967168,
+          "counters": [
+            101524,
+            0,
+            408,
+            2,
+            226262,
+            57164
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "f1c1",
+          "depth": 15,
+          "seldepth": 23,
+          "score": 8,
+          "nodes": 1048578,
+          "seconds": 1.267844853005954,
+          "counters": [
+            397093,
+            0,
+            468,
+            2,
+            496888,
+            209765
+          ]
+        }
+      ],
+      "static": 26
+    },
+    {
+      "id": "g7-p62",
+      "fen": "3r1k2/5ppp/1p2p3/p1b5/P7/1PB2PP1/4P1KP/1R6 w - - 5 32",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "h2h4",
+          "depth": 8,
+          "seldepth": 15,
+          "score": 31,
+          "nodes": 16384,
+          "seconds": 0.01913795599830337,
+          "counters": [
+            6334,
+            0,
+            271,
+            1,
+            13502,
+            4010
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "h2h4",
+          "depth": 11,
+          "seldepth": 16,
+          "score": 38,
+          "nodes": 65538,
+          "seconds": 0.07628097300766967,
+          "counters": [
+            23108,
+            0,
+            361,
+            1,
+            52134,
+            15131
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "h2h4",
+          "depth": 13,
+          "seldepth": 19,
+          "score": 42,
+          "nodes": 262144,
+          "seconds": 0.32109628900070675,
+          "counters": [
+            93712,
+            0,
+            430,
+            1,
+            131172,
+            61101
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "g2f1",
+          "depth": 16,
+          "seldepth": 24,
+          "score": 24,
+          "nodes": 1048577,
+          "seconds": 1.208439185997122,
+          "counters": [
+            380937,
+            0,
+            513,
+            1,
+            840414,
+            243338
+          ]
+        }
+      ],
+      "static": -19
+    },
+    {
+      "id": "g7-p86",
+      "fen": "8/5p2/1pr1k1p1/2b1p1Pp/Pp2P3/5P1P/3BK3/2R5 w - - 0 44",
+      "searches": [
+        {
+          "limit": 16384,
+          "move": "d2b4",
+          "depth": 8,
+          "seldepth": 16,
+          "score": 0,
+          "nodes": 16384,
+          "seconds": 0.01712912599032279,
+          "counters": [
+            6550,
+            0,
+            252,
+            3,
+            5988,
+            4264
+          ]
+        },
+        {
+          "limit": 65536,
+          "move": "d2b4",
+          "depth": 14,
+          "seldepth": 19,
+          "score": 0,
+          "nodes": 65537,
+          "seconds": 0.0730431570118526,
+          "counters": [
+            22318,
+            0,
+            402,
+            3,
+            54451,
+            13871
+          ]
+        },
+        {
+          "limit": 262144,
+          "move": "d2b4",
+          "depth": 18,
+          "seldepth": 27,
+          "score": 0,
+          "nodes": 262144,
+          "seconds": 0.27914705699367914,
+          "counters": [
+            82191,
+            0,
+            502,
+            3,
+            234617,
+            50882
+          ]
+        },
+        {
+          "limit": 1048576,
+          "move": "d2b4",
+          "depth": 22,
+          "seldepth": 30,
+          "score": 0,
+          "nodes": 1048578,
+          "seconds": 1.1912959140026942,
+          "counters": [
+            316125,
+            0,
+            605,
+            3,
+            920055,
+            200302
+          ]
+        }
+      ],
+      "static": -262
+    }
+  ],
+  "integer_forward_max_error": 0
+}

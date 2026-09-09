@@ -1,0 +1,8 @@
+1/8: fixed score 0.5, resets [0, 3]
+2/8: fixed score 1.0, resets [0, 3]
+3/8: fixed score 0.5, resets [0, 3]
+4/8: fixed score 0.5, resets [0, 2]
+5/8: fixed score 0.5, resets [0, 2]
+6/8: fixed score 0.0, resets [0, 0]
+7/8: fixed score 0.0, resets [0, 2]
+8/8: fixed score 0.5, resets [0, 2]
