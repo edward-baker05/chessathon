@@ -15,6 +15,7 @@ Not shipped: tools/ never reaches the zip.
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -113,6 +114,18 @@ def main() -> int:
         qa=np.int32(qa),
         qb=np.int32(QB),
         scale=np.int32(SCALE),
+        # Which checkpoint this is, carried into the file that ships. agent.py logs the
+        # hash of these weights every game; this is what turns that hash back into a run.
+        provenance=np.str_(json.dumps({
+            "checkpoint": str(arguments.checkpoint),
+            "epoch": blob.get("epoch"),
+            "holdout_loss": blob.get("holdout_loss"),
+            "train_loss": blob.get("train_loss"),
+            "l1": hidden,
+            "buckets": buckets,
+            "qa": int(qa),
+            "training": blob.get("provenance"),
+        })),
     )
     print(f"\n{arguments.out} ({arguments.out.stat().st_size:,} bytes)")
 

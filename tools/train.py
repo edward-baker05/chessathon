@@ -20,6 +20,9 @@ an Apple laptop without edits.
 """
 
 import argparse
+import datetime
+import json
+import subprocess
 import sys
 import time
 from collections.abc import Iterator
@@ -95,6 +98,18 @@ class Network(nn.Module):
         with torch.no_grad():
             self.transformer.weight.clamp_(-FT_CLAMP, FT_CLAMP)
             self.output.clamp_(-OUT_CLAMP, OUT_CLAMP)
+
+
+def git_commit() -> str | None:
+    """The checkout this run came from, when there is one."""
+    try:
+        finished = subprocess.run(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return finished.stdout.strip() or None
 
 
 def pick_device(requested: str) -> torch.device:
@@ -189,11 +204,43 @@ def main() -> int:
         parser.error(f"{arguments.data} does not exist. Build it with `make data`")
 
     device = pick_device(arguments.device)
+    # The seed has to reach Torch as well as NumPy. Seeding only NumPy fixes the order the
+    # data arrives in and leaves the initial weights different on every run, so two runs
+    # that differ in one hyper-parameter differ in their starting point as well and the
+    # comparison measures both.
+    torch.manual_seed(arguments.seed)
+    if device.type == "cuda":
+        torch.cuda.manual_seed_all(arguments.seed)
+
     records = dataset.load(arguments.data)
     split = int(records.shape[0] * (1 - arguments.holdout))
     train_records, holdout_records = records[:split], records[split:]
     print(f"device {device}, L1 {arguments.l1}, {train_records.shape[0]:,} positions, "
           f"{holdout_records.shape[0]:,} held out")
+
+    # What produced this run, recorded into every checkpoint. Without it a shipped network
+    # cannot be traced back to the data and the epoch that made it, and the next run has
+    # nothing to be a controlled comparison against.
+    meta_path = arguments.data.with_suffix(".meta.json")
+    provenance = {
+        "data": str(arguments.data),
+        "data_bytes": arguments.data.stat().st_size,
+        "data_meta": json.loads(meta_path.read_text()) if meta_path.exists() else None,
+        "positions_total": int(records.shape[0]),
+        "positions_train": int(train_records.shape[0]),
+        "positions_holdout": int(holdout_records.shape[0]),
+        "seed": arguments.seed,
+        "l1": arguments.l1,
+        "buckets": arguments.buckets,
+        "epochs": arguments.epochs,
+        "batch": arguments.batch,
+        "lr": arguments.lr,
+        "device": str(device),
+        "torch": torch.__version__,
+        "started": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
+        "commit": git_commit(),
+    }
+    print(json.dumps(provenance, indent=2))
 
     model = Network(arguments.l1, arguments.buckets).to(device)
     optimiser = torch.optim.AdamW(model.parameters(), lr=arguments.lr)
@@ -240,7 +287,9 @@ def main() -> int:
                 "buckets": arguments.buckets,
                 "epoch": epoch,
                 "holdout_loss": validation,
+                "train_loss": running / max(seen, 1),
                 "positions": train_records.shape[0],
+                "provenance": provenance,
             },
             arguments.checkpoints / f"epoch{epoch:03d}.pt",
         )

@@ -11,15 +11,28 @@ engine reached once it got there.
 The clock is simulated forward under the policy being measured rather than taken from the
 PGN, because the policy is what changes the clock.
 
+Moves go through `agent.get_move`, the entry point the platform calls, and not through
+`search.think`. That is the difference between measuring the search and measuring the
+agent: only the entry point runs game tracking, so only this way does a move see the
+transposition table, the history tables and the repetition record that the previous move
+left behind. Calling into the search directly measures a first move, every move.
+
+The self-play fallback drives two clocks, one per side, and gives the opponent its own
+work area and transposition table. One agent process cannot honestly play both sides of a
+game, so the opponent there is the bare search: enough for the shape of a clock, and not
+an integration test.
+
     uv run python tools/replay.py "logs/Epoch Mate vs Edward.pgn" --side Edward
     uv run python tools/replay.py --fen "<fen>" --moves 20
 """
 
 import argparse
+import os
 import statistics
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -27,8 +40,26 @@ sys.path.insert(0, str(ROOT))
 import chess  # noqa: E402
 import chess.pgn  # noqa: E402
 
-import search  # noqa: E402
 from harness.rules import BASE_MS, INCREMENT_MS  # noqa: E402
+
+# agent.py freezes its increment from the environment at import, and numba freezes the
+# search's constants at the same moment, so both modules are imported only once the
+# command line has been read. Importing them at the top would bake in a 500 ms increment
+# and silently measure a different time control from the one asked for.
+agent: Any = None
+search: Any = None
+tt: Any = None
+
+
+def load_engine(increment_ms: int) -> None:
+    global agent, search, tt
+    os.environ["CHESSATHON_INCREMENT_MS"] = str(increment_ms)
+    import agent as agent_module
+    import search as search_module
+    import tt as tt_module
+
+    agent, search, tt = agent_module, search_module, tt_module
+    assert increment_ms == agent.INCREMENT_MS, agent.INCREMENT_MS
 
 
 class Move(argparse.Namespace):
@@ -43,17 +74,22 @@ class Move(argparse.Namespace):
     expected: str
 
 
-def measure(board: chess.Board, clock_ms: float, increment_ms: int) -> Move:
-    soft, hard = search.budget_ms(int(clock_ms), increment_ms, search.ply_of(board))
+def measure(board: chess.Board, clock_ms: float) -> Move:
+    """One of our moves, through the entry point the platform calls.
+
+    The budget is read back from the search afterwards rather than recomputed here, so the
+    numbers reported are the ones the move was actually held to.
+    """
     started = time.perf_counter()
-    uci = search.think(board, time_left_ms=int(clock_ms), increment_ms=increment_ms)
+    uci = agent.get_move(board.fen(), int(clock_ms))
     used = (time.perf_counter() - started) * 1000
+    soft, hard = search.budget_of()
     return Move(
         number=board.fullmove_number,
         before_ms=clock_ms,
         used_ms=used,
-        soft_ms=soft,
-        hard_ms=hard,
+        soft_ms=soft * 1000,
+        hard_ms=hard * 1000,
         played=uci,
         expected="",
     )
@@ -70,7 +106,7 @@ def replay_pgn(path: Path, side: str, base_ms: int, increment_ms: int, limit: in
     measured: list[Move] = []
     for node in game.mainline():
         if board.turn == ours:
-            move = measure(board, clock, increment_ms)
+            move = measure(board, clock)
             move.expected = node.move.uci()
             clock = clock - move.used_ms + increment_ms
             measured.append(move)
@@ -84,20 +120,35 @@ def replay_pgn(path: Path, side: str, base_ms: int, increment_ms: int, limit: in
 
 
 def replay_fen(fen: str, base_ms: int, increment_ms: int, limit: int) -> list[Move]:
-    """No opponent, so the engine answers itself. Enough to see the clock's shape."""
+    """No opponent, so the bare search answers on its own clock and its own tables.
+
+    Two clocks, because one clock shared between both sides charges our policy for the
+    opponent's thinking and measures a time control nobody plays.
+    """
     board = chess.Board(fen)
-    clock = float(base_ms)
+    opponent = search.new_work(tt.new_table())
+    clocks = {board.turn: float(base_ms), not board.turn: float(base_ms)}
+    ours = board.turn
     measured: list[Move] = []
-    for _ in range(limit):
-        move = measure(board, clock, increment_ms)
-        clock = clock - move.used_ms + increment_ms
-        measured.append(move)
-        if clock <= 0:
-            print(f"FLAGGED on move {move.number}")
-            break
-        board.push(chess.Move.from_uci(move.played))
-        if board.is_game_over():
-            break
+    while len(measured) < limit and not board.is_game_over():
+        if board.turn == ours:
+            move = measure(board, clocks[ours])
+            clocks[ours] += increment_ms - move.used_ms
+            measured.append(move)
+            if clocks[ours] <= 0:
+                print(f"FLAGGED on move {move.number}")
+                break
+            board.push(chess.Move.from_uci(move.played))
+        else:
+            started = time.perf_counter()
+            uci = search.think(
+                board, int(clocks[not ours]), increment_ms=increment_ms, work=opponent
+            )
+            clocks[not ours] += increment_ms - (time.perf_counter() - started) * 1000
+            if clocks[not ours] <= 0:
+                print("opponent FLAGGED")
+                break
+            board.push(chess.Move.from_uci(uci))
     return measured
 
 
@@ -145,6 +196,7 @@ def main() -> None:
     parser.add_argument("--increment-ms", type=int, default=INCREMENT_MS)
     parser.add_argument("--moves", type=int, default=40, help="stop after this many of our moves")
     arguments = parser.parse_args()
+    load_engine(arguments.increment_ms)
 
     for path in arguments.pgn:
         measured = replay_pgn(

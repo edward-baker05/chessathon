@@ -6,6 +6,10 @@ different distribution of scores across it. The two SEE margins compare a pure m
 exchange score against depth and cannot have been affected, which is worth knowing before
 spending games on them.
 
+Node counts here are counts of positions entered, one per position. Do not compare a
+number from this tool against one produced before the double-counted quiescence handover
+was fixed; they are different units.
+
 The measurement is node counts, not counters inside the search. `search.py` reads every
 margin from the environment and numba bakes the value into the jitted code at import, so a
 margin can be disabled by setting it out of reach and re-importing. Nodes with a margin
@@ -55,17 +59,29 @@ SEE_MARGINS = (
 # The worker. Run as `python -c`, in a fresh process so that the margins in the environment
 # are the ones numba compiles in. It prints one JSON object so the parent does not have to
 # parse an engine's chatter.
+# Every measurement starts from an empty engine. `clear_tables()` does not touch the
+# transposition table, which is deliberate in play and wrong here: without `tt_clear` each
+# position inherits the previous one's entries, and the move test inherits the work of the
+# node count that ran on the same position immediately before it. Neither run is then the
+# independent fixed-budget measurement it is reported as.
 WORKER = """
 import json, sys
 sys.path.insert(0, {engine!r})
-import chess, search
+import chess, search, tt
+
+def fresh():
+    tt.tt_clear(search.WORK.table)
+    search.clear_tables()
+    search.set_game_history([])
+
 total = 0
 moves = []
 for line in json.load(open({fens!r})):
     board = chess.Board(line)
-    search.clear_tables()
+    fresh()
     search.search_value(board, {depth})
     total += search.nodes()
+    fresh()
     moves.append(search.think(board, 3_600_000, node_limit={nodes}))
 print("RESULT" + json.dumps({{"nodes": total, "moves": moves}}))
 """
