@@ -102,7 +102,16 @@ def _key_of(board: chess.Board) -> int:
 
 
 def _signature(board: chess.Board) -> tuple[str, bool, int, int | None]:
-    return (board.board_fen(), board.turn, board.castling_rights, board.ep_square)
+    """Identify a position the way the incoming FEN does.
+
+    `board.fen()`, which is what the platform hands us, prints an en passant square only
+    when a capture onto it is legal. A board reached by `push()` keeps the raw double-push
+    target regardless. Comparing the raw squares therefore fails to match after any
+    opponent double pawn push with no capture available, which is most of them, so the
+    en passant term has to be normalised the same way the FEN normalises it.
+    """
+    ep = board.ep_square if board.has_legal_en_passant() else None
+    return (board.board_fen(), board.turn, board.castling_rights, ep)
 
 
 def _continues_our_game(board: chess.Board) -> bool:

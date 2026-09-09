@@ -12,7 +12,7 @@ from typing import Any
 
 import chess
 import numpy as np
-from numba import int8, int32, int64, njit, uint64
+from numba import boolean, int8, int32, int64, njit, uint64
 
 import position
 from bitboard import (
@@ -308,6 +308,24 @@ def generate_captures(state: Bits, moves: Bits, base: Square) -> Square:
     return n
 
 
+@njit(boolean(uint64[:], int8[:], uint64[:], int8[:], int32[:]), cache=False)
+def has_legal_move(state: Bits, mail: Bits, dst_state: Bits, dst_mail: Bits,
+                   moves: Bits) -> Any:
+    """Does the side to move have any legal move at all?
+
+    Stalemate and checkmate are the same question asked either side of `in_check`, and
+    neither can be answered from a capture list. Returns on the first legal move, which
+    in a position that is not close to terminal is almost always the first generated one.
+    """
+    count = generate(state, moves, 0)
+    mover_black = int64(state[STM])
+    for i in range(count):
+        make(state, mail, dst_state, dst_mail, moves[i])
+        if legal_after(dst_state, mover_black):
+            return True
+    return False
+
+
 @njit(int64(uint64[:, :], int8[:, :], int32[:], int64, int64), cache=False)
 def perft(state: Bits, mail: Bits, moves: Bits, ply: Square, depth: Square) -> Square:
     """Count legal move sequences. The correctness gate for the whole engine.
@@ -338,5 +356,6 @@ move_from(np.int32(0))
 move_to(np.int32(0))
 move_promo(np.int32(0))
 move_flag(np.int32(0))
+has_legal_move(_state[0], _mailbox[0], _state[1], _mailbox[1], _moves)
 _perft_moves = np.zeros(64 * MAX_MOVES, dtype=np.int32)
 perft(_state, _mailbox, _perft_moves, 0, 1)

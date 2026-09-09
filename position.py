@@ -422,6 +422,13 @@ def see(state: Bits, mail: Bits, move: Bits) -> Bits:
         occ &= ~(ONE << U(to + 8 if state[STM] else to - 8))
 
     on_square = int64(mail[frm])
+    if flag == FLAG_PROMO:
+        # The pawn is gone: what stands on `to` and what the opponent can win back is the
+        # promoted piece, and the promotion itself is worth the difference in material.
+        # Valuing the mover as a pawn scores an uncontested queening at zero.
+        on_square = int64((move >> 12) & 7)
+        gain[0] += SEE_VALUE[on_square] - SEE_VALUE[PAWN]
+
     side_black = int64(state[STM])
     attacks = attackers_to(state, to, occ)
 
@@ -467,13 +474,25 @@ def has_non_pawn_material(state: Bits, black: Square) -> Flag:
     return (side & (state[KNIGHT] | state[BISHOP] | state[ROOK] | state[QUEEN])) != ZERO
 
 
+# The light squares. A bishop can never leave the colour it stands on, so bishops that
+# share one of these two halves can never attack each other or force anything.
+LIGHT_SQUARES = U(0x55AA55AA55AA55AA)
+
+
 @njit(boolean(uint64[:]), cache=False)
 def insufficient_material(state: Bits) -> Flag:
-    """King versus king, or king and one minor versus king. Draws under FIDE rules."""
+    """Positions in which neither side can construct a mate. Draws under FIDE rules."""
     if state[PAWN] | state[ROOK] | state[QUEEN]:
         return False
     minors = state[KNIGHT] | state[BISHOP]
-    return popcount(minors) <= 1
+    if popcount(minors) <= 1:
+        return True
+    # Any number of bishops, on either side, all standing on one colour. Without a knight
+    # to change the colour of the mating net this is dead however many there are.
+    if state[KNIGHT] == ZERO:
+        bishops = state[BISHOP]
+        return (bishops & LIGHT_SQUARES) == ZERO or (bishops & ~LIGHT_SQUARES) == ZERO
+    return False
 
 
 # Warm every jitted function with the argument types the real calls use.

@@ -17,9 +17,9 @@ import chess
 import numpy as np
 from numba import njit, objmode
 
-from bitboard import HALF, KEY, STM
+from bitboard import BOCC, FLAG_EP, FLAG_PROMO, HALF, KEY, PAWN, STM, WOCC, popcount
 from evaluate import evaluate
-from movegen import MAX_MOVES, generate, generate_captures, move_to_uci
+from movegen import MAX_MOVES, generate, generate_captures, has_legal_move, move_to_uci
 from nnue import apply as nnue_apply
 from nnue import copy as nnue_copy
 from nnue import new_accumulator
@@ -189,6 +189,8 @@ class Work(NamedTuple):
     hist_keys: np.ndarray
     static_evals: np.ndarray
     played: np.ndarray
+    quiets: np.ndarray
+    probe: np.ndarray
     moved_piece: np.ndarray
     cont_hist: np.ndarray
     acc: np.ndarray
@@ -210,6 +212,11 @@ def new_work(table: np.ndarray = TT) -> Work:
         hist_keys=np.zeros(2048, dtype=np.uint64),
         static_evals=np.zeros(STACK_PLIES, dtype=np.int32),
         played=np.zeros(STACK_PLIES, dtype=np.int32),
+        # The quiet moves each ply actually searched, in the order they were tried.
+        quiets=np.zeros(STACK_PLIES * MAX_MOVES, dtype=np.int32),
+        # Scratch for the legal-move existence probe. One ply deep: the probe always
+        # finishes before the node that asked it generates anything of its own.
+        probe=np.zeros(MAX_MOVES, dtype=np.int32),
         moved_piece=np.zeros(STACK_PLIES, dtype=np.int8),
         # [distance][piece][to][piece][to]: how a reply fared after a given earlier move.
         # Two distances, one and two plies back, at about 1.2 MB in total.
@@ -307,6 +314,22 @@ def continuation_score(work: Bits, ply: Square, piece: Square, to: Square) -> Sq
     return total
 
 
+@njit(cache=False, inline="always")
+def is_quiet(mail: Bits, move: Bits) -> Flag:
+    """One definition of a quiet move, shared by ordering, history and the malus list.
+
+    En passant and promotions win material without landing on an occupied square, so a
+    bare `mail[to] < 0` calls them quiet and feeds them to the quiet history tables.
+    Castling has no victim and genuinely is quiet.
+    """
+    flag = np.int64((move >> 15) & 3)
+    if flag == FLAG_EP:
+        return False
+    if flag == FLAG_PROMO:
+        return False
+    return mail[np.int64((move >> 6) & 63)] < 0
+
+
 @njit(cache=False)
 def score_moves(work: Bits, ply: Square, base: Square, count: Square, tt_move: Bits) -> None:
     """Assign an ordering score to each generated move. Never sorts the whole list."""
@@ -326,8 +349,9 @@ def score_moves(work: Bits, ply: Square, base: Square, count: Square, tt_move: B
         frm = np.int64(move & 63)
         to = np.int64((move >> 6) & 63)
         victim = np.int64(mail[to])
-        flag = np.int64((move >> 15) & 3)
-        if victim >= 0 or flag == 1:
+        # Promotions are ordered by their SEE like captures. Left out, a quiet promotion
+        # falls through to quiet history, which knows nothing about the queen it wins.
+        if not is_quiet(mail, move):
             attacker = np.int64(mail[frm])
             gain = see(state, mail, move)
             base_score = MVV_LVA[victim if victim >= 0 else 0, attacker]
@@ -389,8 +413,13 @@ def update_continuation(
 
 @njit(cache=False)
 def update_history(work: Bits, ply: Square, best_move: Bits, depth: Square, base: Square,
-                   quiet_end: Square) -> None:
-    """Reward the move that caused a cutoff and punish the quiets that did not."""
+                   quiet_count: Square) -> None:
+    """Reward the move that caused a cutoff and punish the quiets that did not.
+
+    The malus walks `work.quiets`, which holds only the quiet moves this node actually
+    searched. Walking the selected move list instead punishes captures, moves rejected
+    for king safety, and moves skipped by pruning, none of which were ever tried.
+    """
     state = work.state[ply]
     black = np.int64(state[STM])
     bonus = np.int32(min(depth * depth, 400))
@@ -413,14 +442,22 @@ def update_history(work: Bits, ply: Square, best_move: Bits, depth: Square, base
     if previous != 0:
         work.counter[black, previous & 63, (previous >> 6) & 63] = best_move
 
-    for i in range(base, quiet_end):
-        move = work.moves[i]
+    for i in range(base, base + quiet_count):
+        move = work.quiets[i]
         if move == best_move:
             continue
         move_from = np.int64(move & 63)
         move_to = np.int64((move >> 6) & 63)
         work.history[black, move_from, move_to] -= bonus
         update_continuation(work, ply, np.int64(work.mail[ply][move_from]), move_to, -bonus)
+
+
+# Probing for stalemate at every quiet leaf measured 837 knps against 748, an 11% loss,
+# so it is gated on the side to move having a king and at most two other pieces. That is
+# where stalemate happens: a bare king, a blocked pawn, a trapped rook. A blockade with
+# more material than this can still be misvalued at a quiescence leaf; negamax adjudicates
+# it correctly wherever the main search reaches it.
+STALEMATE_PIECES = 3
 
 
 @njit(cache=False)
@@ -440,6 +477,26 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
     mail = work.mail[ply]
     base = ply * MAX_MOVES
     checked = in_check(state)
+
+    # Terminal adjudication, before the static evaluation is allowed to speak for the
+    # position. negamax checks these on the way in, which protects the node qsearch was
+    # entered at and none of the ones it reaches afterwards. Mate outranks every draw
+    # rule, so a drawn-by-clock position is only a draw if the side to move can move.
+    if state[HALF] >= 100 or insufficient_material(state) or (
+        # A position cannot repeat in fewer than four plies, and the halfmove clock is
+        # reset by every irreversible move, so this skips the history walk at most nodes.
+        state[HALF] >= 4 and is_repetition(work, ply)
+    ):
+        if not checked or has_legal_move(
+            state, mail, work.state[ply + 1], work.mail[ply + 1], work.probe
+        ):
+            return np.int32(0)
+    elif not checked and popcount(
+        state[BOCC] if state[STM] else state[WOCC]
+    ) <= STALEMATE_PIECES and not has_legal_move(
+        state, mail, work.state[ply + 1], work.mail[ply + 1], work.probe
+    ):
+        return np.int32(0)
 
     if checked:
         # Standing pat while in check would claim a score the side to move cannot
@@ -464,8 +521,16 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
         move = pick_move(work, index, count)
         if not checked and work.ints[I_NO_PRUNING] == 0:
             # A capture that loses material cannot rescue a position this far behind.
+            # The bound has to include everything the move wins, or it discards moves on
+            # the strength of a gain it never counted: a queening pawn arrives on an empty
+            # square and would otherwise be bounded by the 100 cp default.
             victim = np.int64(mail[(move >> 6) & 63])
-            gain = SEE_VALUE[victim] if victim >= 0 else 100
+            flag = np.int64((move >> 15) & 3)
+            gain = SEE_VALUE[victim] if victim >= 0 else np.int32(0)
+            if flag == FLAG_EP:
+                gain = SEE_VALUE[PAWN]
+            elif flag == FLAG_PROMO:
+                gain += SEE_VALUE[(move >> 12) & 7] - SEE_VALUE[PAWN]
             if stand_pat + gain + DELTA_MARGIN < alpha:
                 continue
             if see(state, mail, move) < 0:
@@ -511,7 +576,16 @@ def negamax(
     checked = in_check(state)
 
     if ply > 0:
-        if state[HALF] >= 100 or insufficient_material(state) or is_repetition(work, ply):
+        # Checkmate ends the game before any of these do, so a mating position at
+        # halfmove 100 is a mate and not a draw.
+        if (
+            state[HALF] >= 100 or insufficient_material(state) or is_repetition(work, ply)
+        ) and (
+            not checked
+            or has_legal_move(
+                state, mail, work.state[ply + 1], work.mail[ply + 1], work.probe
+            )
+        ):
             return np.int32(0)
         # Mate distance pruning: a mate found elsewhere is already nearer than anything
         # this subtree can produce, so there is nothing left to look for.
@@ -610,6 +684,7 @@ def negamax(
         depth -= 1
 
     quiets_tried = 0
+    quiets_searched = 0
     improving = ply < 2 or static > work.static_evals[ply - 2]
 
     for index in range(base, count):
@@ -650,6 +725,9 @@ def negamax(
         work.moved_piece[ply] = mail[np.int64(move & 63)]
         if not is_capture:
             quiets_tried += 1
+        if is_quiet(mail, move):
+            work.quiets[base + quiets_searched] = move
+            quiets_searched += 1
 
         if legal == 1:
             value = -negamax(work, ply + 1, depth - 1, -beta, -alpha, is_pv)
@@ -688,9 +766,8 @@ def negamax(
             if value > alpha:
                 alpha = value
                 if alpha >= beta:
-                    victim = np.int64(mail[(move >> 6) & 63])
-                    if victim < 0:
-                        update_history(work, ply, move, depth, base, index + 1)
+                    if is_quiet(mail, move):
+                        update_history(work, ply, move, depth, base, quiets_searched)
                     break
 
     if legal == 0:
@@ -772,6 +849,9 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
                 nnue_apply(work.acc, 0, state, mail, move)
                 legal += 1
                 work.played[0] = move
+                # Continuation history below the root reads this slot. Left at zero it
+                # attributes every root move to a pawn.
+                work.moved_piece[0] = mail[np.int64(move & 63)]
                 if legal == 1:
                     value = -negamax(work, 1, depth - 1, -beta, -local_alpha, True)
                 else:
@@ -1028,6 +1108,7 @@ _prepare(_board, 1000, 0, 4096, WORK)
 search_root(WORK, 2)
 qsearch(WORK, 0, np.int32(-INF), np.int32(INF))
 is_repetition(WORK, 0)
+WORK.quiets[0] = WORK.moves[0]
 update_history(WORK, 0, np.int32(WORK.moves[0]), 1, 0, 1)
 tt_clear(WORK.table)
 clear_tables(WORK)
