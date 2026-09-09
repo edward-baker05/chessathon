@@ -111,6 +111,24 @@ SEE_CAPTURE_MARGIN = _margin("SEE_CAPTURE_MARGIN", 100)
 # Delta pruning in quiescence: this far below alpha even after the capture wins its victim.
 DELTA_MARGIN = _margin("DELTA_MARGIN", 200)
 
+# --------------------------------------------------------------------------------------
+# The fifty-move rule decides games and is not in the position key. A score cached in the
+# transposition table was searched under whatever halfmove clock the position had at the
+# time; the same board hashes identically at clock 3 and at clock 99 and is worth a rook
+# at one and nothing at the other. The entry therefore carries one bit saying which side
+# of this band it was searched on, and a cached score may only be reused when the entry
+# and the node asking both sit outside it. Inside it, two clocks are two different
+# distances from the draw, so nothing is reused however the bits compare.
+#
+# Correctness scope: a score computed outside the band is only clock-independent while no
+# line below it shuffles the sixteen plies to the threshold. A node that does is still
+# scored without the draw in view, and an entry made from it still says so. Widening the
+# band is the fix for that if it ever matters, and it costs table hits in exactly the
+# endgames where the clock is already high.
+RULE50_BAND = 16
+# The counter the rule fires on, in plies. FIDE counts fifty moves by each side.
+RULE50_LIMIT = 100
+
 # Abandon a root iteration the moment the aspiration window fails high. The bound is
 # already established and the depth has to be searched again regardless, so the remaining
 # root moves look like pure waste: an audit measured 5.15% of all nodes spent after the
@@ -473,6 +491,17 @@ def update_history(work: Bits, ply: Square, best_move: Bits, depth: Square, base
 
 
 @njit(cache=False, inline="always")
+def rule50_context(state: Bits) -> Square:
+    """One bit: is this node inside the band where the halfmove clock changes scores?
+
+    A function of the clock alone, so that an entry written by one search and read by
+    another are comparing the same thing. The depth-aware test below is separate, and is
+    for pruning, where the depth of the search being replaced is known.
+    """
+    return 1 if np.int64(state[HALF]) + RULE50_BAND >= RULE50_LIMIT else 0
+
+
+@njit(cache=False, inline="always")
 def any_legal_move(work: Bits, ply: Square, state: Bits, mail: Bits) -> Flag:
     """Does the side to move have a legal move? Exact, and cheap when the answer is yes.
 
@@ -642,8 +671,30 @@ def negamax(
         return qsearch(work, ply, alpha, beta)
 
     key = state[KEY]
-    hit, tt_score, tt_move, tt_depth, tt_bound, tt_static = tt_probe(work.table, key, ply)
-    if hit and not is_pv and tt_depth >= depth and work.ints[I_NO_PRUNING] == 0:
+    hit, tt_score, tt_move, tt_depth, tt_bound, tt_static, tt_rule50 = tt_probe(
+        work.table, key, ply
+    )
+    context = rule50_context(state)
+    # The move and the static evaluation are properties of the position and are used
+    # whatever the clock said when they were written. The score is not: it was searched
+    # under one rule-clock context and may only be reused under the same one, and inside
+    # the band "the same one" is not good enough, because two clocks in there are two
+    # different distances from the draw. So the score is reused only when the entry and
+    # this node both sit outside the band. See RULE50_BAND.
+    #
+    # Repetition is the other way a score depends on the path rather than the position,
+    # and this does not cover it: a node scored zero because its line repeated is stored
+    # as an ordinary exact score and can be handed to a line that does not repeat. Closing
+    # that needs a second bit and a way to carry it up from the node that saw the
+    # repetition, and it is not closed here.
+    if (
+        hit
+        and not is_pv
+        and tt_depth >= depth
+        and work.ints[I_NO_PRUNING] == 0
+        and tt_rule50 == 0
+        and context == 0
+    ):
         if tt_bound == BOUND_EXACT:
             return tt_score
         if tt_bound == BOUND_LOWER and tt_score >= beta:
@@ -828,7 +879,7 @@ def negamax(
         bound = BOUND_LOWER
     tt_store(
         work.table, key, ply, np.int32(best), best_move, depth, bound, np.int32(static),
-        work.ints[I_AGE],
+        work.ints[I_AGE], context,
     )
     return np.int32(best)
 

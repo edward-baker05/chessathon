@@ -38,19 +38,26 @@ SCORE_BIAS = 32768
 # The packed data word, bit by bit. Sixty four, exactly, with nothing spare:
 #   0..15   score, biased
 #   16..31  move, in the sixteen bit form below
-#   32..39  depth
+#   32..38  depth
+#   39      rule-clock context, one bit; see RULE50_BAND in search.py
 #   40..41  bound
 #   42..47  age
 #   48..63  static evaluation, biased
+#
+# The depth field gave up its eighth bit for the rule-clock context. MAX_DEPTH is 127, so
+# seven bits hold every depth the search can ask for. A larger depth than that wraps to a
+# smaller one, which loses a cutoff and never invents one.
 SCORE_SHIFT, SCORE_BITS = 0, 16
 MOVE_SHIFT, MOVE_BITS = 16, 16
-DEPTH_SHIFT, DEPTH_BITS = 32, 8
+DEPTH_SHIFT, DEPTH_BITS = 32, 7
+RULE50_SHIFT, RULE50_BITS = 39, 1
 BOUND_SHIFT, BOUND_BITS = 40, 2
 AGE_SHIFT, AGE_BITS = 42, 6
 STATIC_SHIFT, STATIC_BITS = 48, 16
 
 MOVE_MASK = (1 << MOVE_BITS) - 1
 DEPTH_MASK = (1 << DEPTH_BITS) - 1
+RULE50_MASK = (1 << RULE50_BITS) - 1
 BOUND_MASK = (1 << BOUND_BITS) - 1
 # Ages are compared cyclically, so everything that reads or advances one masks with this.
 AGE_MASK = (1 << AGE_BITS) - 1
@@ -106,21 +113,26 @@ def unpack_move(packed: Square) -> Bits:
     return np.int32((packed & 0xFFF) | (promo << 12) | (flag << 15))
 
 
-@njit(uint64(int32, int32, int64, int64, int32, int64), cache=False, inline="always")
+@njit(uint64(int32, int32, int64, int64, int32, int64, int64), cache=False, inline="always")
 def pack_entry(
-    score: Bits, move: Bits, depth: Square, bound: Square, static_eval: Bits, age: Square
+    score: Bits, move: Bits, depth: Square, bound: Square, static_eval: Bits, age: Square,
+    rule50: Square,
 ) -> Bits:
     return (
         (U(np.int64(score) + SCORE_BIAS) << U(SCORE_SHIFT))
         | (U(pack_move(move) & MOVE_MASK) << U(MOVE_SHIFT))
         | (U(depth & DEPTH_MASK) << U(DEPTH_SHIFT))
+        | (U(rule50 & RULE50_MASK) << U(RULE50_SHIFT))
         | (U(bound & BOUND_MASK) << U(BOUND_SHIFT))
         | (U(age & AGE_MASK) << U(AGE_SHIFT))
         | (U(np.int64(static_eval) + SCORE_BIAS) << U(STATIC_SHIFT))
     )
 
 
-@njit(void(uint64[:, :], uint64, int64, int32, int32, int64, int64, int32, int64), cache=False)
+@njit(
+    void(uint64[:, :], uint64, int64, int32, int32, int64, int64, int32, int64, int64),
+    cache=False,
+)
 def tt_store(
     table: Bits,
     key: Bits,
@@ -131,12 +143,18 @@ def tt_store(
     bound: Square,
     static_eval: Bits,
     age: Square,
+    rule50: Square,
 ) -> None:
     """Store an entry, rebasing mate scores to be relative to this node.
 
     A mate score found at ply N means "mate in K from here". Storing it unadjusted makes it
     mean "mate in K from the root", which is the classic source of mate lines that are off
     by a few moves and of engines that shuffle instead of finishing.
+
+    `rule50` records the rule-clock context the score was searched under. The position key
+    does not carry the halfmove clock, and a position hashes the same at clock 3 and at
+    clock 99 while its score does not. The caller decides what to do with the bit; it is
+    stored so that a later probe can tell the two apart at all.
     """
     adjusted = score
     if score >= MATE_IN_MAX:
@@ -178,12 +196,21 @@ def tt_store(
             slot = i
 
     table[bucket, slot * 2] = key
-    table[bucket, slot * 2 + 1] = pack_entry(adjusted, kept_move, depth, bound, static_eval, age)
+    table[bucket, slot * 2 + 1] = pack_entry(
+        adjusted, kept_move, depth, bound, static_eval, age, rule50
+    )
 
 
 @njit(cache=False)
-def tt_probe(table: Bits, key: Bits, ply: Square) -> tuple[Flag, Bits, Bits, Square, Square, Bits]:
-    """Look up an entry, undoing the mate-score rebasing done on store."""
+def tt_probe(
+    table: Bits, key: Bits, ply: Square
+) -> tuple[Flag, Bits, Bits, Square, Square, Bits, Square]:
+    """Look up an entry, undoing the mate-score rebasing done on store.
+
+    The last field is the rule-clock context the entry was stored under. Everything else in
+    an entry is a property of the position; that one is a property of the search that wrote
+    it, and the caller has to compare it with its own before it may believe the score.
+    """
     bucket = np.int64(key & U(BUCKETS - 1))
     for i in range(ENTRIES_PER_BUCKET):
         if table[bucket, i * 2] != key:
@@ -196,16 +223,20 @@ def tt_probe(table: Bits, key: Bits, ply: Square) -> tuple[Flag, Bits, Bits, Squ
         depth = np.int64((stored >> U(DEPTH_SHIFT)) & U(DEPTH_MASK))
         bound = np.int64((stored >> U(BOUND_SHIFT)) & U(BOUND_MASK))
         static_eval = np.int32(np.int64((stored >> U(STATIC_SHIFT)) & U(STATIC_MASK)) - SCORE_BIAS)
+        rule50 = np.int64((stored >> U(RULE50_SHIFT)) & U(RULE50_MASK))
         if score >= MATE_IN_MAX:
             score = np.int32(score - ply)
         elif score <= -MATE_IN_MAX:
             score = np.int32(score + ply)
-        return True, score, move, depth, bound, static_eval
-    return False, np.int32(0), np.int32(0), np.int64(0), np.int64(BOUND_NONE), np.int32(0)
+        return True, score, move, depth, bound, static_eval, rule50
+    return (
+        False, np.int32(0), np.int32(0), np.int64(0), np.int64(BOUND_NONE), np.int32(0),
+        np.int64(0),
+    )
 
 
 # Warm every jitted function with the argument types the real calls use.
 tt_clear(TT)
-tt_store(TT, U(1), 0, int32(0), int32(0), 1, BOUND_EXACT, int32(0), 1)
+tt_store(TT, U(1), 0, int32(0), int32(0), 1, BOUND_EXACT, int32(0), 1, 0)
 tt_probe(TT, U(1), 0)
 tt_clear(TT)

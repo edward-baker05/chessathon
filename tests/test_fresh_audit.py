@@ -280,6 +280,115 @@ def test_quiescence_draws(fen: str) -> None:
     assert search.qsearch(work, 0, np.int32(-32000), np.int32(32000)) == 0
 
 
+# Every legal move here is a reversible king or rook move and none of them mates, so at
+# halfmove 99 the position is one ply from the fifty-move draw and worth exactly zero. The
+# same board at halfmove zero is worth a rook. The position key is identical either way.
+RULE50_ROOK = '7k/8/8/8/8/8/8/KR6 w - - 99 1'
+RULE50_ROOK_FRESH = '7k/8/8/8/8/8/8/KR6 w - - 0 1'
+
+
+def key_of(board: chess.Board, work: Any) -> int:
+    """The position key, read through a scratch ply so nothing in flight is disturbed."""
+    position.encode(board, work.state[3], work.mail[3])
+    return int(work.state[3][bb.KEY])
+
+
+def reclock(board: chess.Board, work: Any, halfmove: int) -> None:
+    """The same board on a different halfmove clock, encoded the way a search sees it."""
+    board.halfmove_clock = halfmove
+    position.encode(board, work.state[0], work.mail[0])
+    nnue.refresh(work.acc, 0, work.state[0], work.mail[0])
+    work.ints[search.I_ABORT] = 0
+
+
+def wide(work: Any, depth: int, is_pv: bool = True) -> int:
+    return int(search.negamax(work, 0, depth, np.int32(-32000), np.int32(32000), is_pv))
+
+
+def test_tt_entry_carries_its_rule_clock_context() -> None:
+    """The bit goes in and comes back out, and the shortened depth field still fits."""
+    tt.tt_clear(tt.TT)
+    for depth in (1, 7, 63, 127):
+        for context in (0, 1):
+            key = np.uint64(0x9E3779B97F4A7C15 + depth * 4 + context)
+            tt.tt_store(tt.TT, key, 0, np.int32(-1234), np.int32(0), depth,
+                        tt.BOUND_UPPER, np.int32(77), 3, context)
+            hit, score, _move, got_depth, bound, static, rule50 = tt.tt_probe(tt.TT, key, 0)
+            assert hit and score == -1234 and got_depth == depth
+            assert bound == tt.BOUND_UPPER and static == 77 and rule50 == context
+    assert search.MAX_DEPTH <= tt.DEPTH_MASK
+    tt.tt_clear(tt.TT)
+
+
+def test_a_score_from_a_low_clock_is_not_reused_at_a_high_one() -> None:
+    """The failure the recheck isolated: an exact entry searched at halfmove zero, read
+    back at halfmove 99, where the same board is a draw."""
+    board, work = prepare(RULE50_ROOK_FRESH)
+    fresh = wide(work, 1)
+    assert fresh > 1000, fresh
+    reclock(board, work, 99)
+    warm = int(search.negamax(work, 0, 1, np.int32(-100), np.int32(100), False))
+    warm_wide = wide(work, 1, is_pv=False)
+    tt.tt_clear(work.table)
+    cold = int(search.negamax(work, 0, 1, np.int32(-100), np.int32(100), False))
+    tt.tt_clear(work.table)
+    cold_wide = wide(work, 1, is_pv=False)
+    # The narrow window still returns the static score here, because reverse futility
+    # takes it before the search reaches the draw. What this commit fixes is that the
+    # table has stopped being the thing that decides: warm and cold now agree.
+    assert warm == cold, (warm, cold)
+    assert warm_wide == cold_wide == 0, (warm_wide, cold_wide)
+
+
+def test_a_score_from_a_high_clock_is_not_reused_at_a_low_one() -> None:
+    """The same rule in the other direction: a draw score must not follow the position
+    back to a clock where the draw is fifty moves away."""
+    board, work = prepare(RULE50_ROOK)
+    assert wide(work, 1, is_pv=False) == 0
+    reclock(board, work, 0)
+    warm = wide(work, 1, is_pv=False)
+    tt.tt_clear(work.table)
+    cold = wide(work, 1, is_pv=False)
+    assert warm == cold > 1000, (warm, cold)
+
+
+@pytest.mark.parametrize(('halfmove', 'inside'), [
+    (0, 0), (50, 0), (82, 0), (83, 0), (84, 1), (99, 1), (100, 1),
+])
+def test_the_rule_clock_band_boundary(halfmove: int, inside: int) -> None:
+    """RULE50_BAND plies from the threshold, and tested either side of the edge."""
+    board, work = prepare(RULE50_ROOK_FRESH)
+    reclock(board, work, halfmove)
+    assert int(search.rule50_context(work.state[0])) == inside
+
+
+def test_repetition_from_the_real_game_history_is_a_draw() -> None:
+    """A repetition of a position played earlier in the game, not earlier in the line.
+
+    This pins behaviour rather than fixing it: it is the second way a score depends on the
+    path and not on the position, and unlike the halfmove clock it is not carried into the
+    transposition table. See the note beside the context gate in search.py.
+    """
+    work = search.WORK
+    tt.tt_clear(work.table)
+    search.clear_tables(work)
+    board = chess.Board(RULE50_ROOK_FRESH)
+    keys = [key_of(board, work)]
+    for uci in ('b1b2', 'h8g8', 'b2b1'):
+        board.push_uci(uci)
+        keys.append(key_of(board, work))
+    search.set_game_history(keys, work)
+    search.set_pruning(True, work)
+    search._prepare(board, 3_600_000, 0, 0, work)
+    assert board.turn is chess.BLACK
+    descend(board, 'g8h8', work)
+    assert search.is_repetition(work, 1)
+    for alpha in (-2000, -1, 0, 1, 2000):
+        work.ints[search.I_ABORT] = 0
+        got = search.negamax(work, 1, 4, np.int32(alpha), np.int32(alpha + 1), False)
+        assert got == 0, (alpha, int(got))
+
+
 def test_see_promotion() -> None:
     board, work = prepare('7k/P7/8/8/8/8/8/7K w - - 0 1')
     assert position.see(work.state[0], work.mail[0], encoded_move(board, 'a7a8q')) == 800
