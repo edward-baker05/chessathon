@@ -10,6 +10,19 @@ mechanism off and every other one still running, so a difference names exactly o
     uv run python tools/selectivity.py --positions cases.json --json out.json
     uv run python tools/selectivity.py --root-depth 8
 
+Ablations are run in both directions, because one direction cannot answer the question.
+
+**Subtractive**, everything on and one mechanism off. This finds a mechanism that is
+solely responsible. It cannot clear pruning: if two mechanisms would each remove the same
+line on their own, turning either one off changes nothing and the table looks innocent.
+
+**Additive**, everything off and one mechanism on, then pairs of the ones that were clean
+alone. Everything off still keeps the check extension and the transposition policy, which
+is what `set_pruning(False)` does not, so the starting point is the real search with only
+the selective mechanisms removed. If that starting point already disagrees with the
+oracle, the difference is in the extension, the table or the evaluation, and no amount of
+pruning work will find it.
+
 Two probes per case, because they answer different questions.
 
 **Window probe.** One `negamax` call at a fixed depth and a fixed window, which is what an
@@ -153,23 +166,25 @@ def root_probe(case: dict[str, Any], depth: int, work: search.Work) -> dict[str,
     }
 
 
-def variants() -> list[tuple[str, str | None]]:
-    """The runs to make for each case: the engine, the oracle, and one per mechanism."""
-    rows: list[tuple[str, str | None]] = [("all on", None), ("oracle", "oracle")]
-    rows.extend((f"-{name}", name) for name in search.MECHANISMS)
+# A variant is a label and the set of mechanisms it runs with. `None` means all of them,
+# which is the shipped engine; "oracle" is the plain alpha-beta comparison.
+Variant = tuple[str, "str | tuple[str, ...] | None"]
+
+
+def base_variants() -> list[Variant]:
+    """Everything, nothing, the oracle, and each single-mechanism ablation."""
+    rows: list[Variant] = [("all on", None), ("none", ()), ("oracle", "oracle")]
+    rows.extend((f"-{name}", tuple(m for m in search.MECHANISMS if m != name))
+                for name in search.MECHANISMS)
     return rows
 
 
-def configure(mechanism: str | None, work: search.Work) -> None:
-    if mechanism == "oracle":
-        search.set_pruning(False, work)
-        search.set_mechanisms(None, work)
-    elif mechanism is None:
-        search.set_pruning(True, work)
-        search.set_mechanisms(None, work)
+def configure(mechanisms: "str | tuple[str, ...] | None", work: search.Work) -> None:
+    search.set_pruning(mechanisms != "oracle", work)
+    if isinstance(mechanisms, tuple):
+        search.set_mechanisms(mechanisms, work)
     else:
-        search.set_pruning(True, work)
-        search.without_mechanism(mechanism, work)
+        search.set_mechanisms(None, work)
 
 
 def contradicts(score: int, oracle: int, alpha: int, beta: int) -> bool:
@@ -188,6 +203,37 @@ def contradicts(score: int, oracle: int, alpha: int, beta: int) -> bool:
     return score != oracle
 
 
+def run_variant(case: dict[str, Any], variant: Variant, root_depth: int,
+                work: search.Work) -> dict[str, Any]:
+    label, mechanisms = variant
+    fresh(work)
+    configure(mechanisms, work)
+    row = window_probe(case, work)
+    row["label"] = label
+    if root_depth:
+        fresh(work)
+        configure(mechanisms, work)
+        row["root"] = root_probe(case, root_depth, work)
+    return row
+
+
+def print_rows(rows: list[dict[str, Any]], oracle: int, alpha: int, beta: int,
+               root_depth: int, reference: str | None) -> None:
+    for row in rows:
+        score = int(row["score"])
+        verdict = "-" if row["label"] == "oracle" else (
+            "wrong" if contradicts(score, oracle, alpha, beta) else "ok"
+        )
+        line = f"  {row['label']:<14} {score:>8} {verdict:>6} {row['nodes']:>9,}"
+        if root_depth:
+            root = row["root"]
+            mark = "*" if reference and root["move"] == reference else " "
+            line += f" {root['move'] + mark:>10} {root['score']:>8}"
+        fired = ",".join(f"{k}={v}" for k, v in row["fired"].items()) or "-"
+        pv = " ".join(row["pv"][:6]) or "-"
+        print(f"{line}  {fired} | {pv}")
+
+
 def report_case(case: dict[str, Any], root_depth: int, work: search.Work) -> dict[str, Any]:
     board = chess.Board(str(case["fen"]))
     alpha, beta = int(case["alpha"]), int(case["beta"])
@@ -199,50 +245,53 @@ def report_case(case: dict[str, Any], root_depth: int, work: search.Work) -> dic
     if case.get("note"):
         print(f"  {case['note']}")
 
-    runs: dict[str, dict[str, Any]] = {}
-    for label, mechanism in variants():
-        fresh(work)
-        configure(mechanism, work)
-        runs[label] = window_probe(case, work)
-        if root_depth:
-            fresh(work)
-            configure(mechanism, work)
-            runs[label]["root"] = root_probe(case, root_depth, work)
-    fresh(work)
-
+    runs = {label: run_variant(case, (label, mechanisms), root_depth, work)
+            for label, mechanisms in base_variants()}
     oracle = int(runs["oracle"]["score"])
     baseline = int(runs["all on"]["score"])
+    floor = int(runs["none"]["score"])
     reference = case.get("move")
-    header = f"  {'run':<12} {'score':>8} {'bound':>6} {'nodes':>9}"
+
+    header = f"  {'run':<14} {'score':>8} {'bound':>6} {'nodes':>9}"
     if root_depth:
         header += f" {'root move':>10} {'root cp':>8}"
     print(header + "  fired / pv")
-    for label, _mechanism in variants():
-        row = runs[label]
-        score = int(row["score"])
-        verdict = "-" if label == "oracle" else (
-            "wrong" if contradicts(score, oracle, alpha, beta) else "ok"
-        )
-        line = f"  {label:<12} {score:>8} {verdict:>6} {row['nodes']:>9,}"
-        if root_depth:
-            root = row["root"]
-            mark = "*" if reference and root["move"] == reference else " "
-            line += f" {root['move'] + mark:>10} {root['score']:>8}"
-        fired = ",".join(f"{k}={v}" for k, v in row["fired"].items()) or "-"
-        pv = " ".join(row["pv"][:6]) or "-"
-        print(f"{line}  {fired} | {pv}")
+    print_rows([runs[label] for label, _ in base_variants()], oracle, alpha, beta,
+               root_depth, reference)
 
-    blamed: list[str] = []
-    if contradicts(baseline, oracle, alpha, beta):
-        blamed = [
-            label for label, mechanism in variants()
-            if mechanism not in (None, "oracle")
-            and not contradicts(int(runs[label]["score"]), oracle, alpha, beta)
-        ]
-        if not blamed:
-            blamed = ["no single mechanism; the bound needs more than one of them off"]
-    print(f"  blamed: {', '.join(blamed) if blamed else 'nothing; the engine agrees'}")
-    return {"case": case, "oracle": oracle, "runs": runs, "blamed": blamed}
+    verdict: dict[str, Any] = {"single_cause": [], "pair_cause": [], "clean_alone": []}
+    if not contradicts(baseline, oracle, alpha, beta):
+        print("  verdict: the engine's bound agrees with the oracle; nothing to blame")
+    elif contradicts(floor, oracle, alpha, beta):
+        print("  verdict: wrong with every mechanism off, so the check extension, the "
+              "table or the evaluation owns this, not pruning")
+        verdict["floor_is_wrong"] = True
+    else:
+        singles = [(f"+{name}", (name,)) for name in search.MECHANISMS]
+        single_runs = [run_variant(case, v, root_depth, work) for v in singles]
+        print("  adding one mechanism at a time to the clean floor:")
+        print_rows(single_runs, oracle, alpha, beta, root_depth, reference)
+        guilty = [row["label"][1:] for row in single_runs
+                  if contradicts(int(row["score"]), oracle, alpha, beta)]
+        clean = [name for name in search.MECHANISMS if name not in guilty]
+        verdict["single_cause"] = guilty
+        verdict["clean_alone"] = clean
+        if guilty:
+            print(f"  each of these removes the line on its own: {', '.join(guilty)}")
+        pairs = [(f"+{a}+{b}", (a, b))
+                 for index, a in enumerate(clean) for b in clean[index + 1:]]
+        if pairs:
+            pair_runs = [run_variant(case, v, root_depth, work) for v in pairs]
+            bad = [row for row in pair_runs
+                   if contradicts(int(row["score"]), oracle, alpha, beta)]
+            verdict["pair_cause"] = [row["label"] for row in bad]
+            if bad:
+                print("  pairs that are clean alone and wrong together:")
+                print_rows(bad, oracle, alpha, beta, root_depth, reference)
+            else:
+                print(f"  no pair of the {len(clean)} clean mechanisms is wrong together")
+        runs.update({row["label"]: row for row in single_runs})
+    return {"case": case, "oracle": oracle, "runs": runs, "verdict": verdict}
 
 
 def main() -> int:
