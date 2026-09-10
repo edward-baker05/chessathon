@@ -35,7 +35,7 @@ from torch import nn
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tools import dataset  # noqa: E402
+from tools import dataset, freshset  # noqa: E402
 
 # One training batch, already on the device: white features, black features, bag offsets,
 # side to move, output bucket, and the label in centipawns.
@@ -197,6 +197,31 @@ def evaluate_loss(model: Network, records: np.ndarray, batch_size: int, device: 
     return total / max(seen, 1)
 
 
+def fresh_evaluations(
+    model: Network, fresh: freshset.FreshSet, device: torch.device, buckets: int,
+    king_buckets: int, batch: int = 8192,
+) -> np.ndarray:
+    """Centipawns for every board of the fresh holdout, in `fresh.fens` order."""
+    model.eval()
+    out: list[float] = []
+    with torch.no_grad():
+        for start in range(0, fresh.records.shape[0], batch):
+            block = fresh.records[start : start + batch]
+            index, white, black, stm, _score = dataset.unpack(block, king_buckets)
+            counts = np.bincount(index, minlength=block.shape[0])
+            offsets = np.zeros(block.shape[0], dtype=np.int64)
+            np.cumsum(counts[:-1], out=offsets[1:])
+            bucket = np.clip((counts - 2) // ((32 - 2) // buckets + 1), 0, buckets - 1)
+            value = model(
+                torch.from_numpy(white).to(device), torch.from_numpy(black).to(device),
+                torch.from_numpy(offsets).to(device), torch.from_numpy(stm).to(device),
+                torch.from_numpy(bucket).to(device),
+            )
+            out.extend(float(v) * SCALE for v in value.cpu())
+    model.train()
+    return np.array(out)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=ROOT / "data" / "train.bin")
@@ -213,6 +238,12 @@ def main() -> int:
                         help="768-feature blocks, one per own-king region")
     parser.add_argument("--positions", type=int, default=0,
                         help="use only this many records, so a pilot is a fixed subset")
+    parser.add_argument("--fresh-holdout", type=Path,
+                        help="a tools/holdout.py file, scored after every epoch and used to "
+                             "choose best.pt. The in-file holdout below is a tail of the "
+                             "training data and has been shown to mislead in both "
+                             "directions; this one is generated from games the training "
+                             "file never saw and is split by opening cluster")
     arguments = parser.parse_args()
 
     if not arguments.data.exists():
@@ -226,6 +257,20 @@ def main() -> int:
     torch.manual_seed(arguments.seed)
     if device.type == "cuda":
         torch.cuda.manual_seed_all(arguments.seed)
+
+    # Loaded before the first epoch, so a bad path fails in a second rather than an hour in.
+    fresh = freshset.load(arguments.fresh_holdout) if arguments.fresh_holdout else None
+    if fresh is None:
+        print("no --fresh-holdout given. The holdout below is a tail of the training file, "
+              "drawn from the distribution the weights are being fitted to. It says whether "
+              "this net fit this file and not whether the evaluation is any good; run 1 "
+              "measured a net 3.6% better on it that was 0.4% better off it and drew its "
+              "match. Pass --fresh-holdout unless you have a reason not to.")
+    else:
+        print(f"fresh holdout: {len(fresh.owners):,} positions, {fresh.records.shape[0]:,} "
+              f"boards including the reference's ranked moves, "
+              f"{int(fresh.is_mate.sum()):,} labelled as mates and kept out of the "
+              f"centipawn figures")
 
     records = dataset.load(arguments.data)
     if arguments.positions:
@@ -253,6 +298,7 @@ def main() -> int:
         "l1": arguments.l1,
         "buckets": arguments.buckets,
         "king_buckets": arguments.king_buckets,
+        "fresh_holdout": str(arguments.fresh_holdout) if arguments.fresh_holdout else None,
         "epochs": arguments.epochs,
         "batch": arguments.batch,
         "lr": arguments.lr,
@@ -271,6 +317,7 @@ def main() -> int:
     rng = np.random.default_rng(arguments.seed)
     arguments.checkpoints.mkdir(parents=True, exist_ok=True)
 
+    best = float("inf")
     for epoch in range(1, arguments.epochs + 1):
         started = time.perf_counter()
         running = 0.0
@@ -300,28 +347,52 @@ def main() -> int:
             model, holdout_records, arguments.batch, device, arguments.buckets, rng,
             arguments.king_buckets
         )
+        measured: dict[str, float] = {}
+        if fresh is not None:
+            measured = freshset.score(
+                fresh,
+                fresh_evaluations(model, fresh, device, arguments.buckets,
+                                  arguments.king_buckets),
+                SCALE,
+            )
         elapsed = time.perf_counter() - started
-        print(f"\repoch {epoch}: train {running / max(seen, 1):.6f}  holdout {validation:.6f}  "
-              f"{elapsed:.0f}s ({seen / max(elapsed, 1e-9):,.0f}/s)".ljust(90))
+        line = (f"\repoch {epoch}: train {running / max(seen, 1):.6f}  "
+                f"in-file {validation:.6f}")
+        if measured:
+            line += (f"  fresh {measured['sigmoid_mse']:.6f}"
+                     f"  quiet {measured['quiet_mae_cp']:.1f}cp"
+                     f"  top1 {measured['top1']:.1%}")
+        print(f"{line}  {elapsed:.0f}s ({seen / max(elapsed, 1e-9):,.0f}/s)".ljust(110))
 
         # Every epoch, so a long run can be stopped at any point without losing the day.
-        torch.save(
-            {
-                "state": model.state_dict(),
-                "l1": arguments.l1,
-                "buckets": arguments.buckets,
-                "king_buckets": arguments.king_buckets,
-                "epoch": epoch,
-                "holdout_loss": validation,
-                "train_loss": running / max(seen, 1),
-                "positions": train_records.shape[0],
-                "provenance": provenance,
-            },
-            arguments.checkpoints / f"epoch{epoch:03d}.pt",
-        )
+        blob = {
+            "state": model.state_dict(),
+            "l1": arguments.l1,
+            "buckets": arguments.buckets,
+            "king_buckets": arguments.king_buckets,
+            "epoch": epoch,
+            "holdout_loss": validation,
+            "fresh": measured or None,
+            "train_loss": running / max(seen, 1),
+            "positions": train_records.shape[0],
+            "provenance": provenance,
+        }
+        torch.save(blob, arguments.checkpoints / f"epoch{epoch:03d}.pt")
+
+        # Chosen on the fresh holdout where there is one, because the in-file number is a
+        # tail of the training data and picking on it picks the epoch that fit this file
+        # best. Selecting on the fresh set does make it a selection set rather than a clean
+        # holdout, which is why a match is still the acceptance test and not this number.
+        criterion = measured["sigmoid_mse"] if measured else validation
+        if criterion < best:
+            best = criterion
+            torch.save(blob, arguments.checkpoints / "best.pt")
+            print(f"  best so far, on {'the fresh holdout' if measured else 'the in-file '
+                  'holdout'}: {criterion:.6f} at epoch {epoch}")
 
     print(f"\ncheckpoints in {arguments.checkpoints}")
-    print("quantise one with: uv run python tools/quantise.py --checkpoint <file>")
+    print(f"quantise the best one with: uv run python tools/quantise.py "
+          f"--checkpoint {arguments.checkpoints / 'best.pt'} --out weights/candidate.npz")
     return 0
 
 

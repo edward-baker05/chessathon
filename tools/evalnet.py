@@ -47,33 +47,11 @@ import chess  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
-from tools import dataset  # noqa: E402
+from tools import dataset, freshset  # noqa: E402
 from tools.checkpoint import load_checkpoint  # noqa: E402
 from tools.train import SCALE, Network  # noqa: E402
 
 RUNTIME = ROOT / "tools" / "net_eval_runtime.py"
-
-
-def positions_and_children(rows: list[dict[str, Any]]) -> tuple[list[str], list[list[int]]]:
-    """Every board a net has to evaluate, and which of them belong to which position.
-
-    The position itself first, then the position after each ranked move. Evaluating a
-    child is what turns a static evaluation into a move ordering, and the ordering is the
-    half of the comparison that a loss curve cannot show.
-    """
-    fens: list[str] = []
-    owned: list[list[int]] = []
-    for row in rows:
-        board = chess.Board(str(row["fen"]))
-        mine = [len(fens)]
-        fens.append(board.fen())
-        for entry in row["ranked"]:
-            child = board.copy(stack=False)
-            child.push(chess.Move.from_uci(str(entry["move"])))
-            mine.append(len(fens))
-            fens.append(child.fen())
-        owned.append(mine)
-    return fens, owned
 
 
 def float_evaluations(checkpoint: Path, fens: list[str], batch: int = 4096) -> list[float]:
@@ -211,7 +189,9 @@ def main() -> int:
         parser.error(f"{arguments.out} exists; evidence is never overwritten, pick a new name")
     holdout = json.loads(arguments.holdout.read_text())
     rows = holdout["positions"][: arguments.limit or None]
-    fens, owned = positions_and_children(rows)
+    # The same boards, in the same order, that tools/train.py scores itself on each epoch.
+    built = freshset.load(arguments.holdout, arguments.limit)
+    fens, owned = built.fens, built.owners
     print(f"{len(rows)} holdout positions, {len(fens)} boards to evaluate")
 
     results: dict[str, Any] = {}
