@@ -13,9 +13,11 @@ crossing its own bucket boundary is the one move that cannot be: every feature t
 perspective reads has moved to a different block. A missed refresh leaves an accumulator
 that is wrong and stays wrong for the rest of the subtree.
 
-Both run at one bucket and at four. At one bucket the whole mechanism folds to a constant
-zero, so a test that only ran there would prove nothing about the other. `nnue` fixes its
-shape at import from the file it loads, so each case is a subprocess with its own network.
+Every supported bucket count is run. At one bucket the whole mechanism folds to a constant
+zero, so a test that only ran there would prove nothing about the others, and each finer
+partition is a different arithmetic expression that has to be written identically twice.
+`nnue` fixes its shape at import from the file it loads, so each case runs in a subprocess
+against a network written for it.
 """
 
 import json
@@ -65,7 +67,7 @@ def run_with(tmp_path: Path, king_buckets: int) -> dict[str, Any]:
     return parsed
 
 
-@pytest.mark.parametrize("king_buckets", [1, 4])
+@pytest.mark.parametrize("king_buckets", [1, 4, 8, 16])
 def test_offline_features_and_incremental_updates_agree(
     tmp_path: Path, king_buckets: int
 ) -> None:

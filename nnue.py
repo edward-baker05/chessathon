@@ -66,6 +66,8 @@ WEIGHTS_PATH = (
 # such block per own-king bucket; how many buckets there are is a property of the file,
 # read below, so one runtime plays a plain 768 net and a king-conditioned one unchanged.
 SQUARE_FEATURES = 768
+# Bucket counts the runtime knows how to partition the board into. See `king_bucket`.
+KING_BUCKET_COUNTS = (1, 4, 8, 16)
 
 # An evaluation is clamped to this. The search reserves scores near MATE for real mates,
 # and a net that produced one would be read as a forced win that does not exist.
@@ -92,10 +94,11 @@ def _load(path: Path) -> dict[str, np.ndarray]:
     if missing:
         raise ValueError(f"{path} is missing {', '.join(missing)}")
     rows = int(arrays["ft_weight"].shape[0])
-    if rows % SQUARE_FEATURES or rows // SQUARE_FEATURES not in (1, 4):
+    if rows % SQUARE_FEATURES or rows // SQUARE_FEATURES not in KING_BUCKET_COUNTS:
         raise ValueError(
-            f"{path} has {rows} input features, expected {SQUARE_FEATURES} or "
-            f"{4 * SQUARE_FEATURES}, being one 768-feature block per own-king bucket"
+            f"{path} has {rows} input features, expected one 768-feature block per own-king "
+            f"bucket with {KING_BUCKET_COUNTS} buckets, so one of "
+            f"{[n * SQUARE_FEATURES for n in KING_BUCKET_COUNTS]}"
         )
     hidden = int(arrays["ft_weight"].shape[1])
     if arrays["ft_bias"].shape != (hidden,):
@@ -209,19 +212,28 @@ def king_bucket(perspective: Square, king_square: Square) -> Square:
     """Which block of 768 features this perspective is currently reading.
 
     The board is oriented first, exactly as `feature` orients it: from black's side it is
-    flipped vertically, so a bucket means the same thing to both players. The partition is
-    a fixed 2x2 of the oriented board, by file and by rank:
+    flipped vertically, so a bucket means the same thing to both players. The partition
+    then divides the oriented board into equal rectangles, finer as the count rises:
 
-        0  own half, files a to d      1  own half, files e to h
-        2  far half, files a to d      3  far half, files e to h
+        4   two file halves by two rank halves
+        8   four file quarters by two rank halves
+        16  four file quarters by four rank quarters
 
-    So bit 2 of the oriented square is the file half and bit 5 is the rank half. With one
-    bucket this is the constant zero and numba folds it away with the branch.
+    A finer partition gives the network more room to say that the same piece placement
+    means different things depending on where its king is, and costs three things: weights
+    in proportion, fewer positions per bucket to learn from, and more refreshes, because
+    every extra boundary is another line a king can cross. `KING_BUCKETS` is a literal by
+    the time numba compiles this, so exactly one branch survives, and at one bucket the
+    whole thing folds to a constant zero.
     """
     if KING_BUCKETS == 1:
         return np.int64(0)
     oriented = king_square ^ (perspective * 56)
-    return ((oriented >> 2) & 1) | (((oriented >> 5) & 1) << 1)
+    if KING_BUCKETS == 4:
+        return ((oriented >> 2) & 1) | (((oriented >> 5) & 1) << 1)
+    if KING_BUCKETS == 8:
+        return ((oriented & 7) >> 1) | (((oriented >> 5) & 1) << 2)
+    return ((oriented & 7) >> 1) | ((((oriented >> 3) & 7) >> 1) << 2)
 
 
 @njit(int64(uint64[:], int64), cache=False, inline="always")

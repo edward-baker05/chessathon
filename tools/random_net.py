@@ -27,7 +27,7 @@ def main() -> None:
     parser.add_argument("--qb", type=int, default=64)
     parser.add_argument("--scale", type=int, default=400)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--king-buckets", type=int, default=1, choices=(1, 4),
+    parser.add_argument("--king-buckets", type=int, default=1, choices=(1, 4, 8, 16),
                         help="768-feature blocks, one per own-king region")
     parser.add_argument("--out", type=Path, default=ROOT / "weights" / "net.npz")
     arguments = parser.parse_args()

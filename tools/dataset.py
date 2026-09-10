@@ -83,16 +83,25 @@ Unpacked = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 # every square rather than trusting the arithmetic to be written the same way twice.
 SQUARE_FEATURES = 768
 KING_CODE = 5  # colour * 6 + piece, with piece 5 being the king, so 5 white and 11 black.
+KING_BUCKET_COUNTS = (1, 4, 8, 16)
 
 
-def bucket_of(oriented_king: np.ndarray) -> np.ndarray:
+def bucket_of(oriented_king: np.ndarray, count: int) -> np.ndarray:
     """Which block a perspective reads, from its own king's already-oriented square.
 
-    A fixed 2x2 of the oriented board: bit 2 of the square is the file half and bit 5 the
-    rank half. Orienting is the caller's job, because the caller is the one that knows
-    which perspective it is building.
+    Must agree with `nnue.king_bucket` for every square and every count, which
+    `tests/test_king_buckets.py` checks rather than assumes. Orienting is the caller's job,
+    because the caller is the one that knows which perspective it is building.
     """
-    return ((oriented_king >> 2) & 1) | (((oriented_king >> 5) & 1) << 1)
+    if count == 1:
+        return np.zeros_like(oriented_king)
+    if count == 4:
+        return ((oriented_king >> 2) & 1) | (((oriented_king >> 5) & 1) << 1)
+    if count == 8:
+        return ((oriented_king & 7) >> 1) | (((oriented_king >> 5) & 1) << 2)
+    if count == 16:
+        return ((oriented_king & 7) >> 1) | ((((oriented_king >> 3) & 7) >> 1) << 2)
+    raise ValueError(f"{count} king buckets; expected one of {KING_BUCKET_COUNTS}")
 
 
 def unpack(records: np.ndarray, king_buckets: int = 1) -> Unpacked:
@@ -144,8 +153,8 @@ def unpack(records: np.ndarray, king_buckets: int = 1) -> Unpacked:
             raise ValueError(f"{int((kings < 0).any(axis=1).sum())} records have no king")
         # White reads the board as it stands; black reads it flipped, and `bucket_of`
         # takes an already-oriented square, so black's king is flipped before bucketing.
-        white_bucket = bucket_of(kings[:, 0])[index]
-        black_bucket = bucket_of(kings[:, 1] ^ 56)[index]
+        white_bucket = bucket_of(kings[:, 0], king_buckets)[index]
+        black_bucket = bucket_of(kings[:, 1] ^ 56, king_buckets)[index]
         white = white_bucket * SQUARE_FEATURES + white
         black = black_bucket * SQUARE_FEATURES + black
 

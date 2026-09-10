@@ -234,7 +234,7 @@ def main() -> int:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--holdout", type=float, default=0.005)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--king-buckets", type=int, default=1, choices=(1, 4),
+    parser.add_argument("--king-buckets", type=int, default=1, choices=(1, 4, 8, 16),
                         help="768-feature blocks, one per own-king region")
     parser.add_argument("--positions", type=int, default=0,
                         help="use only this many records, so a pilot is a fixed subset")
