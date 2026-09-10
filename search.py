@@ -139,6 +139,7 @@ SEE_CAPTURE_MARGIN = _margin("SEE_CAPTURE_MARGIN", 100)
 # Delta pruning in quiescence: this far below alpha even after the capture wins its victim.
 DELTA_MARGIN = _margin("DELTA_MARGIN", 200)
 
+
 # --------------------------------------------------------------------------------------
 # The fifty-move rule is the one thing that decides a game and is not in the position key.
 # Two consequences, and this constant is the scope of the answer to both.
@@ -658,7 +659,7 @@ def qsearch(work: Bits, ply: Square, alpha: Bits, beta: Bits) -> Bits:
         make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
         if not legal_after(work.state[ply + 1], black):
             continue
-        nnue_apply(work.acc, ply, state, mail, move)
+        nnue_apply(work.acc, ply, state, mail, work.state[ply + 1], work.mail[ply + 1], move)
         legal += 1
         work.played[ply] = move
         work.moved_piece[ply] = mail[np.int64(move & 63)]
@@ -776,6 +777,14 @@ def negamax(
     if prunable:
         # Reverse futility. So far ahead that giving back a margin per remaining ply still
         # beats beta, so the opponent would have avoided this line.
+        # Two changes to this cutoff were built and rejected on measurement, not taste:
+        # withholding it below a piece count, and returning `beta + (static - beta) / 3`
+        # instead of the raw static evaluation. Both came out of an independently judged
+        # failure set in which reverse futility alone reproduced six of nineteen confirmed
+        # bad moves, every one of them an ending. Together they put 8 of those 19 right at
+        # a fixed depth of six. On the whole 320-position sample at a 300k-node budget they
+        # made move quality **worse**, 10.3cp of mean regret against 5.7, and worst in the
+        # endings they were aimed at, 15.6cp against 5.7. See audit/next-strength/run1.
         if depth <= 8 and static - RFP_MARGIN * depth >= beta and mechanisms & M_RFP:
             # A stalemate scores zero however good the pieces on it look, so a cutoff that
             # stands in for the search has to know that the search had something to do.
@@ -914,7 +923,7 @@ def negamax(
         make(state, mail, work.state[ply + 1], work.mail[ply + 1], move)
         if not legal_after(work.state[ply + 1], black):
             continue
-        nnue_apply(work.acc, ply, state, mail, move)
+        nnue_apply(work.acc, ply, state, mail, work.state[ply + 1], work.mail[ply + 1], move)
         legal += 1
         work.played[ply] = move
         work.moved_piece[ply] = mail[np.int64(move & 63)]
@@ -1049,7 +1058,7 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
                 make(state, mail, work.state[1], work.mail[1], move)
                 if not legal_after(work.state[1], black):
                     continue
-                nnue_apply(work.acc, 0, state, mail, move)
+                nnue_apply(work.acc, 0, state, mail, work.state[1], work.mail[1], move)
                 legal += 1
                 work.played[0] = move
                 # Continuation history below the root reads this slot. Left at zero it

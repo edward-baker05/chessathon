@@ -17,8 +17,8 @@ cost a factor of between six and thirty six when it was got wrong.
    `int32(ROW, ROW, RO_ROW)` signature it vectorises and runs at 87 ns. Lazy compilation,
    `inline="always"` and hand-inlining all measured slow. This is why every loop below is
    a small function with a spelled-out signature, and why the wrappers that slice do no
-   arithmetic. It looks like indirection. It is a 6x speedup, and `tests/test_nnue.py`
-   guards it.
+   arithmetic. It looks like indirection. It is a 6x speedup. No test guards it; the
+   throughput line in `tests/bench.py` is the only thing that would notice it going.
 
 3. Rows sliced from the module-level weight arrays are `readonly` to numba, which is a
    different type from a writable row. A signature that does not say so fails to compile,
@@ -33,6 +33,7 @@ so `tools/quantise.py` proves it cannot for the specific weights being shipped a
 to write a file it cannot prove safe.
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -40,7 +41,7 @@ import numpy as np
 from numba import int8, int16, int32, int64, njit, uint64, void
 from numba.core import types
 
-from bitboard import BOCC, ONE, PAWN, ROOK, STM, WOCC, U, popcount
+from bitboard import BOCC, KING, ONE, PAWN, ROOK, STM, WOCC, U, lsb, popcount
 
 Bits = Any
 Square = Any
@@ -51,13 +52,20 @@ Square = Any
 ROW: Any = types.Array(types.int16, 1, "C")  # type: ignore[no-untyped-call]
 RO_ROW: Any = types.Array(types.int16, 1, "C", readonly=True)  # type: ignore[no-untyped-call]
 
-WEIGHTS_PATH = Path(__file__).resolve().parent / "weights" / "net.npz"
+# The shipped network sits beside this file, which is what the zip contains and what a
+# rated game always loads. The override exists so a test can run the runtime against a
+# network of a different shape without editing the tree the engine is playing from; it is
+# never set on the platform, where the environment is fixed and there is nothing else to
+# point at.
+_OVERRIDE = os.environ.get("CHESSATHON_WEIGHTS", "")
+WEIGHTS_PATH = (
+    Path(_OVERRIDE) if _OVERRIDE else Path(__file__).resolve().parent / "weights" / "net.npz"
+)
 
-# Piece-square-colour features, six piece types by two colours by sixty four squares.
-NUM_FEATURES = 768
-# One extra all-zero row past the real features. Pointing an unused slot at it lets every
-# move share one "subtract two, add two" update instead of branching per move flag.
-ZERO_FEATURE = NUM_FEATURES
+# Piece-square-colour features, six piece types by two colours by sixty four squares. One
+# such block per own-king bucket; how many buckets there are is a property of the file,
+# read below, so one runtime plays a plain 768 net and a king-conditioned one unchanged.
+SQUARE_FEATURES = 768
 
 # An evaluation is clamped to this. The search reserves scores near MATE for real mates,
 # and a net that produced one would be read as a forced win that does not exist.
@@ -83,9 +91,11 @@ def _load(path: Path) -> dict[str, np.ndarray]:
     missing = [name for name in required if name not in arrays]
     if missing:
         raise ValueError(f"{path} is missing {', '.join(missing)}")
-    if arrays["ft_weight"].shape[0] != NUM_FEATURES:
+    rows = int(arrays["ft_weight"].shape[0])
+    if rows % SQUARE_FEATURES or rows // SQUARE_FEATURES not in (1, 4):
         raise ValueError(
-            f"{path} has {arrays['ft_weight'].shape[0]} input features, expected {NUM_FEATURES}"
+            f"{path} has {rows} input features, expected {SQUARE_FEATURES} or "
+            f"{4 * SQUARE_FEATURES}, being one 768-feature block per own-king bucket"
         )
     hidden = int(arrays["ft_weight"].shape[1])
     if arrays["ft_bias"].shape != (hidden,):
@@ -110,6 +120,15 @@ BUCKETS: int = int(_NET["out_bias"].shape[0])
 QA: int = int(_NET["qa"])
 QB: int = int(_NET["qb"])
 SCALE: int = int(_NET["scale"])
+
+# How many own-king buckets the shipped file was trained with: 1 is the plain scheme, in
+# which `king_bucket` folds to a constant zero at compile time and every index below is
+# exactly what it was before this existed.
+KING_BUCKETS: int = int(_NET["ft_weight"].shape[0]) // SQUARE_FEATURES
+NUM_FEATURES: int = SQUARE_FEATURES * KING_BUCKETS
+# One extra all-zero row past the real features. Pointing an unused slot at it lets every
+# move share one "subtract two, add two" update instead of branching per move flag.
+ZERO_FEATURE = NUM_FEATURES
 
 # The zero row is appended here rather than saved in the file, so the file holds only real
 # weights and the trainer never has to know about this trick.
@@ -185,30 +204,72 @@ def _dot(us: Bits, them: Bits, weights: Bits) -> Bits:
 # --------------------------------------------------------------------------------------
 
 
-@njit(int32(int64, int64, int64, int64), cache=False, inline="always")
-def feature(perspective: Square, colour: Square, piece: Square, square: Square) -> Bits:
+@njit(int64(int64, int64), cache=False, inline="always")
+def king_bucket(perspective: Square, king_square: Square) -> Square:
+    """Which block of 768 features this perspective is currently reading.
+
+    The board is oriented first, exactly as `feature` orients it: from black's side it is
+    flipped vertically, so a bucket means the same thing to both players. The partition is
+    a fixed 2x2 of the oriented board, by file and by rank:
+
+        0  own half, files a to d      1  own half, files e to h
+        2  far half, files a to d      3  far half, files e to h
+
+    So bit 2 of the oriented square is the file half and bit 5 is the rank half. With one
+    bucket this is the constant zero and numba folds it away with the branch.
+    """
+    if KING_BUCKETS == 1:
+        return np.int64(0)
+    oriented = king_square ^ (perspective * 56)
+    return ((oriented >> 2) & 1) | (((oriented >> 5) & 1) << 1)
+
+
+@njit(int64(uint64[:], int64), cache=False, inline="always")
+def king_of(state: Bits, colour: Square) -> Square:
+    """Square of one side's king."""
+    return lsb(state[KING] & (state[BOCC] if colour else state[WOCC]))
+
+
+@njit(int32(int64, int64, int64, int64, int64), cache=False, inline="always")
+def feature(perspective: Square, colour: Square, piece: Square, square: Square,
+            bucket: Square) -> Bits:
     """Index of one piece-on-square feature, as seen from one side.
 
     `perspective` is 0 for white and 1 for black. From black's side the board is flipped
     vertically and the colours are swapped, so that "my pawn on my second rank" is the
     same feature for both players and the two halves of the network share weights.
+    `bucket` is `king_bucket` of that perspective's own king, and is zero unless the
+    shipped file was trained king-conditioned.
     """
-    return np.int32(((colour ^ perspective) * 6 + piece) * 64 + (square ^ (perspective * 56)))
+    return np.int32(bucket * SQUARE_FEATURES
+                    + ((colour ^ perspective) * 6 + piece) * 64 + (square ^ (perspective * 56)))
 
 
-@njit(void(int16[:, :, ::1], int64, uint64[:], int8[:]), cache=False)
-def refresh(acc: Bits, ply: Square, state: Bits, mail: Bits) -> None:
-    """Rebuild both accumulators from the board. Called once per search, at the root."""
-    _set(acc[ply, 0], FT_BIAS)
-    _set(acc[ply, 1], FT_BIAS)
+@njit(void(int16[:, :, ::1], int64, int64, uint64[:], int8[:]), cache=False)
+def refresh_one(acc: Bits, ply: Square, perspective: Square, state: Bits, mail: Bits) -> None:
+    """Rebuild one accumulator from the board.
+
+    Its own function because a king crossing a bucket boundary invalidates that side's
+    accumulator and only that side's: every feature it reads has moved to a different
+    block, while the other perspective's are all still where they were.
+    """
+    row = acc[ply, perspective]
+    _set(row, FT_BIAS)
+    bucket = king_bucket(perspective, king_of(state, perspective))
     black_occupancy = state[BOCC]
     for square in range(64):
         piece = np.int64(mail[square])
         if piece < 0:
             continue
         colour = np.int64(1) if ((black_occupancy >> U(square)) & ONE) != 0 else np.int64(0)
-        _add(acc[ply, 0], FT_WEIGHT[feature(0, colour, piece, square)])
-        _add(acc[ply, 1], FT_WEIGHT[feature(1, colour, piece, square)])
+        _add(row, FT_WEIGHT[feature(perspective, colour, piece, square, bucket)])
+
+
+@njit(void(int16[:, :, ::1], int64, uint64[:], int8[:]), cache=False)
+def refresh(acc: Bits, ply: Square, state: Bits, mail: Bits) -> None:
+    """Rebuild both accumulators from the board. Called once per search, at the root."""
+    refresh_one(acc, ply, 0, state, mail)
+    refresh_one(acc, ply, 1, state, mail)
 
 
 @njit(void(int16[:, :, ::1], int64), cache=False)
@@ -218,14 +279,18 @@ def copy(acc: Bits, ply: Square) -> None:
     _copy_row(acc[ply + 1, 1], acc[ply, 1])
 
 
-@njit(void(int16[:, :, ::1], int64, uint64[:], int8[:], int32), cache=False)
-def apply(acc: Bits, ply: Square, state: Bits, mail: Bits, move: Bits) -> None:
+@njit(void(int16[:, :, ::1], int64, uint64[:], int8[:], uint64[:], int8[:], int32), cache=False)
+def apply(acc: Bits, ply: Square, state: Bits, mail: Bits, after_state: Bits, after_mail: Bits,
+          move: Bits) -> None:
     """Write ply+1 from ply for one move, without rebuilding from the board.
 
-    `state` and `mail` are the position *before* the move. Everything the update needs is
-    derivable from them, which is why this can sit in the search after the legality check
-    rather than inside `position.make`: `position.py` stays free of evaluation concerns,
-    and pseudo-legal moves that turn out illegal cost nothing.
+    `state` and `mail` are the position *before* the move, and `after_state`/`after_mail`
+    the position after it, which the search has already built by the time it calls this.
+    The incremental update needs only the first pair; the second is there for the one case
+    that cannot be incremental, a king crossing its own bucket boundary, which invalidates
+    every feature that perspective reads and has to be rebuilt from the board. With a
+    single bucket that branch is compile-time dead and the extra arguments cost nothing
+    but the call.
 
     At most two features leave and two arrive. A capture removes the mover's old square
     and the victim; castling removes the king's and the rook's old squares and adds both
@@ -247,8 +312,17 @@ def apply(acc: Bits, ply: Square, state: Bits, mail: Bits, move: Bits) -> None:
 
     simple = flag == 0 and mail[to] < 0
     for p in range(2):
-        sub0 = feature(p, us, moved, frm)
-        add0 = feature(p, us, arriving, to)
+        bucket = np.int64(0)
+        if KING_BUCKETS > 1:
+            bucket = king_bucket(p, king_of(state, p))
+            # `to` is the king's destination under every flag, castling included, so this
+            # is the whole test. Only the mover's own perspective can change bucket; the
+            # other side's king has not moved.
+            if moved == KING and us == p and king_bucket(p, to) != bucket:
+                refresh_one(acc, ply + 1, p, after_state, after_mail)
+                continue
+        sub0 = feature(p, us, moved, frm, bucket)
+        add0 = feature(p, us, arriving, to, bucket)
         if simple:
             _move_one(acc[ply + 1, p], acc[ply, p], FT_WEIGHT[sub0], FT_WEIGHT[add0])
             continue
@@ -257,7 +331,7 @@ def apply(acc: Bits, ply: Square, state: Bits, mail: Bits, move: Bits) -> None:
         add1 = np.int32(ZERO_FEATURE)
         if flag == 1:
             # En passant. The captured pawn sits beside the target square, not behind it.
-            sub1 = feature(p, them, PAWN, to + 8 if black else to - 8)
+            sub1 = feature(p, them, PAWN, to + 8 if black else to - 8, bucket)
         elif flag == 2:
             # Castling. The king's move is already in slot zero, so this is the rook.
             if to == 6:
@@ -268,12 +342,12 @@ def apply(acc: Bits, ply: Square, state: Bits, mail: Bits, move: Bits) -> None:
                 rook_from, rook_to = np.int64(63), np.int64(61)
             else:
                 rook_from, rook_to = np.int64(56), np.int64(59)
-            sub1 = feature(p, us, ROOK, rook_from)
-            add1 = feature(p, us, ROOK, rook_to)
+            sub1 = feature(p, us, ROOK, rook_from, bucket)
+            add1 = feature(p, us, ROOK, rook_to, bucket)
         else:
             captured = np.int64(mail[to])
             if captured >= 0:
-                sub1 = feature(p, them, captured, to)
+                sub1 = feature(p, them, captured, to, bucket)
         _move_two(
             acc[ply + 1, p],
             acc[ply, p],
@@ -309,20 +383,31 @@ def new_accumulator(plies: int) -> np.ndarray:
 # compilation lands inside the platform's 90 second init budget rather than on the clock.
 # A real position rather than an empty board: `apply` reads the mover off the mailbox, and
 # warming it on an empty square would index the weights with a piece type of -1.
+#
+# Both kings are on the warm-up board. Without them `king_of` would scan an empty bitboard
+# and index the weights with whatever `lsb(0)` returns, which is a warm-up that crashes
+# only once a king-conditioned file is loaded.
 _acc = new_accumulator(4)
 _state = np.zeros(16, dtype=np.uint64)
 _mail = np.full(64, -1, dtype=np.int8)
 _mail[8] = PAWN
 _mail[16] = PAWN
 _mail[63] = ROOK
+_mail[4] = KING
+_mail[60] = KING
 _state[PAWN] = (np.uint64(1) << np.uint64(8)) | (np.uint64(1) << np.uint64(16))
 _state[ROOK] = np.uint64(1) << np.uint64(63)
-_state[WOCC] = _state[PAWN]
-_state[BOCC] = _state[ROOK]
+_state[KING] = (np.uint64(1) << np.uint64(4)) | (np.uint64(1) << np.uint64(60))
+_state[WOCC] = _state[PAWN] | (np.uint64(1) << np.uint64(4))
+_state[BOCC] = _state[ROOK] | (np.uint64(1) << np.uint64(60))
 refresh(_acc, 0, _state, _mail)
 copy(_acc, 0)
 forward(_acc, 0, _state)
 for _flag in (0, 1, 2, 3):
     # Both branches of `apply`: a quiet move onto an empty square, and every flagged form.
-    apply(_acc, 0, _state, _mail, np.int32(8 | (24 << 6) | (4 << 12) | (_flag << 15)))
-apply(_acc, 0, _state, _mail, np.int32(8 | (16 << 6)))
+    _quiet = np.int32(8 | (24 << 6) | (4 << 12) | (_flag << 15))
+    apply(_acc, 0, _state, _mail, _state, _mail, _quiet)
+apply(_acc, 0, _state, _mail, _state, _mail, np.int32(8 | (16 << 6)))
+# A king move that crosses a bucket boundary, so `refresh_one` is compiled here too rather
+# than on the clock the first time a king walks across the board in a rated game.
+apply(_acc, 0, _state, _mail, _state, _mail, np.int32(4 | (3 << 6)))

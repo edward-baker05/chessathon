@@ -75,8 +75,11 @@ def test_move_state_hash_accumulator_and_features() -> None:
             codes = [(0 if p.color else 6) + p.piece_type - 1
                      for _, p in sorted(board.piece_map().items())]
             record = dataset.pack(board.occupied, codes, not board.turn, 123)
+            # The bucket count has to come from the runtime, not from the default. With a
+            # king-conditioned network loaded, unpacking at one bucket builds indices into
+            # the wrong 768-feature block and every neuron disagrees.
             _, white, black, stm, score = dataset.unpack(
-                np.frombuffer(record, dtype=np.uint8).reshape(1, 32))
+                np.frombuffer(record, dtype=np.uint8).reshape(1, 32), nnue.KING_BUCKETS)
             assert int(stm[0]) == int(not board.turn) and int(score[0]) == 123
             for perspective, features in enumerate((white, black)):
                 reference = nnue.FT_BIAS.astype(np.int64) + nnue.FT_WEIGHT[
@@ -92,7 +95,8 @@ def test_move_state_hash_accumulator_and_features() -> None:
                 legal.add(uci)
                 flags.add(int(packed) >> 15)
                 assert tt.unpack_move(tt.pack_move(packed)) == packed
-                nnue.apply(work.acc, 0, work.state[0], work.mail[0], packed)
+                nnue.apply(work.acc, 0, work.state[0], work.mail[0],
+                           work.state[1], work.mail[1], packed)
                 board.push_uci(uci)
                 position.encode(board, work.state[2], work.mail[2])
                 np.testing.assert_array_equal(work.state[1], work.state[2])
@@ -144,7 +148,8 @@ def descend(board: chess.Board, uci: str, work: Any) -> None:
     """
     move = encoded_move(board, uci)
     position.make(work.state[0], work.mail[0], work.state[1], work.mail[1], move)
-    nnue.apply(work.acc, 0, work.state[0], work.mail[0], move)
+    nnue.apply(work.acc, 0, work.state[0], work.mail[0],
+               work.state[1], work.mail[1], move)
 
 
 def static_of(work: Any, ply: int = 0) -> int:

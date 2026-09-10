@@ -20,10 +20,11 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import torch
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+
+from tools.checkpoint import load_checkpoint  # noqa: E402
 
 # Largest first. QA is the input and activation scale, so a bigger one quantises the
 # accumulator more finely; it is reduced only when the overflow proof demands it.
@@ -65,11 +66,17 @@ def main() -> int:
     parser.add_argument("--qa", type=int, default=0, help="force a scale instead of choosing")
     arguments = parser.parse_args()
 
-    blob = torch.load(arguments.checkpoint, map_location="cpu", weights_only=True)
+    blob = load_checkpoint(arguments.checkpoint)
     state = blob["state"]
     hidden = int(blob["l1"])
     buckets = int(blob["buckets"])
-    print(f"{arguments.checkpoint}: L1 {hidden}, {buckets} buckets, epoch {blob.get('epoch')}, "
+    # How many 768-feature blocks the file carries is not written into the npz: nnue.py
+    # derives it from the number of input rows, so there is one place it can be wrong
+    # rather than two that can disagree. It goes in the provenance so a shipped file can
+    # still say what it was trained as.
+    king_buckets = int(blob.get("king_buckets", 1))
+    print(f"{arguments.checkpoint}: L1 {hidden}, {buckets} buckets, "
+          f"{king_buckets} king bucket(s), epoch {blob.get('epoch')}, "
           f"holdout loss {blob.get('holdout_loss'):.6f}")
 
     ft = state["transformer.weight"].numpy()
@@ -123,6 +130,7 @@ def main() -> int:
             "train_loss": blob.get("train_loss"),
             "l1": hidden,
             "buckets": buckets,
+            "king_buckets": king_buckets,
             "qa": int(qa),
             "training": blob.get("provenance"),
         })),
@@ -134,7 +142,7 @@ def main() -> int:
     error = float(np.abs(ft * qa - ft_weight).mean())
     print(f"  mean input weight rounding error: {error:.4f} of a quantisation step")
     print(f"  clipped input weights:  {int((np.abs(ft_weight) == np.abs(ft_weight).max()).sum())}")
-    print("\nverify with: uv run pytest tests/test_nnue.py -q")
+    print("\nverify with: uv run pytest tests/test_king_buckets.py -q")
     return 0
 
 

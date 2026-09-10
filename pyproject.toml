@@ -43,6 +43,9 @@ testpaths = ["tests"]
 
 [tool.mypy]
 strict = true
+# audit/ is not a package and is not checked, but tools/judge.py imports the UCI client
+# that lives there. Without this the import is unresolvable and strict mode fails.
+mypy_path = ["audit"]
 files = ["agent.py", "bitboard.py", "position.py", "movegen.py", "tt.py", "evaluate.py", "nnue.py", "search.py", "harness", "tests", "tools"]
 
 [tool.pyright]

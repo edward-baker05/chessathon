@@ -43,7 +43,11 @@ Batch = tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
-FEATURES = 768
+# One 768-feature block per own-king bucket. One bucket is the plain piece-square-colour
+# input; four is the king-conditioned pilot, a fixed 2x2 partition of each perspective's
+# own-king square. `tools/dataset.py` owns that mapping and `nnue.py` reproduces it at
+# runtime; nothing in this file knows how a bucket is chosen.
+SQUARE_FEATURES = 768
 # Centipawns per unit of the network's output, and the divisor that turns a centipawn
 # score into a win probability. Equal, so that the loss is a plain sigmoid of the output.
 SCALE = 400
@@ -57,17 +61,23 @@ OUT_CLAMP = 1.98
 
 
 class Network(nn.Module):
-    def __init__(self, hidden: int, buckets: int) -> None:
+    def __init__(self, hidden: int, buckets: int, king_buckets: int = 1) -> None:
         super().__init__()
+        features = SQUARE_FEATURES * king_buckets
         # EmbeddingBag sums the active features without ever materialising a dense input,
         # which is the whole reason a 768 wide sparse layer is cheap to train.
-        self.transformer = nn.EmbeddingBag(FEATURES, hidden, mode="sum")
+        self.transformer = nn.EmbeddingBag(features, hidden, mode="sum")
         self.transformer_bias = nn.Parameter(torch.zeros(hidden))
         self.output = nn.Parameter(torch.zeros(buckets, 2 * hidden))
         self.output_bias = nn.Parameter(torch.zeros(buckets))
         self.hidden = hidden
+        self.king_buckets = king_buckets
 
-        bound = 1.0 / FEATURES**0.5
+        # The fan-in is what a hidden unit actually sums, which is the number of pieces on
+        # the board and not the number of rows in the table. Scaling the bound by the table
+        # size would start a four-bucket net at half the weight magnitude of a one-bucket
+        # net and make the comparison between them measure the initialisation.
+        bound = 1.0 / SQUARE_FEATURES**0.5
         nn.init.uniform_(self.transformer.weight, -bound, bound)
         nn.init.uniform_(self.output, -bound, bound)
 
@@ -130,6 +140,7 @@ def batches(
     rng: np.random.Generator,
     shuffle: bool = True,
     slab: int = 1 << 21,
+    king_buckets: int = 1,
 ) -> Iterator[Batch]:
     """Yield batches, shuffling inside large contiguous slabs.
 
@@ -152,7 +163,7 @@ def batches(
             size = chosen.shape[0]
             if size == 0:
                 continue
-            index, white, black, stm, score = dataset.unpack(block[chosen])
+            index, white, black, stm, score = dataset.unpack(block[chosen], king_buckets)
 
             counts = np.bincount(index, minlength=size)
             offsets = np.zeros(size, dtype=np.int64)
@@ -170,13 +181,13 @@ def batches(
 
 
 def evaluate_loss(model: Network, records: np.ndarray, batch_size: int, device: torch.device,
-                  buckets: int, rng: np.random.Generator) -> float:
+                  buckets: int, rng: np.random.Generator, king_buckets: int = 1) -> float:
     model.eval()
     total = 0.0
     seen = 0
     with torch.no_grad():
         for white, black, offsets, stm, bucket, score in batches(
-            records, batch_size, device, buckets, rng, shuffle=False
+            records, batch_size, device, buckets, rng, shuffle=False, king_buckets=king_buckets
         ):
             predicted = torch.sigmoid(model(white, black, offsets, stm, bucket))
             target = torch.sigmoid(score / SCALE)
@@ -198,6 +209,10 @@ def main() -> int:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--holdout", type=float, default=0.005)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--king-buckets", type=int, default=1, choices=(1, 4),
+                        help="768-feature blocks, one per own-king region")
+    parser.add_argument("--positions", type=int, default=0,
+                        help="use only this many records, so a pilot is a fixed subset")
     arguments = parser.parse_args()
 
     if not arguments.data.exists():
@@ -213,10 +228,15 @@ def main() -> int:
         torch.cuda.manual_seed_all(arguments.seed)
 
     records = dataset.load(arguments.data)
+    if arguments.positions:
+        # A prefix of an already shuffled file. Taking the same prefix in every run of a
+        # comparison is the point: two nets trained on different subsets differ by the
+        # subset as much as by the architecture.
+        records = records[: arguments.positions]
     split = int(records.shape[0] * (1 - arguments.holdout))
     train_records, holdout_records = records[:split], records[split:]
-    print(f"device {device}, L1 {arguments.l1}, {train_records.shape[0]:,} positions, "
-          f"{holdout_records.shape[0]:,} held out")
+    print(f"device {device}, L1 {arguments.l1}, {arguments.king_buckets} king bucket(s), "
+          f"{train_records.shape[0]:,} positions, {holdout_records.shape[0]:,} held out")
 
     # What produced this run, recorded into every checkpoint. Without it a shipped network
     # cannot be traced back to the data and the epoch that made it, and the next run has
@@ -232,17 +252,20 @@ def main() -> int:
         "seed": arguments.seed,
         "l1": arguments.l1,
         "buckets": arguments.buckets,
+        "king_buckets": arguments.king_buckets,
         "epochs": arguments.epochs,
         "batch": arguments.batch,
         "lr": arguments.lr,
         "device": str(device),
-        "torch": torch.__version__,
+        # str, not the TorchVersion object it really is: that type is not on torch.load's
+        # allowlist, so storing it makes the checkpoint unreadable under weights_only.
+        "torch": str(torch.__version__),
         "started": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
         "commit": git_commit(),
     }
     print(json.dumps(provenance, indent=2))
 
-    model = Network(arguments.l1, arguments.buckets).to(device)
+    model = Network(arguments.l1, arguments.buckets, arguments.king_buckets).to(device)
     optimiser = torch.optim.AdamW(model.parameters(), lr=arguments.lr)
     schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimiser, T_max=arguments.epochs)
     rng = np.random.default_rng(arguments.seed)
@@ -253,7 +276,8 @@ def main() -> int:
         running = 0.0
         seen = 0
         for white, black, offsets, stm, bucket, score in batches(
-            train_records, arguments.batch, device, arguments.buckets, rng
+            train_records, arguments.batch, device, arguments.buckets, rng,
+            king_buckets=arguments.king_buckets
         ):
             predicted = torch.sigmoid(model(white, black, offsets, stm, bucket))
             target = torch.sigmoid(score / SCALE)
@@ -273,7 +297,8 @@ def main() -> int:
 
         schedule.step()
         validation = evaluate_loss(
-            model, holdout_records, arguments.batch, device, arguments.buckets, rng
+            model, holdout_records, arguments.batch, device, arguments.buckets, rng,
+            arguments.king_buckets
         )
         elapsed = time.perf_counter() - started
         print(f"\repoch {epoch}: train {running / max(seen, 1):.6f}  holdout {validation:.6f}  "
@@ -285,6 +310,7 @@ def main() -> int:
                 "state": model.state_dict(),
                 "l1": arguments.l1,
                 "buckets": arguments.buckets,
+                "king_buckets": arguments.king_buckets,
                 "epoch": epoch,
                 "holdout_loss": validation,
                 "train_loss": running / max(seen, 1),

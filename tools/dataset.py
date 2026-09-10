@@ -1,11 +1,11 @@
 """The packed training record, and the one place features are derived from it.
 
 `tools/extract.py` writes these records and `tools/train.py` reads them. Both go through
-this module, and `tests/test_dataset.py` proves that the features it produces are exactly
-the ones `nnue.refresh` builds when the engine plays. That agreement is the property the
-whole project depends on and the one that fails most quietly: a net trained under one
-feature convention and played under another still trains to a plausible loss and then
-plays badly, with nothing anywhere to say why.
+this module, and `tests/test_king_buckets.py` proves that the features it produces are
+exactly the ones `nnue` builds when the engine plays, at one king bucket and at four. That
+agreement is the property the whole project depends on and the one that fails most quietly:
+a net trained under one feature convention and played under another still trains to a
+plausible loss and then plays badly, with nothing anywhere to say why.
 
 Not shipped: tools/ never reaches the zip.
 """
@@ -51,6 +51,24 @@ def pack(occupancy: int, codes: list[int], black_to_move: bool, score: int) -> b
     return bytes(record)
 
 
+def from_board(board: Any, score: int = 0) -> bytes:
+    """One `chess.Board` to one record, in the extractor's own convention.
+
+    `tools/extract.py` builds records straight out of the dump's FEN field and never needs
+    a board object. Everything that checks the extractor against the runtime does, and
+    writing the piece walk out twice is how the two quietly stop agreeing.
+    """
+    occupancy = 0
+    codes: list[int] = []
+    for square in range(64):
+        piece = board.piece_at(square)
+        if piece is None:
+            continue
+        occupancy |= 1 << square
+        codes.append((0 if piece.color else 1) * 6 + piece.piece_type - 1)
+    return pack(occupancy, codes, not board.turn, score)
+
+
 def load(path: Any) -> np.ndarray:
     """A whole file as an (n, RECORD) uint8 view, memory mapped rather than read."""
     raw = np.memmap(path, dtype=np.uint8, mode="r")
@@ -60,14 +78,34 @@ def load(path: Any) -> np.ndarray:
 
 Unpacked = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
 
+# One 768-feature block per own-king bucket, and the partition that chooses the block.
+# Both must agree with `nnue.king_bucket` exactly; `tests/test_king_buckets.py` checks
+# every square rather than trusting the arithmetic to be written the same way twice.
+SQUARE_FEATURES = 768
+KING_CODE = 5  # colour * 6 + piece, with piece 5 being the king, so 5 white and 11 black.
 
-def unpack(records: np.ndarray) -> Unpacked:
+
+def bucket_of(oriented_king: np.ndarray) -> np.ndarray:
+    """Which block a perspective reads, from its own king's already-oriented square.
+
+    A fixed 2x2 of the oriented board: bit 2 of the square is the file half and bit 5 the
+    rank half. Orienting is the caller's job, because the caller is the one that knows
+    which perspective it is building.
+    """
+    return ((oriented_king >> 2) & 1) | (((oriented_king >> 5) & 1) << 1)
+
+
+def unpack(records: np.ndarray, king_buckets: int = 1) -> Unpacked:
     """Records to sparse features, one row per piece.
 
     Returns `(index, white, black, stm, score)`. `index[k]` says which position piece `k`
     belongs to, so the three arrays together are a coordinate-format sparse matrix that a
     torch embedding bag consumes directly. Everything is vectorised over the whole batch,
     because a Python loop over positions is slower than the GPU step it feeds.
+
+    With `king_buckets` at 4 every index is offset by its perspective's own-king block.
+    The kings are read out of the packed record itself rather than passed in: the nibbles
+    already carry both kings' piece codes and the occupancy already carries their squares.
     """
     # unpackbits with little bit order puts bit b of byte n at column 8n + b, and squares
     # are numbered from the low bit of the low byte, so the column index is the square.
@@ -92,6 +130,24 @@ def unpack(records: np.ndarray) -> Unpacked:
     # swaps the colour half, which is (code + 6) mod 12, and flips the rank.
     white = flat_codes * 64 + squares
     black = ((flat_codes + 6) % 12) * 64 + (squares ^ 56)
+
+    if king_buckets > 1:
+        # Each position contributes exactly one king per colour, so scattering the king
+        # squares by position index gives one square per position with no loop. A record
+        # missing a king would leave -1 behind and index the weights out of range, so it
+        # is caught here rather than discovered as a wrong evaluation.
+        kings = np.full((records.shape[0], 2), -1, dtype=np.int64)
+        for colour in (0, 1):
+            found = flat_codes == KING_CODE + 6 * colour
+            kings[index[found], colour] = squares[found]
+        if (kings < 0).any():
+            raise ValueError(f"{int((kings < 0).any(axis=1).sum())} records have no king")
+        # White reads the board as it stands; black reads it flipped, and `bucket_of`
+        # takes an already-oriented square, so black's king is flipped before bucketing.
+        white_bucket = bucket_of(kings[:, 0])[index]
+        black_bucket = bucket_of(kings[:, 1] ^ 56)[index]
+        white = white_bucket * SQUARE_FEATURES + white
+        black = black_bucket * SQUARE_FEATURES + black
 
     stm = records[:, STM_OFFSET].astype(np.int64)
     raw = records[:, SCORE_OFFSET:SCORE_OFFSET + 2].copy()
