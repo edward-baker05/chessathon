@@ -95,6 +95,11 @@ def score(fresh: FreshSet, evaluations: np.ndarray, scale: float) -> dict[str, f
         return 1.0 / (1.0 + np.exp(-values / scale))
 
     gap = predicted[quiet] - fresh.label_cp[quiet]
+    # Error where the position is close to level. This is the number that decides games and
+    # the one every capacity increase so far has failed to move: sibling moves differ by tens
+    # of centipawns, so an evaluation noisier than that cannot order them. Measured against a
+    # label floor of about 7cp, from re-evaluating real training records at 2M nodes.
+    balanced = np.abs(fresh.label_cp) < 50
     top1 = ranked = 0
     for mine, theirs in zip(fresh.owners, fresh.ranked_cp, strict=True):
         if len(theirs) < 2:
@@ -113,6 +118,10 @@ def score(fresh: FreshSet, evaluations: np.ndarray, scale: float) -> dict[str, f
             ((sigmoid(predicted[quiet]) - sigmoid(fresh.label_cp[quiet])) ** 2).mean()
         ),
         "quiet_mae_cp": float(np.abs(gap).mean()),
+        "balanced_mae_cp": float(
+            np.abs(predicted[balanced] - fresh.label_cp[balanced]).mean()
+        ) if balanced.any() else 0.0,
+        "balanced_positions": float(balanced.sum()),
         "top1": top1 / max(ranked, 1),
         "positions": float(len(fresh.owners)),
     }

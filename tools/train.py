@@ -141,6 +141,7 @@ def batches(
     shuffle: bool = True,
     slab: int = 1 << 21,
     king_buckets: int = 1,
+    max_label: int = 0,
 ) -> Iterator[Batch]:
     """Yield batches, shuffling inside large contiguous slabs.
 
@@ -163,7 +164,22 @@ def batches(
             size = chosen.shape[0]
             if size == 0:
                 continue
-            index, white, black, stm, score = dataset.unpack(block[chosen], king_buckets)
+            rows = block[chosen]
+            if max_label:
+                # Dropped before the features are built, on the score the record already
+                # carries. Positions this far from level have labels worth 73 to 1320
+                # centipawns of disagreement with a deep search, measured over 300 decoded
+                # training records, and they take most of the gradient; a tenth of the file
+                # is the mate sentinel, whose sigmoid target is 1.0 to float precision and
+                # whose gradient is therefore exactly zero. Fitting that better is what
+                # every extra parameter has been spent on.
+                stored = rows[:, dataset.SCORE_OFFSET:dataset.SCORE_OFFSET + 2]
+                keep = np.abs(stored.copy().view(np.int16).ravel()) <= max_label
+                rows = rows[keep]
+                if rows.shape[0] == 0:
+                    continue
+            size = rows.shape[0]
+            index, white, black, stm, score = dataset.unpack(rows, king_buckets)
 
             counts = np.bincount(index, minlength=size)
             offsets = np.zeros(size, dtype=np.int64)
@@ -238,6 +254,10 @@ def main() -> int:
                         help="768-feature blocks, one per own-king region")
     parser.add_argument("--positions", type=int, default=0,
                         help="use only this many records, so a pilot is a fixed subset")
+    parser.add_argument("--max-label", type=int, default=0,
+                        help="train only on positions whose label is within this many "
+                             "centipawns of level, 0 for all of them. The training stream "
+                             "only; both holdouts stay whole so the numbers stay comparable")
     parser.add_argument("--fresh-holdout", type=Path,
                         help="a tools/holdout.py file, scored after every epoch and used to "
                              "choose best.pt. The in-file holdout below is a tail of the "
@@ -298,6 +318,7 @@ def main() -> int:
         "l1": arguments.l1,
         "buckets": arguments.buckets,
         "king_buckets": arguments.king_buckets,
+        "max_label": arguments.max_label,
         "fresh_holdout": str(arguments.fresh_holdout) if arguments.fresh_holdout else None,
         "epochs": arguments.epochs,
         "batch": arguments.batch,
@@ -324,7 +345,7 @@ def main() -> int:
         seen = 0
         for white, black, offsets, stm, bucket, score in batches(
             train_records, arguments.batch, device, arguments.buckets, rng,
-            king_buckets=arguments.king_buckets
+            king_buckets=arguments.king_buckets, max_label=arguments.max_label
         ):
             predicted = torch.sigmoid(model(white, black, offsets, stm, bucket))
             target = torch.sigmoid(score / SCALE)
@@ -360,7 +381,7 @@ def main() -> int:
                 f"in-file {validation:.6f}")
         if measured:
             line += (f"  fresh {measured['sigmoid_mse']:.6f}"
-                     f"  quiet {measured['quiet_mae_cp']:.1f}cp"
+                     f"  level {measured['balanced_mae_cp']:.1f}cp"
                      f"  top1 {measured['top1']:.1%}")
         print(f"{line}  {elapsed:.0f}s ({seen / max(elapsed, 1e-9):,.0f}/s)".ljust(110))
 
