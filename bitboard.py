@@ -1,7 +1,7 @@
 """Bit primitives, attack tables and Zobrist keys. No position logic lives here.
 
 Every table is built at import so numba compilation and table generation land inside the
-platform's 90 second init budget rather than on the game clock.
+import rather than on the game clock.
 
 Nothing here uses numba's cache=True. numba bakes the *contents* of global numpy arrays
 into a cached binary with no warning, so a cached build would silently serve stale magics

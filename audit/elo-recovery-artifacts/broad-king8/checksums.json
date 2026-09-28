@@ -1,0 +1,18 @@
+{
+  "best.pt": {
+    "bytes": 12622143,
+    "sha256": "fb42e477e5213dbd9c33ba1521d8fbee8fb5630d3b1418679aaffcfbc67b6596"
+  },
+  "net.npz": {
+    "bytes": 4189095,
+    "sha256": "34bce7cece1bf7712f06666d20de8608858259ddc3040abf957e559ecbdd677b"
+  },
+  "corpus-manifest.json": {
+    "bytes": 3887,
+    "sha256": "8fed75f5ca13010e238614fa4a5286598d82f886472771e067501bf288d74588"
+  },
+  "corpus.tar.gz": {
+    "bytes": 85158434,
+    "sha256": "ed91d3424673e0a4cb6117a47c5155eec3699d5fc82a0f95fd3dd0a99b20d346"
+  }
+}

@@ -1,0 +1,28 @@
+import os,sys,json
+from pathlib import Path
+os.environ['CHESSATHON_DEBUG']='0'
+ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
+import chess,chess.engine
+import search,tt
+from audit.uci import Engine
+OUT=Path(__file__).resolve().parent
+cases=json.loads((OUT/'current-failures.json').read_text())
+sf=Engine('/home/edwardb/Documents/stockfish/stockfish-linux-x86-64-universal');sf.configure({'Threads':1,'Hash':32})
+output=[]
+for idx in [1,4,10,11]:
+    case=cases[idx];board=chess.Board(case['source']['fen']);rows=[]
+    policies=[('without-'+name,tuple(m for m in search.MECHANISMS if m!=name)) for name in search.MECHANISMS]
+    policies += [('without-rfp-futility-lmp',tuple(m for m in search.MECHANISMS if m not in ['rfp','futility','lmp']))]
+    for name,mechs in policies:
+        tt.tt_clear(tt.TT);search.clear_tables();search.set_game_history([]);search.set_pruning(True);search.set_mechanisms(mechs)
+        m=search.think(board,3600000,increment_ms=0,node_limit=2097152)
+        d,sd,s,n,t=search.last_search()
+        rows.append(dict(name=name,move=m,cp=s,depth=d,nodes=n,seconds=t))
+    judged=dict(case['judged'])
+    for m in sorted({r['move'] for r in rows}-set(judged)):
+        sf.configure({'Clear Hash':None});r=sf.analyse(board,chess.engine.Limit(nodes=1000000),root_moves=[chess.Move.from_uci(m)])
+        p=r['score'].pov(board.turn);judged[m]=dict(cp=p.score(),mate=p.mate(),pv=[m.uci() for m in r['pv']])
+    output.append(dict(case_index=idx,fen=board.fen(),runs=rows,judged=judged))
+    (OUT/'selective-ablation.json').write_text(json.dumps(output,indent=2))
+    print(idx,[(r['name'],r['move'],judged[r['move']]['cp']) for r in rows],flush=True)
+sf.quit()

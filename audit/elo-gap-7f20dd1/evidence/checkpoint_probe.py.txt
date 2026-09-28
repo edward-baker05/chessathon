@@ -1,0 +1,20 @@
+import os,json
+from pathlib import Path
+os.environ['OMP_NUM_THREADS']='1'
+import torch,numpy as np
+torch.set_num_threads(1)
+OUT=Path(__file__).resolve().parent
+net=np.load(OUT.parent/'weights/net.npz');match=[]
+for d in ['/home/edwardb/Documents/chessathon/data/checkpoints','/home/edwardb/Downloads/checkpoints','/home/edwardb/Documents/chessathon/snapshots']:
+    for p in sorted(Path(d).rglob('*.pt')):
+        b=torch.load(p,map_location='cpu',weights_only=True)
+        if 'state' not in b:continue
+        s=b['state'];ft=s.get('transformer.weight')
+        if ft is None or tuple(ft.shape)!=net['ft_weight'].shape:continue
+        err=int(np.abs(np.rint(ft.numpy()*int(net['qa'])).astype(np.int64)-net['ft_weight']).sum())
+        row=dict(path=str(p),epoch=b.get('epoch'),holdout_loss=b.get('holdout_loss'),ft_error=err)
+        match.append(row)
+        if err==0:
+            row['all_equal']=all(np.array_equal(np.rint(s[k].numpy()*scale).astype(np.int64),net[a]) for k,a,scale in [('transformer_bias','ft_bias',int(net['qa'])),('output','out_weight',int(net['qb'])),('output_bias','out_bias',int(net['qa'])*int(net['qb']))])
+print(sorted(match,key=lambda x:x['ft_error'])[:5])
+(OUT/'checkpoint-match.json').write_text(json.dumps(match,indent=2))

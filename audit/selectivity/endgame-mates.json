@@ -1,0 +1,8 @@
+[
+ {"name": "queen-vs-bare-king", "fen": "8/8/8/8/8/2q3k1/8/3K4 b - - 0 94",
+  "depth": 6, "alpha": 4600, "beta": 4601, "is_pv": false,
+  "note": "From a played game. Mate is forced and the shipped search misses it at depth 9."},
+ {"name": "queen-and-rook-mate", "fen": "8/6pk/4Kp2/7p/5P1P/3q4/3N4/2r5 b - - 11 70",
+  "depth": 6, "alpha": 5900, "beta": 5901, "is_pv": false,
+  "note": "Also from a played game. Floor sees mate at depth 6, shipped does not at depth 7."}
+]

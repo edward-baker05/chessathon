@@ -1,0 +1,52 @@
+import os,sys,time,json,hashlib
+from pathlib import Path
+os.environ['CHESSATHON_DEBUG']='0'
+ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
+import chess,chess.engine,numpy as np
+import search,tt,nnue,position,movegen
+from audit.uci import Engine
+OUT=Path(__file__).resolve().parent
+rows=json.loads((OUT/'rated-reference.json').read_text())['rows']
+# Pre-declared ranking from old games: largest finite error while the game is contestable.
+rows=[r for r in rows if r['cp'] is not None and -150<r['cp']<300 and r['loss'] is not None and r['loss']>=35]
+selected=[];pergame={}
+for r in sorted(rows,key=lambda x:-x['loss']):
+    g=r['game']
+    if pergame.get(g,0)>=2: continue
+    pergame[g]=pergame.get(g,0)+1;selected.append(r)
+    if len(selected)==12:break
+sf=Engine('/home/edwardb/Documents/stockfish/stockfish-linux-x86-64-universal');sf.configure({'Threads':1,'Hash':32,'UCI_ShowWDL':True})
+output=[]
+def fresh():
+    tt.tt_clear(tt.TT);search.clear_tables();search.set_game_history([]);search.set_pruning(True);search.set_mechanisms(None)
+for idx,row in enumerate(selected):
+    b=chess.Board(row['fen']);runs=[]
+    for name,n,mechs in [('262k',262144,None),('2m',2097152,None),('8m',8388608,None),('floor2m',2097152,())]:
+        fresh();search.set_mechanisms(mechs)
+        m=search.think(b,3600000,increment_ms=0,node_limit=n)
+        d,sd,s,used,t=search.last_search()
+        pv=[];walk=b.copy();state,mail=position.new_stacks()
+        # Root move not stored in root TT by think; follow it then recorded TT moves.
+        follow=chess.Move.from_uci(m)
+        for step in range(32):
+            if follow not in walk.legal_moves:break
+            pv.append(follow.uci());walk.push(follow)
+            if walk.is_game_over(claim_draw=True):break
+            position.encode(walk,state[0],mail[0]);hit,_,tm,*_=tt.tt_probe(tt.TT,state[0,12],step+1)
+            if not hit or tm==0:break
+            follow=chess.Move.from_uci(movegen.move_to_uci(int(tm)))
+        runs.append(dict(name=name,move=m,depth=d,seldepth=sd,cp=s,nodes=used,seconds=t,tt_line=pv))
+    sf.configure({'Clear Hash':None})
+    reference=sf.analyse(b,chess.engine.Limit(nodes=1000000))
+    choices={row['played'],row['best'],reference['pv'][0].uci(),*(r['move'] for r in runs)}
+    judged={}
+    for uci in sorted(choices):
+        sf.configure({'Clear Hash':None})
+        i=sf.analyse(b,chess.engine.Limit(nodes=1000000),root_moves=[chess.Move.from_uci(uci)])
+        s=i['score'].pov(b.turn)
+        judged[uci]=dict(cp=s.score(),mate=s.mate(),depth=i['depth'],wdl=list(i['wdl'].pov(b.turn)) if 'wdl' in i else None,pv=[m.uci() for m in i['pv']])
+    fresh();search._prepare(b,3600000,0,0,search.WORK)
+    output.append(dict(source=row,runs=runs,judged=judged,static_cp=int(nnue.forward(search.WORK.acc,0,search.WORK.state[0]))))
+    (OUT/'current-failures.json').write_text(json.dumps(output,indent=2))
+    print(idx+1,row['game'],row['fen'],[(r['name'],r['move'],r['depth'],judged[r['move']]['cp']) for r in runs],flush=True)
+sf.quit()

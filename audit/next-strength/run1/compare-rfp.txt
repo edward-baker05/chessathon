@@ -1,0 +1,26 @@
+320 positions, 2 builds, arm 'budget', 1,000,000 reference nodes per move
+  40/320  18s
+  80/320  41s
+  120/320  60s
+  160/320  82s
+  200/320  101s
+  240/320  121s
+  280/320  145s
+  320/320  167s
+
+build            best  <50cp  severe  mate class   mean cp    95% over clusters       kn       s
+baseline          250     58       6           6      5.7c [    3.7,     8.0]    90685   156.4
+rfp-candidate     250     56       8           6     10.3c [    5.4,    16.3]    90433   168.3
+
+Same positions, same reference searches, same candidate set. 'mate class' is counted, never averaged into the centipawn mean.
+
+mean centipawn regret by phase:
+                       endgame    middlegame       opening
+  baseline                5.7c          7.3c          5.9c
+  rfp-candidate          15.6c          5.8c          4.3c
+
+mean centipawn regret by stratum:
+                         check         quiet
+  baseline               10.3c          6.0c
+  rfp-candidate          15.1c          8.9c
+wrote audit/next-strength/run1/compare-rfp.json

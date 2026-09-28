@@ -1,0 +1,30 @@
+import os,sys,json
+from pathlib import Path
+os.environ['OMP_NUM_THREADS']='1'
+import torch,numpy as np
+torch.set_num_threads(1)
+OUT=Path(__file__).resolve().parent;sys.path.insert(0,str(OUT.parent))
+from tools import dataset
+from tools.train import Network
+cp=Path('/home/edwardb/Documents/chessathon/data/checkpoints/epoch030.pt');blob=torch.load(cp,map_location='cpu',weights_only=True)
+print('checkpoint metadata',{k:v for k,v in blob.items() if k!='state'},flush=True)
+model=Network(blob['l1'],blob['buckets']);model.load_state_dict(blob['state']);model.eval()
+net=np.load(OUT.parent/'weights/net.npz');qa=int(net['qa']);qb=int(net['qb'])
+ft=torch.from_numpy(net['ft_weight'].astype(np.float32));fb=torch.from_numpy(net['ft_bias'].astype(np.float32));ow=torch.from_numpy(net['out_weight'].astype(np.int64));ob=torch.from_numpy(net['out_bias'].astype(np.int64))
+rec=dataset.load('/home/edwardb/Documents/chessathon/data/train.shuffled.bin');indices=np.load(OUT/'training-sample-indices.npy');sample=np.array(rec[indices]);float_vals=[];quant_vals=[];all_counts=[];all_labels=[]
+for start in range(0,len(sample),1024):
+    index,w,b,stm,labels=dataset.unpack(sample[start:start+1024]);counts=np.bincount(index,minlength=len(labels));off=np.r_[0,np.cumsum(counts[:-1])];bucket=(counts-2)//4
+    w,b,off,stm,bu=[torch.from_numpy(x) for x in (w,b,off,stm,bucket)]
+    with torch.no_grad():
+        v=model(w,b,off,stm,bu)*400
+        a=torch.nn.functional.embedding_bag(w,ft,off,mode='sum')+fb
+        z=torch.nn.functional.embedding_bag(b,ft,off,mode='sum')+fb
+        side=stm[:,None];us=a*(1-side)+z*side;them=z*(1-side)+a*side
+        act=torch.cat([us,them],1).clamp(0,qa).to(torch.int64)**2
+        q=((act*ow[bu]).sum(1)//qa+ob[bu])*400//(qa*qb)
+    float_vals.extend(v.tolist());quant_vals.extend(q.tolist());all_counts.extend(counts.tolist());all_labels.extend(labels.tolist())
+f=np.array(float_vals);q=np.array(quant_vals);c=np.array(all_counts);lab=np.array(all_labels)
+error=abs(q-f);prob=lambda x:1/(1+np.exp(-x/400))
+result=dict(checkpoint=str(cp),metadata={k:v for k,v in blob.items() if k!='state'},positions=len(f),mean_abs_float_quant_cp=float(error.mean()),p99_abs_float_quant_cp=float(np.percentile(error,99)),max_abs_float_quant_cp=float(error.max()),float_mse=float(np.mean((prob(f)-prob(lab))**2)),quant_mse=float(np.mean((prob(q)-prob(lab))**2)))
+np.savez_compressed(OUT/'sample-evaluations.npz',float_cp=f,quant_cp=q,label_cp=lab,pieces=c)
+(OUT/'quantization.json').write_text(json.dumps(result,indent=2));print(result)

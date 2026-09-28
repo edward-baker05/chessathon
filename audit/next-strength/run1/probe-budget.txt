@@ -1,0 +1,50 @@
+320 positions from 64 files, depth 6, cold cache, net 57ab14b41b9f
+  20/320  17s
+  40/320  35s
+  60/320  58s
+  80/320  81s
+  100/320  101s
+  120/320  117s
+  140/320  134s
+  160/320  157s
+  180/320  181s
+  200/320  196s
+  220/320  213s
+  240/320  232s
+  260/320  252s
+  280/320  275s
+  300/320  299s
+  320/320  324s
+
+positions                     320  {'quiet': 290, 'check': 30}
+clusters                      232
+the three searches differ     156
+floor scored higher by >50cp  28
+floor scored lower by >50cp   28
+These are disagreements between two implementations. Which one is right is not a question this file can answer; run tools/judge.py on the output.
+wrote audit/next-strength/run1/probe-base-budget.json
+320 positions from 64 files, depth 6, cold cache, net 57ab14b41b9f
+  20/320  18s
+  40/320  36s
+  60/320  61s
+  80/320  85s
+  100/320  105s
+  120/320  122s
+  140/320  141s
+  160/320  164s
+  180/320  192s
+  200/320  208s
+  220/320  227s
+  240/320  249s
+  260/320  270s
+  280/320  293s
+  300/320  320s
+  320/320  345s
+
+positions                     320  {'quiet': 290, 'check': 30}
+clusters                      232
+the three searches differ     165
+floor scored higher by >50cp  22
+floor scored lower by >50cp   29
+These are disagreements between two implementations. Which one is right is not a question this file can answer; run tools/judge.py on the output.
+wrote audit/next-strength/run1/probe-cand-budget.json

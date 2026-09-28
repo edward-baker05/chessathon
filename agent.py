@@ -1,4 +1,4 @@
-"""The submission entrypoint. The platform imports this file and calls get_move."""
+"""The engine entrypoint. The harness imports this file and calls get_move."""
 
 import io
 import os
@@ -11,22 +11,22 @@ import search
 import tt
 from bitboard import KEY
 
-# Import time runs once per game, inside a 90 second budget, before the clock starts.
+# Import time runs once per game, before the clock starts.
 # Importing search pulls in every jitted function and warms it, which is the point.
 
 if isinstance(sys.stdout, io.TextIOWrapper):
     sys.stdout.reconfigure(line_buffering=True)
 
-# The rated time control is 120 s + 0.5 s per move. Local fast games use a smaller
+# The default time control is 120 s + 0.5 s per move. Faster local games use a smaller
 # increment, so the harness can say so rather than have the agent over-budget and flag.
-INCREMENT_MS = int(os.environ.get("CHESSATHON_INCREMENT_MS", "500"))
-NODE_LIMIT = int(os.environ.get("CHESSATHON_NODE_LIMIT", "0"))
+INCREMENT_MS = int(os.environ.get("ENGINE_INCREMENT_MS", "500"))
+NODE_LIMIT = int(os.environ.get("ENGINE_NODE_LIMIT", "0"))
 
 _scratch_state, _scratch_mail = position.new_stacks()
 
 # Positions already seen in this game, as Zobrist keys, for repetition detection.
 _history: list[int] = []
-# The position after our own last reply. The platform only ever shows us positions where
+# The position after our own last reply. The harness only ever shows us positions where
 # it is our turn, so this is what lets us tell "the game continued" from "a new game".
 _last_reply: chess.Board | None = None
 
@@ -57,7 +57,7 @@ def _signature(board: chess.Board) -> tuple[str, bool, int, int | None]:
 def _continues_our_game(board: chess.Board) -> bool:
     """Is `board` one legal move on from the position we last moved into?
 
-    The platform hands over a bare FEN with no game identity, so this is how the agent
+    The harness hands over a bare FEN with no game identity, so this is how the agent
     tells a continuing game from the first move of a new one.
     """
     if _last_reply is None:

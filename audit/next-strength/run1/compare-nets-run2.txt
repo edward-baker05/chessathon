@@ -1,0 +1,51 @@
+320 positions from 64 files, depth 6, cold cache, net 4fbd49a5ab7b
+  20/320  36s
+  40/320  75s
+  60/320  118s
+  80/320  160s
+  100/320  200s
+  120/320  236s
+  140/320  272s
+  160/320  317s
+  180/320  363s
+  200/320  399s
+  220/320  437s
+  240/320  479s
+  260/320  521s
+  280/320  565s
+  300/320  612s
+  320/320  658s
+
+positions                     320  {'quiet': 290, 'check': 30}
+clusters                      232
+the three searches differ     180
+floor scored higher by >50cp  32
+floor scored lower by >50cp   33
+These are disagreements between two implementations. Which one is right is not a question this file can answer; run tools/judge.py on the output.
+wrote audit/next-strength/run1/probe-run2kb4-1m.json
+320 positions, 2 builds, arm 'budget', 1,000,000 reference nodes per move
+  40/320  28s
+  80/320  63s
+  120/320  91s
+  160/320  120s
+  200/320  149s
+  240/320  179s
+  280/320  211s
+  320/320  242s
+
+build            best  <50cp  severe  mate class   mean cp    95% over clusters       kn       s
+shipped-net       239     71       4           6      6.5c [    4.5,     8.9]   297444   554.9
+run2-kb4          235     70       7           8      8.9c [    5.9,    12.3]   297610   497.6
+
+Same positions, same reference searches, same candidate set. 'mate class' is counted, never averaged into the centipawn mean.
+
+mean centipawn regret by phase:
+                       endgame    middlegame       opening
+  shipped-net             7.4c          6.5c          7.6c
+  run2-kb4                9.0c         10.6c          5.0c
+
+mean centipawn regret by stratum:
+                         check         quiet
+  shipped-net            10.3c          6.7c
+  run2-kb4                9.0c          8.9c
+wrote audit/next-strength/run1/compare-nets-run2.json

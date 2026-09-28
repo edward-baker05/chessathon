@@ -1,0 +1,10 @@
+{'boards': 3004, 'legal_edges': 63339, 'checked_positions': 158, 'ep_positions': 69, 'flags': {0: 62652, 1: 28, 2: 131, 3: 528}, 'max_pseudo_moves': 62, 'slider_cases': 215296}
+generate 138.61
+captures 64.52
+make 108.31
+make_and_legal 131.14
+see 121.83
+has_legal 408.93
+nnue_update_forward 382.96
+in_check 33.25
+null 100.7

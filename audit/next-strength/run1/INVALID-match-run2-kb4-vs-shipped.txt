@@ -1,0 +1,65 @@
+{
+  "agent": "/home/edwardb/Documents/chessathon/snapshots/run2-kb4",
+  "agent_build": "e4d1c1460321",
+  "opponent": "/home/edwardb/Documents/chessathon/snapshots/run2-baseline",
+  "opponent_build": "a1b0288142e9",
+  "pairs": 60,
+  "openings": 102,
+  "control": "20000ms + 200ms",
+  "node_limit": 0,
+  "base_ms": 20000,
+  "increment_ms": 200,
+  "ply_cap": 600,
+  "workers": 3,
+  "openings_file": "audit/next-strength/run1/openings-acceptance.json",
+  "clusters": 35,
+  "shuffle_seed": 20260909,
+  "stagger_s": 30.0,
+  "pinned_cores": [
+    0,
+    1,
+    2
+  ]
+}
+
+60 pairs (120 games) at 20000ms + 200ms
+
+[  5.8 min] pair 1/60 (opening 2): 1.0/2  [threefold_repetition, threefold_repetition]
+[  6.0 min] pair 2/60 (opening 0): 2.0/2  [checkmate, checkmate]
+[  6.0 min] pair 3/60 (opening 1): 1.0/2  [checkmate, checkmate]
+[ 11.3 min] pair 4/60 (opening 5): 0.5/2  [checkmate, threefold_repetition]
+[ 11.5 min] pair 5/60 (opening 4): 1.5/2  [threefold_repetition, checkmate]
+[ 11.6 min] pair 6/60 (opening 3): 0.0/2  [checkmate, checkmate]
+[ 17.2 min] pair 7/60 (opening 7): 0.5/2  [checkmate, threefold_repetition]
+[ 17.4 min] pair 8/60 (opening 6): 1.0/2  [checkmate, checkmate]
+[ 17.7 min] pair 9/60 (opening 8): 1.5/2  [checkmate, insufficient_material]
+[ 23.1 min] pair 10/60 (opening 11): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 23.2 min] pair 11/60 (opening 9): 1.5/2  [checkmate, threefold_repetition]
+[ 23.3 min] pair 12/60 (opening 10): 0.5/2  [threefold_repetition, checkmate]
+[ 29.2 min] pair 13/60 (opening 13): 2.0/2  [checkmate, checkmate]
+[ 29.3 min] pair 14/60 (opening 14): 2.0/2  [checkmate, checkmate]
+[ 29.6 min] pair 15/60 (opening 12): 1.5/2  [fifty_moves, checkmate]
+[ 35.6 min] pair 16/60 (opening 17): 1.5/2  [fifty_moves, checkmate]
+[ 35.7 min] pair 17/60 (opening 16): 1.0/2  [insufficient_material, insufficient_material]
+[ 36.2 min] pair 18/60 (opening 15): 1.0/2  [fifty_moves, fifty_moves]
+[ 41.0 min] pair 19/60 (opening 19): 0.5/2  [checkmate, threefold_repetition]
+[ 41.7 min] pair 20/60 (opening 20): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 41.9 min] pair 21/60 (opening 18): 1.0/2  [checkmate, checkmate]
+[ 48.5 min] pair 22/60 (opening 21): 1.0/2  [threefold_repetition, insufficient_material]
+[ 48.7 min] pair 23/60 (opening 23): 1.0/2  [threefold_repetition, insufficient_material]
+[ 49.4 min] pair 24/60 (opening 22): 0.5/2  [checkmate, threefold_repetition]
+[ 55.3 min] pair 25/60 (opening 26): 0.5/2  [init, both_failed]
+[ 55.6 min] pair 26/60 (opening 25): 1.5/2  [fifty_moves, checkmate]
+[ 55.7 min] pair 27/60 (opening 24): 1.5/2  [threefold_repetition, checkmate]
+[ 61.7 min] pair 28/60 (opening 29): 1.0/2  [both_failed, both_failed]
+[ 61.8 min] pair 29/60 (opening 28): 2.0/2  [checkmate, init]
+[ 62.2 min] pair 30/60 (opening 27): 1.0/2  [threefold_repetition, fifty_moves]
+[ 67.8 min] pair 31/60 (opening 31): 1.5/2  [checkmate, threefold_repetition]
+[ 68.7 min] pair 32/60 (opening 32): 1.0/2  [checkmate, checkmate]
+[ 69.0 min] pair 33/60 (opening 30): 2.0/2  [checkmate, checkmate]
+[ 74.1 min] pair 34/60 (opening 33): 1.5/2  [checkmate, both_failed]
+[ 76.0 min] pair 35/60 (opening 35): 2.0/2  [checkmate, checkmate]
+[ 76.2 min] pair 36/60 (opening 34): 2.0/2  [checkmate, checkmate]
+[ 80.0 min] pair 37/60 (opening 36): 1.5/2  [both_failed, init]
+[ 82.2 min] pair 38/60 (opening 37): 0.5/2  [threefold_repetition, init]
+[ 82.8 min] pair 39/60 (opening 38): 1.5/2  [checkmate, both_failed]

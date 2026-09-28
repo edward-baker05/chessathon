@@ -1,0 +1,101 @@
+3045 holdout positions, 15094 boards to evaluate
+
+float data/full-kb1/epoch012.pt
+  all         2787 positions   MAE   153.6cp   RMSE   304.0cp   sigmoid MSE 0.00672
+  stable      2672 positions   MAE   144.3cp   RMSE   281.7cp   sigmoid MSE 0.00622
+  unstable     115 positions   MAE   369.2cp   RMSE   628.3cp   sigmoid MSE 0.01835
+  mate_labelled    258 positions   MAE  9899.8cp   RMSE  9993.8cp   sigmoid MSE 0.00248
+  centipawn figures exclude mate-labelled positions; the mate line is those.
+  top-1 move 985/3023 (32.6%), pairwise 55.7% of 16,283
+    pawn_race          58  MAE   337.1cp
+    king_active       379  MAE   324.6cp
+    imbalance         803  MAE   311.5cp
+    endgame           735  MAE   291.2cp
+    rook_ending       218  MAE   207.1cp
+    king_exposed       65  MAE   161.0cp
+    middlegame       1894  MAE   110.7cp
+    plain            1693  MAE    84.0cp
+
+float data/full-kb4/epoch012.pt
+  all         2787 positions   MAE   153.6cp   RMSE   310.1cp   sigmoid MSE 0.00620
+  stable      2672 positions   MAE   143.8cp   RMSE   288.2cp   sigmoid MSE 0.00581
+  unstable     115 positions   MAE   381.7cp   RMSE   632.9cp   sigmoid MSE 0.01512
+  mate_labelled    258 positions   MAE  9592.4cp   RMSE  9730.9cp   sigmoid MSE 0.00167
+  centipawn figures exclude mate-labelled positions; the mate line is those.
+  top-1 move 999/3023 (33.0%), pairwise 56.0% of 16,283
+    pawn_race          58  MAE   347.7cp
+    king_active       379  MAE   327.8cp
+    imbalance         803  MAE   312.5cp
+    endgame           735  MAE   297.5cp
+    rook_ending       218  MAE   186.5cp
+    king_exposed       65  MAE   176.9cp
+    middlegame       1894  MAE   108.2cp
+    plain            1693  MAE    82.1cp
+
+float data/checkpoints/epoch030.pt
+  all         2787 positions   MAE   156.4cp   RMSE   302.0cp   sigmoid MSE 0.00675
+  stable      2672 positions   MAE   146.9cp   RMSE   281.9cp   sigmoid MSE 0.00629
+  unstable     115 positions   MAE   377.2cp   RMSE   603.0cp   sigmoid MSE 0.01743
+  mate_labelled    258 positions   MAE  9787.1cp   RMSE  9885.9cp   sigmoid MSE 0.00184
+  centipawn figures exclude mate-labelled positions; the mate line is those.
+  top-1 move 944/3023 (31.2%), pairwise 55.6% of 16,283
+    king_active       379  MAE   342.9cp
+    imbalance         803  MAE   323.2cp
+    endgame           735  MAE   303.9cp
+    pawn_race          58  MAE   296.1cp
+    rook_ending       218  MAE   213.3cp
+    king_exposed       65  MAE   163.7cp
+    middlegame       1894  MAE   110.0cp
+    plain            1693  MAE    82.9cp
+
+quantised audit/next-strength/run1/net-full-kb1.npz
+  all         2787 positions   MAE   153.7cp   RMSE   304.0cp   sigmoid MSE 0.00670
+  stable      2672 positions   MAE   144.4cp   RMSE   281.7cp   sigmoid MSE 0.00619
+  unstable     115 positions   MAE   369.4cp   RMSE   630.0cp   sigmoid MSE 0.01842
+  mate_labelled    258 positions   MAE  9898.1cp   RMSE  9992.1cp   sigmoid MSE 0.00249
+  centipawn figures exclude mate-labelled positions; the mate line is those.
+  top-1 move 995/3023 (32.9%), pairwise 55.5% of 16,283
+    pawn_race          58  MAE   336.8cp
+    king_active       379  MAE   324.4cp
+    imbalance         803  MAE   311.2cp
+    endgame           735  MAE   291.1cp
+    rook_ending       218  MAE   206.9cp
+    king_exposed       65  MAE   159.6cp
+    middlegame       1894  MAE   110.8cp
+    plain            1693  MAE    84.3cp
+  import 6.2s, peak 724 MB
+
+quantised audit/next-strength/run1/net-full-kb4.npz
+  all         2787 positions   MAE   154.1cp   RMSE   310.5cp   sigmoid MSE 0.00626
+  stable      2672 positions   MAE   144.2cp   RMSE   288.7cp   sigmoid MSE 0.00587
+  unstable     115 positions   MAE   382.6cp   RMSE   633.3cp   sigmoid MSE 0.01536
+  mate_labelled    258 positions   MAE  9590.7cp   RMSE  9729.3cp   sigmoid MSE 0.00166
+  centipawn figures exclude mate-labelled positions; the mate line is those.
+  top-1 move 1008/3023 (33.3%), pairwise 55.8% of 16,283
+    pawn_race          58  MAE   348.3cp
+    king_active       379  MAE   327.8cp
+    imbalance         803  MAE   313.0cp
+    endgame           735  MAE   297.8cp
+    rook_ending       218  MAE   187.4cp
+    king_exposed       65  MAE   176.4cp
+    middlegame       1894  MAE   108.9cp
+    plain            1693  MAE    82.6cp
+  import 6.2s, peak 724 MB
+
+quantised weights/net.npz
+  all         2787 positions   MAE   156.3cp   RMSE   301.8cp   sigmoid MSE 0.00674
+  stable      2672 positions   MAE   146.8cp   RMSE   281.7cp   sigmoid MSE 0.00628
+  unstable     115 positions   MAE   377.4cp   RMSE   603.7cp   sigmoid MSE 0.01733
+  mate_labelled    258 positions   MAE  9786.0cp   RMSE  9884.6cp   sigmoid MSE 0.00184
+  centipawn figures exclude mate-labelled positions; the mate line is those.
+  top-1 move 950/3023 (31.4%), pairwise 55.3% of 16,283
+    king_active       379  MAE   342.7cp
+    imbalance         803  MAE   322.9cp
+    endgame           735  MAE   303.6cp
+    pawn_race          58  MAE   296.6cp
+    rook_ending       218  MAE   213.2cp
+    king_exposed       65  MAE   164.3cp
+    middlegame       1894  MAE   110.0cp
+    plain            1693  MAE    83.0cp
+  import 6.2s, peak 724 MB
+wrote audit/next-strength/run1/evalnet-full.json

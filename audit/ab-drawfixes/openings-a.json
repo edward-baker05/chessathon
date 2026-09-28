@@ -1,0 +1,408 @@
+{
+ "positions": [
+  {
+   "fen": "r1b1k2r/pp2ppbp/2n3p1/2pq4/P7/3P1NP1/1P2PPBP/R1BQK2R b KQkq - 0 9",
+   "cluster": "aichessathon-round-32-team7347"
+  },
+  {
+   "fen": "r1bqk2r/pp1pppbp/2n2np1/2p5/P1P5/2N2NP1/1P1PPPBP/R1BQK2R b KQkq - 0 6",
+   "cluster": "aichessathon-round-32-team7347"
+  },
+  {
+   "fen": "r1b1kb1r/1pqnpp1p/3p2p1/pB6/Pn1NP3/R1N1B3/1PP2PPP/3QK2R b Kkq - 4 12",
+   "cluster": "aichessathon-round-33-magnus-force"
+  },
+  {
+   "fen": "r1bqkb1r/1p1npppp/n2p4/pB6/3NP3/P1N1B3/1PP2PPP/1R1QK2R b Kkq - 0 9",
+   "cluster": "aichessathon-round-33-magnus-force"
+  },
+  {
+   "fen": "rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N1B3/PPP2PPP/R2QKB1R b KQkq - 1 6",
+   "cluster": "aichessathon-round-33-magnus-force"
+  },
+  {
+   "fen": "rnbq1r1k/4bppp/p3pn2/1p1P4/2B2B2/2N2N2/PPQ2PPP/R3R1K1 w - - 0 14",
+   "cluster": "aichessathon-round-34-blue-school-baddies"
+  },
+  {
+   "fen": "rnbq1rk1/pp2bppp/4pn2/8/2BP4/2N2N2/PPQ2PPP/R1B2RK1 w - - 3 11",
+   "cluster": "aichessathon-round-34-blue-school-baddies"
+  },
+  {
+   "fen": "rnbq1rk1/pp3ppp/4pn2/2p5/1bBP4/2N1P3/PPQ2PPP/R1B1K1NR w KQ - 0 8",
+   "cluster": "aichessathon-round-34-blue-school-baddies"
+  },
+  {
+   "fen": "r1bqk1nr/pp3pbp/2npp1p1/2p5/4PP2/2NP1NP1/PPP3BP/R1BQK2R b KQkq - 1 7",
+   "cluster": "aichessathon-round-35-sweat"
+  },
+  {
+   "fen": "r3k2r/1p1bnpbp/p1npp1p1/q1p5/4PP2/P2P2P1/NPPBN1BP/1R1QK2R b Kkq - 5 13",
+   "cluster": "aichessathon-round-35-sweat"
+  },
+  {
+   "fen": "r3k2r/pp1bnpbp/2npp1p1/q1p5/4PP2/P1NP1NP1/1PPB2BP/1R1QK2R b Kkq - 2 10",
+   "cluster": "aichessathon-round-35-sweat"
+  },
+  {
+   "fen": "r1bqk2r/p3bppp/2p5/3pp3/8/2N5/PPP1BPPP/R1BQK2R b KQkq - 1 11",
+   "cluster": "aichessathon-round-36-epoch-mate"
+  },
+  {
+   "fen": "r1bqkb1r/pp3ppp/2np4/1N1Pp3/8/8/PPP2PPP/R1BQKB1R b KQkq - 0 8",
+   "cluster": "aichessathon-round-36-epoch-mate"
+  },
+  {
+   "fen": "r1bqr1k1/p4ppp/2pb4/3pp3/8/2N2B2/PPP2PPP/R1BQR1K1 b - - 7 14",
+   "cluster": "aichessathon-round-36-epoch-mate"
+  },
+  {
+   "fen": "r1b1k2r/pp2qppp/2n2n2/3pp3/1P6/2P1P2P/P2NNPP1/R2QKB1R w KQkq - 1 11",
+   "cluster": "aichessathon-round-37-martin"
+  },
+  {
+   "fen": "r1b1k2r/pp3ppp/2nqpn2/2pp4/3P4/2P1P2P/PP1N1PP1/R2QKBNR w KQkq - 0 8",
+   "cluster": "aichessathon-round-37-martin"
+  },
+  {
+   "fen": "r3k2r/p3qppp/1p2bn2/nP1pp3/1Q6/2P1P2P/P2NNPP1/R3KB1R w KQkq - 2 14",
+   "cluster": "aichessathon-round-37-martin"
+  },
+  {
+   "fen": "r1bq1rk1/p3ppbp/2pp2p1/4n3/P3P3/2N1BB2/1PP1QPPP/R4RK1 b - - 0 12",
+   "cluster": "aichessathon-round-38-lefischer"
+  },
+  {
+   "fen": "r1bqk2r/p3ppbp/2pp1np1/8/4P3/2N1B3/PPP1BPPP/R2Q1RK1 b kq - 1 9",
+   "cluster": "aichessathon-round-38-lefischer"
+  },
+  {
+   "fen": "rnbqkb1r/pp2pp1p/3p1np1/8/3NP3/2N5/PPP1BPPP/R1BQK2R b KQkq - 1 6",
+   "cluster": "aichessathon-round-38-lefischer"
+  },
+  {
+   "fen": "r1b1k1nr/pp1p1pQp/2p5/q3P3/Bb6/3P4/PBP2PPP/R4RK1 b kq - 0 12",
+   "cluster": "aichessathon-round-39-fableengine"
+  },
+  {
+   "fen": "r1b1k2r/pp1p1ppp/2p2n2/q3P3/Bb1p4/2NP4/PPP2PPP/R1BQ1RK1 b kq - 0 9",
+   "cluster": "aichessathon-round-39-fableengine"
+  },
+  {
+   "fen": "r1bqk2r/pppp1ppp/5n2/4p3/Bb1nP3/2NP1N2/PPP2PPP/R1BQK2R b KQkq - 2 6",
+   "cluster": "aichessathon-round-39-fableengine"
+  },
+  {
+   "fen": "r1bq1rk1/pp2ppbp/2n3p1/2pn4/3P4/2N1PNP1/PP3PBP/R1BQK2R w KQ - 0 9",
+   "cluster": "aichessathon-round-40-therook"
+  },
+  {
+   "fen": "r2q1rk1/pp2ppbp/2n3p1/2pb2N1/3P4/2P1P1P1/P4PBP/R1BQ1RK1 w - - 1 12",
+   "cluster": "aichessathon-round-40-therook"
+  },
+  {
+   "fen": "r2q1rk1/pp3pbp/2n3p1/4P1N1/8/2P3P1/P3QPbP/R1B2RK1 w - - 0 15",
+   "cluster": "aichessathon-round-40-therook"
+  },
+  {
+   "fen": "r1bqk2r/1p1nbppp/8/p1Pp4/PP6/2P2N2/3N1PPP/R1BQK2R b KQkq - 0 11",
+   "cluster": "aichessathon-round-41-elbow-grease"
+  },
+  {
+   "fen": "r1bqk2r/pp1nbppp/5n2/1BPp4/P7/5N2/1PPN1PPP/R1BQK2R b KQkq - 0 8",
+   "cluster": "aichessathon-round-41-elbow-grease"
+  },
+  {
+   "fen": "rnbqkbnr/pp3ppp/8/2pp4/P2P4/8/1PPN1PPP/R1BQKBNR b KQkq - 0 5",
+   "cluster": "aichessathon-round-41-elbow-grease"
+  },
+  {
+   "fen": "1rbq1rk1/5pbp/2npp1p1/p1p5/Pp1PPNnP/2P3P1/1P1QNPB1/R1B2RK1 b - - 0 14",
+   "cluster": "aichessathon-round-42-sillycats"
+  },
+  {
+   "fen": "1rbq1rk1/p3ppbp/2np1np1/2pN4/Pp2P2P/3P2P1/1PPQNPB1/R1B2RK1 b - - 1 11",
+   "cluster": "aichessathon-round-42-sillycats"
+  },
+  {
+   "fen": "r1bq1rk1/pp2ppbp/2np1np1/2p5/4P2P/2NP2P1/PPP1NPB1/R1BQ1RK1 b - - 4 8",
+   "cluster": "aichessathon-round-42-sillycats"
+  },
+  {
+   "fen": "r2q1r1k/3nbpp1/p2pbn1p/1p2p3/4P3/PNN1B1QP/1PP1BPP1/3R1RK1 b - - 0 14",
+   "cluster": "aichessathon-round-43-the-archer"
+  },
+  {
+   "fen": "rn1q1rk1/1p2bpp1/p2pbn1p/4p3/4P3/1NN1B1QP/PPP1BPP1/R3K2R b KQ - 3 11",
+   "cluster": "aichessathon-round-43-the-archer"
+  },
+  {
+   "fen": "rn1qkb1r/1p3ppp/p2pbn2/4p3/4P3/1NN1B2P/PPP2PP1/R2QKB1R b KQkq - 3 8",
+   "cluster": "aichessathon-round-43-the-archer"
+  },
+  {
+   "fen": "r2q1rk1/2pbbppp/p1np1n2/1p2p3/P2PP3/1BP2N2/1P3PPP/RNBQR1K1 b - - 0 10",
+   "cluster": "aichessathon-round-44-zagreus-5-0"
+  },
+  {
+   "fen": "r2q1rk1/2pbbppp/p2p1n2/np1Pp3/P3P3/2P2N2/1PBN1PPP/R1BQR1K1 b - - 4 13",
+   "cluster": "aichessathon-round-44-zagreus-5-0"
+  },
+  {
+   "fen": "r4rk1/2qbbppp/p2p1n2/n1pPp3/Pp2P1P1/2P2N1P/1PB2P2/R1BQRNK1 b - - 0 16",
+   "cluster": "aichessathon-round-44-zagreus-5-0"
+  },
+  {
+   "fen": "r1bqkb1r/1p3pp1/p1n1pn1p/2p5/P1BP4/2N1PN2/1P2QPPP/R1B2RK1 b kq - 3 9",
+   "cluster": "aichessathon-round-45-waterside-research"
+  },
+  {
+   "fen": "r3k2r/1pqbbpp1/p1n1pn1p/2p5/P2P4/2NBPN2/1P1BQPPP/2R2RK1 b kq - 9 12",
+   "cluster": "aichessathon-round-45-waterside-research"
+  },
+  {
+   "fen": "rnbqkb1r/pp3ppp/4pn2/2p5/2BP4/4PN2/PP2QPPP/RNB1K2R b KQkq - 1 6",
+   "cluster": "aichessathon-round-45-waterside-research"
+  },
+  {
+   "fen": "5rk1/ppp2pbp/n3bnp1/4p1N1/2P1P3/2N5/P3BPPP/R2R2K1 b - - 1 14",
+   "cluster": "aichessathon-round-46-octabasilissa"
+  },
+  {
+   "fen": "r4rk1/ppp2pbp/2n1bnp1/4p3/1PP1P3/2N1BN2/P3BPPP/R2R2K1 b - - 0 11",
+   "cluster": "aichessathon-round-46-octabasilissa"
+  },
+  {
+   "fen": "rnbq1rk1/ppp2pbp/5np1/4p3/2P1P3/2N1BN2/PP2BPPP/R2QK2R b KQ - 1 8",
+   "cluster": "aichessathon-round-46-octabasilissa"
+  },
+  {
+   "fen": "r1b2rk1/ppq1ppbp/2n3p1/8/3N4/2P1P1P1/P4PBP/1RBQ1RK1 b - - 2 12",
+   "cluster": "aichessathon-round-47-nakamura"
+  },
+  {
+   "fen": "r1bq1rk1/pp2ppbp/2n3p1/2pn4/3P4/2N1PNP1/PP3PBP/R1BQ1RK1 b - - 0 9",
+   "cluster": "aichessathon-round-47-nakamura"
+  },
+  {
+   "fen": "r1bqk2r/pp1pppbp/2n2np1/2p5/2P5/2N1PNP1/PP1P1PBP/R1BQK2R b KQkq - 0 6",
+   "cluster": "aichessathon-round-47-nakamura"
+  },
+  {
+   "fen": "r1bqkb1r/1p3ppp/p1np1n2/4p3/4P3/N1N2P2/PPP3PP/R1BQKB1R b KQkq - 1 8",
+   "cluster": "aichessathon-round-48-emile-andrieu-vs-pheanup"
+  },
+  {
+   "fen": "r1bqkb1r/4nppp/p2p4/1p1Pp3/8/N1P2P2/PP4PP/R1BQKB1R b KQkq - 0 11",
+   "cluster": "aichessathon-round-48-emile-andrieu-vs-pheanup"
+  },
+  {
+   "fen": "r2qk2r/3bnpbp/p2p2p1/1p1Pp1B1/8/2P2P2/PPN1B1PP/R2QK2R b KQkq - 5 14",
+   "cluster": "aichessathon-round-48-emile-andrieu-vs-pheanup"
+  },
+  {
+   "fen": "r2qkb1r/pp1n1ppp/2p1pn2/5b2/P1NP4/2N1P3/1P3PPP/R1BQKB1R b KQkq - 0 8",
+   "cluster": "aichessathon-round-48-finlay-phillips"
+  },
+  {
+   "fen": "r2r2k1/ppqn1ppp/2p1bn2/P3N3/1b1P4/2N1PB2/1P1B1PPP/R2Q1RK1 b - - 0 14",
+   "cluster": "aichessathon-round-48-finlay-phillips"
+  },
+  {
+   "fen": "r4rk1/ppqn1ppp/2p1pn2/5b2/PbNP4/2N1PB2/1P3PPP/R1BQ1RK1 b - - 6 11",
+   "cluster": "aichessathon-round-48-finlay-phillips"
+  },
+  {
+   "fen": "r1bq1rk1/1pp2pp1/p1np1n1p/4p3/P3P3/2P2N1P/1PP2PP1/R1BQRBK1 b - - 1 10",
+   "cluster": "aichessathon-round-49-edward-vs-hal9000"
+  },
+  {
+   "fen": "r1bq1rk1/pppp1ppp/2n2n2/1B2p3/4P3/2P2N1P/PPP2PP1/R1BQ1RK1 b - - 0 7",
+   "cluster": "aichessathon-round-49-edward-vs-hal9000"
+  },
+  {
+   "fen": "r4rk1/1ppn1pp1/p1npbq1p/P3p3/1P2P3/R1P2N1P/2P2PP1/2BQRBK1 b - - 0 13",
+   "cluster": "aichessathon-round-49-edward-vs-hal9000"
+  },
+  {
+   "fen": "1r1q1r2/p2bnpbk/2np2pp/2p1p3/2P1P3/PPNP2PP/4NPB1/1RBQ1RK1 b - - 0 14",
+   "cluster": "aichessathon-round-49-the-roooookkk-vs-emile-andrieu"
+  },
+  {
+   "fen": "r1bq1rk1/p3npb1/2np2pp/1Np1p3/2P1P3/P2P2PP/1P2NPB1/R1BQ1RK1 b - - 2 11",
+   "cluster": "aichessathon-round-49-the-roooookkk-vs-emile-andrieu"
+  },
+  {
+   "fen": "r1bqk2r/pp2npbp/2np2p1/2p1p3/4P3/P1NP2PP/1PP1NPB1/R1BQK2R b KQkq - 2 8",
+   "cluster": "aichessathon-round-49-the-roooookkk-vs-emile-andrieu"
+  },
+  {
+   "fen": "r1bq1rk1/1p1nbppn/2p1p2p/3pP3/p1PP4/5NP1/PPQN1PBP/R1BR2K1 w - - 1 12",
+   "cluster": "aichessathon-round-51-pgn"
+  },
+  {
+   "fen": "r1bq1rk1/3nb1pn/2p1p2p/1pPpp3/p2P3P/5NP1/PPQN1PB1/R1B1R1K1 w - - 0 15",
+   "cluster": "aichessathon-round-51-pgn"
+  },
+  {
+   "fen": "r1bq1rk1/pp1nbpp1/2p1pn1p/3p4/2PP4/5NP1/PPQ1PPBP/RNBR2K1 w - - 2 9",
+   "cluster": "aichessathon-round-51-pgn"
+  },
+  {
+   "fen": "1r1qr1k1/1p1b1pbp/p1nppnp1/P1p5/2N1PP2/2NP2PP/1PP3B1/R1BQ1RK1 b - - 1 13",
+   "cluster": "aichessathon-round-52-adashima"
+  },
+  {
+   "fen": "r1bqk2r/pp2ppbp/2np1np1/2p5/4P3/2NP1NP1/PPP2PBP/R1BQ1RK1 b kq - 3 7",
+   "cluster": "aichessathon-round-52-adashima"
+  },
+  {
+   "fen": "r2qr1k1/pp1bppbp/2np1np1/2p5/P3P3/2NP2PP/1PPN1PB1/R1BQ1RK1 b - - 2 10",
+   "cluster": "aichessathon-round-52-adashima"
+  },
+  {
+   "fen": "r1bqk2r/ppppbppp/2n2n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R b KQkq - 2 5",
+   "cluster": "aichessathon-round-53-jsp"
+  },
+  {
+   "fen": "r1q1k2r/ppp1bppp/2npbn2/3Np3/P1B1P3/2PP1N2/1P3PPP/R1BQK2R b KQkq - 0 8",
+   "cluster": "aichessathon-round-53-jsp"
+  },
+  {
+   "fen": "r1q4r/ppp1kppp/3pnn2/4p3/P3P3/2PP1N2/1P3PPP/R1BQ1RK1 b - - 1 11",
+   "cluster": "aichessathon-round-53-jsp"
+  },
+  {
+   "fen": "1r1qk2r/1p1bppbn/p1np2p1/2p4p/P3PP1B/2NP2P1/1PPQN1BP/R4RK1 b k - 2 12",
+   "cluster": "aichessathon-round-54-rmfe"
+  },
+  {
+   "fen": "r1bqk1nr/pp2ppbp/2np2p1/2p5/P3P3/2NP2P1/1PP2PBP/R1BQK1NR b KQkq - 0 6",
+   "cluster": "aichessathon-round-54-rmfe"
+  },
+  {
+   "fen": "r1bqk2r/1p2ppb1/p1np1np1/2p3Bp/P3P3/2NP2P1/1PPQNPBP/R3K2R b KQkq - 3 9",
+   "cluster": "aichessathon-round-54-rmfe"
+  },
+  {
+   "fen": "1rb1k2r/pp4bp/2nqp1pn/2p2p2/5P2/2NP2P1/PPPN2BP/R1BQK2R w KQk - 0 11",
+   "cluster": "aichessathon-round-55-team1"
+  },
+  {
+   "fen": "1rb2rk1/ppq3bp/2n1p1pn/P1p2p2/N4P2/3P2P1/1PPN2BP/R1BQK2R w KQ - 3 14",
+   "cluster": "aichessathon-round-55-team1"
+  },
+  {
+   "fen": "1rbqk1nr/pp3pbp/2npp1p1/2p5/4PP2/2NP1NP1/PPP3BP/R1BQK2R w KQk - 2 8",
+   "cluster": "aichessathon-round-55-team1"
+  },
+  {
+   "fen": "r1bq1rk1/1p1nb1pp/p2p4/3Ppp2/2P5/2N2P2/PP2B1PP/1RBQ1RK1 b - - 0 14",
+   "cluster": "aichessathon-round-56-jbg-fam-vs-ms"
+  },
+  {
+   "fen": "rnbqk2r/1p2bppp/p2p4/3Pp3/2P5/2N5/PP2BPPP/R1BQK2R b KQkq - 3 11",
+   "cluster": "aichessathon-round-56-jbg-fam-vs-ms"
+  },
+  {
+   "fen": "r1bq1rk1/4bppp/p2p1n2/npp1p3/4P3/P2P1N1P/BPP2PP1/RNBQR1K1 b - - 0 11",
+   "cluster": "aichessathon-round-56-opus-carlsen"
+  },
+  {
+   "fen": "r1bqk2r/2p1bppp/p1np1n2/1p2p3/4P3/PB3N2/1PPP1PPP/RNBQR1K1 b kq - 0 8",
+   "cluster": "aichessathon-round-56-opus-carlsen"
+  },
+  {
+   "fen": "r3r1k1/pppn1ppp/3b1q2/3P1b2/3Pn3/P2B1N1P/1P3PP1/RNBQ1RK1 b - - 0 12",
+   "cluster": "aichessathon-round-57-fuzzybot"
+  },
+  {
+   "fen": "rnbqkb1r/ppp2ppp/8/3p4/3Pn3/P4N2/1PP2PPP/RNBQKB1R b KQkq - 0 6",
+   "cluster": "aichessathon-round-57-fuzzybot"
+  },
+  {
+   "fen": "rnbqr1k1/ppp2ppp/3b4/3P4/3Pn3/P4N2/1P2BPPP/RNBQK2R b KQ - 2 9",
+   "cluster": "aichessathon-round-57-fuzzybot"
+  },
+  {
+   "fen": "r1b1qrk1/1p1n2pp/2pbp3/p2p1p2/2PPn3/1PN1PNP1/PBQ2PBP/2R2RK1 b - - 0 13",
+   "cluster": "aichessathon-round-57-jbg-fam-vs-ryan-vincent"
+  },
+  {
+   "fen": "r1bq1rk1/pp1n2pp/2pbpn2/3p1p2/2PP4/1P3NP1/PBQ1PPBP/RN3RK1 b - - 5 10",
+   "cluster": "aichessathon-round-57-jbg-fam-vs-ryan-vincent"
+  },
+  {
+   "fen": "rnbqk2r/ppp3pp/3bpn2/3p1p2/2PP4/1P3NP1/P3PPBP/RNBQK2R b KQkq - 0 7",
+   "cluster": "aichessathon-round-57-jbg-fam-vs-ryan-vincent"
+  },
+  {
+   "fen": "r2qk2r/pp1nbpp1/2p1pn1p/4N3/2PP3P/6N1/PP2QPP1/R1B2RK1 b kq - 0 13",
+   "cluster": "aichessathon-round-58-danya-s-disciple"
+  },
+  {
+   "fen": "rn1qkbnr/pp2ppp1/2p3bp/8/3P3P/5NN1/PPP2PP1/R1BQKB1R b KQkq - 1 7",
+   "cluster": "aichessathon-round-58-danya-s-disciple"
+  },
+  {
+   "fen": "rn1qkbnr/pp3pp1/2p1p2p/4N3/3P3P/3Q2N1/PPP2PP1/R1B1K2R b KQkq - 0 10",
+   "cluster": "aichessathon-round-58-danya-s-disciple"
+  },
+  {
+   "fen": "r1b1k2r/pp2nppp/1q2pn2/2pp4/3P1P2/2PBP2N/PP1N2PP/R2QK2R w KQkq - 3 10",
+   "cluster": "aichessathon-round-58-the-roooookkk-vs-jbg-fam"
+  },
+  {
+   "fen": "r1b1k2r/pp3ppp/1q2p3/3p1n2/2pP1Pn1/2P1PN1N/PPB3PP/R1Q1K2R w KQkq - 2 13",
+   "cluster": "aichessathon-round-58-the-roooookkk-vs-jbg-fam"
+  },
+  {
+   "fen": "r1bqk2r/pp3ppp/2nbpn2/2pp4/3P1B2/2P1P2N/PP1N1PPP/R2QKB1R w KQkq - 2 7",
+   "cluster": "aichessathon-round-58-the-roooookkk-vs-jbg-fam"
+  },
+  {
+   "fen": "r1bq1rk1/pp3pp1/2nb3p/3p4/3P4/2P2N2/P1B2PPP/R1BQ1RK1 b - - 3 13",
+   "cluster": "aichessathon-round-59-alphabeta"
+  },
+  {
+   "fen": "rnbq1rk1/pp3pp1/2pb3p/3P4/3Pn3/2N2N2/PP2BPPP/R1BQ1RK1 b - - 0 10",
+   "cluster": "aichessathon-round-59-alphabeta"
+  },
+  {
+   "fen": "rnbqk2r/ppp2ppp/3b4/3p4/2PPn3/5N2/PP2BPPP/RNBQK2R b KQkq - 0 7",
+   "cluster": "aichessathon-round-59-alphabeta"
+  },
+  {
+   "fen": "r1bq1rk1/pp2npbp/3p1np1/P2Pp3/8/2N2N2/1PP1BPPP/R1BQR1K1 b - - 0 11",
+   "cluster": "aichessathon-round-59-sobriety-vs-jbg-fam"
+  },
+  {
+   "fen": "r1bq1rk1/ppp2pbp/2np1np1/P2Pp3/4P3/2N2N2/1PP1BPPP/R1BQK2R b KQ - 0 8",
+   "cluster": "aichessathon-round-59-sobriety-vs-jbg-fam"
+  },
+  {
+   "fen": "r2qnrk1/pp1bnpb1/3p2pp/P2Pp3/6N1/2N4P/1PP1BPP1/R1BQR1K1 b - - 4 14",
+   "cluster": "aichessathon-round-59-sobriety-vs-jbg-fam"
+  },
+  {
+   "fen": "r1bqr1k1/2p1bppp/p2p1n2/np2p3/4P3/1B1P1N1P/PPPN1PP1/R1BQR1K1 w - - 3 11",
+   "cluster": "aichessathon-round-60-amplifirm"
+  },
+  {
+   "fen": "r1bqr1k1/4bpp1/p2p1n1p/1pp1p3/4P3/1P1P1NNP/1PP2PP1/R1BQR1K1 w - - 0 14",
+   "cluster": "aichessathon-round-60-amplifirm"
+  },
+  {
+   "fen": "r2qr1k1/4bpp1/3pbn1p/ppp5/3pP3/1PP2NNP/1P1B1PP1/R2QR1K1 w - - 0 17",
+   "cluster": "aichessathon-round-60-amplifirm"
+  },
+  {
+   "fen": "r2qr1k1/2pbbpp1/p1np1n1p/1p6/P2PP3/1B3N1P/1P1N1PP1/R1BQR1K1 b - - 0 13",
+   "cluster": "aichessathon-round-60-jbg-fam-vs-emile-andrieu"
+  },
+  {
+   "fen": "r2qr1k1/2pbbpp1/p2p3p/3nP3/Bn1PN3/5N1P/1P3PP1/R1BQR1K1 b - - 0 16",
+   "cluster": "aichessathon-round-60-jbg-fam-vs-emile-andrieu"
+  }
+ ]
+}

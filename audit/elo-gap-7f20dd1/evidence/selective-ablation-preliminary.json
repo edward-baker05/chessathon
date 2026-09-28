@@ -1,0 +1,477 @@
+[
+  {
+    "case_index": 1,
+    "fen": "r4r2/pb4kp/1p3qp1/1Bpp3P/4p3/P1P1P3/1PQ2PP1/R3K2R w KQ - 1 21",
+    "runs": [
+      {
+        "name": "without-rfp",
+        "move": "c2d2",
+        "cp": -13,
+        "depth": 16,
+        "nodes": 2097154,
+        "seconds": 5.018304109573364
+      },
+      {
+        "name": "without-razor",
+        "move": "c2e2",
+        "cp": 0,
+        "depth": 18,
+        "nodes": 2097152,
+        "seconds": 4.542040586471558
+      },
+      {
+        "name": "without-null",
+        "move": "h5g6",
+        "cp": -2,
+        "depth": 14,
+        "nodes": 2097154,
+        "seconds": 4.461278915405273
+      },
+      {
+        "name": "without-futility",
+        "move": "c2e2",
+        "cp": 12,
+        "depth": 17,
+        "nodes": 2097154,
+        "seconds": 4.584537506103516
+      },
+      {
+        "name": "without-lmp",
+        "move": "h5g6",
+        "cp": -39,
+        "depth": 15,
+        "nodes": 2097152,
+        "seconds": 3.8389294147491455
+      },
+      {
+        "name": "without-see",
+        "move": "h5g6",
+        "cp": -4,
+        "depth": 18,
+        "nodes": 2097154,
+        "seconds": 4.089121341705322
+      },
+      {
+        "name": "without-lmr",
+        "move": "h5g6",
+        "cp": -9,
+        "depth": 13,
+        "nodes": 2097153,
+        "seconds": 4.338444471359253
+      },
+      {
+        "name": "without-iir",
+        "move": "h5g6",
+        "cp": -16,
+        "depth": 16,
+        "nodes": 2097153,
+        "seconds": 4.265864372253418
+      },
+      {
+        "name": "without-rfp-futility-lmp",
+        "move": "h5g6",
+        "cp": -28,
+        "depth": 14,
+        "nodes": 2097153,
+        "seconds": 4.291108846664429
+      }
+    ],
+    "judged": {
+      "c2d2": {
+        "cp": -87,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "c2d2",
+          "a8d8"
+        ]
+      },
+      "c2e2": {
+        "cp": -112,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "c2e2",
+          "a8d8"
+        ]
+      },
+      "e1c1": {
+        "cp": -4,
+        "mate": null,
+        "depth": 23,
+        "wdl": null,
+        "pv": [
+          "e1c1",
+          "a7a6"
+        ]
+      },
+      "h5g6": {
+        "cp": -85,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "h5g6",
+          "h7g6"
+        ]
+      }
+    }
+  },
+  {
+    "case_index": 4,
+    "fen": "4r1k1/1r4p1/7p/8/7P/3bBP2/6P1/4RNK1 w - - 1 51",
+    "runs": [
+      {
+        "name": "without-rfp",
+        "move": "f1g3",
+        "cp": -140,
+        "depth": 21,
+        "nodes": 2097155,
+        "seconds": 3.946978807449341
+      },
+      {
+        "name": "without-razor",
+        "move": "f1g3",
+        "cp": -139,
+        "depth": 21,
+        "nodes": 2097153,
+        "seconds": 3.798128366470337
+      },
+      {
+        "name": "without-null",
+        "move": "f1g3",
+        "cp": -149,
+        "depth": 17,
+        "nodes": 2097154,
+        "seconds": 3.8457202911376953
+      },
+      {
+        "name": "without-futility",
+        "move": "f1g3",
+        "cp": -143,
+        "depth": 22,
+        "nodes": 2097153,
+        "seconds": 3.767963171005249
+      },
+      {
+        "name": "without-lmp",
+        "move": "f1g3",
+        "cp": -143,
+        "depth": 22,
+        "nodes": 2097154,
+        "seconds": 3.4313507080078125
+      },
+      {
+        "name": "without-see",
+        "move": "f1g3",
+        "cp": -143,
+        "depth": 24,
+        "nodes": 2097152,
+        "seconds": 3.719399929046631
+      },
+      {
+        "name": "without-lmr",
+        "move": "f1g3",
+        "cp": -148,
+        "depth": 16,
+        "nodes": 2097152,
+        "seconds": 3.9501171112060547
+      },
+      {
+        "name": "without-iir",
+        "move": "f1g3",
+        "cp": -143,
+        "depth": 22,
+        "nodes": 2097152,
+        "seconds": 3.729168176651001
+      },
+      {
+        "name": "without-rfp-futility-lmp",
+        "move": "f1g3",
+        "cp": -145,
+        "depth": 21,
+        "nodes": 2097152,
+        "seconds": 3.63750958442688
+      }
+    ],
+    "judged": {
+      "e3d2": {
+        "cp": 0,
+        "mate": null,
+        "depth": 20,
+        "wdl": null,
+        "pv": [
+          "e3d2",
+          "e8a8"
+        ]
+      },
+      "e3f2": {
+        "cp": -8,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "e3f2",
+          "e8e1"
+        ]
+      },
+      "f1g3": {
+        "cp": -113,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "f1g3",
+          "b7b4"
+        ]
+      }
+    }
+  },
+  {
+    "case_index": 10,
+    "fen": "6k1/4npp1/1prb3p/1R1p4/r2P4/6P1/3B1PKP/1Q6 w - - 5 36",
+    "runs": [
+      {
+        "name": "without-rfp",
+        "move": "b5b6",
+        "cp": 185,
+        "depth": 21,
+        "nodes": 2097153,
+        "seconds": 4.151159286499023
+      },
+      {
+        "name": "without-razor",
+        "move": "b5b6",
+        "cp": 175,
+        "depth": 22,
+        "nodes": 2097152,
+        "seconds": 3.927513837814331
+      },
+      {
+        "name": "without-null",
+        "move": "b5b6",
+        "cp": 191,
+        "depth": 17,
+        "nodes": 2097153,
+        "seconds": 3.825853109359741
+      },
+      {
+        "name": "without-futility",
+        "move": "b5b6",
+        "cp": 182,
+        "depth": 22,
+        "nodes": 2097153,
+        "seconds": 3.680457592010498
+      },
+      {
+        "name": "without-lmp",
+        "move": "b5b6",
+        "cp": 180,
+        "depth": 21,
+        "nodes": 2097152,
+        "seconds": 3.5433104038238525
+      },
+      {
+        "name": "without-see",
+        "move": "b5b6",
+        "cp": 180,
+        "depth": 20,
+        "nodes": 2097152,
+        "seconds": 4.011718273162842
+      },
+      {
+        "name": "without-lmr",
+        "move": "b5b6",
+        "cp": 201,
+        "depth": 16,
+        "nodes": 2097152,
+        "seconds": 3.897714614868164
+      },
+      {
+        "name": "without-iir",
+        "move": "b5b6",
+        "cp": 194,
+        "depth": 21,
+        "nodes": 2097153,
+        "seconds": 3.8218626976013184
+      },
+      {
+        "name": "without-rfp-futility-lmp",
+        "move": "b5b6",
+        "cp": 179,
+        "depth": 19,
+        "nodes": 2097152,
+        "seconds": 4.104085206985474
+      }
+    ],
+    "judged": {
+      "b5b6": {
+        "cp": 71,
+        "mate": null,
+        "depth": 20,
+        "wdl": null,
+        "pv": [
+          "b5b6",
+          "a4d4"
+        ]
+      },
+      "d2e3": {
+        "cp": 158,
+        "mate": null,
+        "depth": 20,
+        "wdl": null,
+        "pv": [
+          "d2e3",
+          "d6c7"
+        ]
+      }
+    }
+  },
+  {
+    "case_index": 11,
+    "fen": "1r2r3/1q3pbk/Rp4p1/1Qp1pn1p/2N5/3PBPP1/1P2P1KP/2R5 b - - 2 27",
+    "runs": [
+      {
+        "name": "without-rfp",
+        "move": "e5e4",
+        "cp": 106,
+        "depth": 16,
+        "nodes": 2097153,
+        "seconds": 4.635194778442383
+      },
+      {
+        "name": "without-razor",
+        "move": "e5e4",
+        "cp": 143,
+        "depth": 18,
+        "nodes": 2097152,
+        "seconds": 4.660360336303711
+      },
+      {
+        "name": "without-null",
+        "move": "e5e4",
+        "cp": 123,
+        "depth": 15,
+        "nodes": 2097152,
+        "seconds": 4.705460548400879
+      },
+      {
+        "name": "without-futility",
+        "move": "e5e4",
+        "cp": 129,
+        "depth": 19,
+        "nodes": 2097152,
+        "seconds": 4.341168165206909
+      },
+      {
+        "name": "without-lmp",
+        "move": "e5e4",
+        "cp": 106,
+        "depth": 16,
+        "nodes": 2097152,
+        "seconds": 4.0234479904174805
+      },
+      {
+        "name": "without-see",
+        "move": "h5h4",
+        "cp": 121,
+        "depth": 16,
+        "nodes": 2097152,
+        "seconds": 4.546231269836426
+      },
+      {
+        "name": "without-lmr",
+        "move": "e8e6",
+        "cp": 145,
+        "depth": 13,
+        "nodes": 2097152,
+        "seconds": 4.996784925460815
+      },
+      {
+        "name": "without-iir",
+        "move": "e5e4",
+        "cp": 130,
+        "depth": 19,
+        "nodes": 2097152,
+        "seconds": 4.172857761383057
+      },
+      {
+        "name": "without-rfp-futility-lmp",
+        "move": "e5e4",
+        "cp": 96,
+        "depth": 14,
+        "nodes": 2097152,
+        "seconds": 4.631943464279175
+      }
+    ],
+    "judged": {
+      "e5e4": {
+        "cp": -88,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "e5e4",
+          "d3e4"
+        ]
+      },
+      "e8e6": {
+        "cp": 5,
+        "mate": null,
+        "depth": 23,
+        "wdl": null,
+        "pv": [
+          "e8e6",
+          "c1a1",
+          "b7d5",
+          "e3f2",
+          "f5d4",
+          "e2e4",
+          "d5e4",
+          "d3e4",
+          "d4b5",
+          "a6a8",
+          "b8a8",
+          "a1a8",
+          "b5d6",
+          "c4e3",
+          "g7h6",
+          "e3d5",
+          "d6c4",
+          "b2b3",
+          "c4d2",
+          "a8b8",
+          "d2b3",
+          "d5b6",
+          "b3d4",
+          "b6c4",
+          "h6g7",
+          "b8c8",
+          "e6a6"
+        ]
+      },
+      "f5e3": {
+        "cp": -21,
+        "mate": null,
+        "depth": 23,
+        "wdl": null,
+        "pv": [
+          "f5e3",
+          "c4e3"
+        ]
+      },
+      "h5h4": {
+        "cp": 32,
+        "mate": null,
+        "depth": 23,
+        "wdl": null,
+        "pv": [
+          "h5h4",
+          "c1a1"
+        ]
+      }
+    }
+  }
+]

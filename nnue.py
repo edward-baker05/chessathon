@@ -24,8 +24,8 @@ cost a factor of between six and thirty six when it was got wrong.
    different type from a writable row. A signature that does not say so fails to compile,
    or worse, forces a lazily typed fallback. Hence `RO_ROW`.
 
-`np.dot` is unavailable: numba's linear algebra needs scipy, which the platform does not
-ship. numpy slice expressions inside njit allocate and measured 18x slower than a loop.
+`np.dot` is unavailable: numba's linear algebra needs scipy, which is not
+available here. numpy slice expressions inside njit allocate and measured 18x slower than a loop.
 
 The output sum accumulates in int32. int64 measured at 516 ns against 81 ns, because the
 vector unit carries two int64 lanes against eight int16. int32 can overflow in principle,
@@ -68,9 +68,9 @@ def _load(path: Path) -> dict[str, np.ndarray]:
     """Read the shipped network, or fail loudly.
 
     There is deliberately no fallback to the material evaluation. A silent fallback would
-    pass validation and then play an entire rated round hundreds of Elo weak, and would
-    look like an unexplained rating drop rather than a broken upload. Raising here puts
-    the reason in the validation log before the build ever plays a rated game.
+    let a broken build play whole games hundreds of Elo weak, and would look like an
+    unexplained strength drop rather than a missing file. Raising here puts the reason
+    up front.
     """
     if not path.exists():
         raise FileNotFoundError(
@@ -306,7 +306,7 @@ def new_accumulator(plies: int) -> np.ndarray:
 
 
 # Warm every jitted function at import, with the argument types the real calls use, so
-# compilation lands inside the platform's 90 second init budget rather than on the clock.
+# compilation lands at import rather than on the clock.
 # A real position rather than an empty board: `apply` reads the mover off the mailbox, and
 # warming it on an empty square would index the weights with a piece type of -1.
 _acc = new_accumulator(4)

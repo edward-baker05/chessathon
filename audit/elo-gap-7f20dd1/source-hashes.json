@@ -1,0 +1,23 @@
+{
+  "commit": "7f20dd1c0603ae3aa377227c3184835f995880bd",
+  "sha256": {
+    "agent.py": "57ec95c5814fa9b75d33147ad5a35cd77fc38f083ae77ea5dbdf1634a20dba72",
+    "bitboard.py": "ffa0027e5115afd4eed3f8bfb956cf16e7b57a2dfe8460a85ccb9bdd5c44ae7f",
+    "position.py": "3236b9857ea109e89e876576f7a8f0cf4e79018efb5bd77a46678e5b02d5f066",
+    "movegen.py": "d147235dca6c3f4e7d42fb2f7c3a9aaaaf76bb742e2da4ffe6b5397197d4ed03",
+    "search.py": "3e19d57cc25d158db0d74688f7ba9d8a69d8fe1b33b08f129d0073cce3f0b13d",
+    "tt.py": "4972523fd97fe1412bdf6efb244a3e1c76f7646a57d67aec7f9dd33c7e90811a",
+    "evaluate.py": "047df21af366ff7f7c0046af1c738b7b7bbb224d38a1b8e28706aff1d0d982cb",
+    "nnue.py": "bddb7e7aa00b2de51afd657b75f3d65954712d31cfda3995fb618295f52be70b",
+    "tools/train.py": "5615decd6348c7958285a5c40ad7925623360c1f318df64ab414c0048751de7f",
+    "tools/dataset.py": "f1a928f1ccf33bfcefa636756e33af8e65d47949f423ad16623f6a1938e1de4d",
+    "tools/extract.py": "a48988faa632788dea5f5c8817bbd037f01f47cc3250570165f690312b86b4ee",
+    "tools/quantise.py": "74efebf825f4f029cfc6474ed2c3e299b5d936edf64b9bdf4bc296b0ec7bb94e",
+    "tools/failures.py": "78ca2e55da082f4f673c5da21cc968b00c9cfbba5ec29b8a82f414301f2a1a5c",
+    "tests/match.py": "de502041cfee452d69160e8f7552ca4f673db7b817f3a0dc46b52e48b34854e2",
+    "Makefile": "6d5fd27a491202a116f874e67cfdb6041bbd661daed2eb4c9ddc8686da1e6dd8",
+    "pyproject.toml": "24ed06b730a16977d4aa4ef96e7e76607fb3ad046dc26567d7c8a293e6e8701f",
+    "weights/net.npz": "57ab14b41b9f6d664a24c39f948c54c05b1593c2e9a156187b6235ad172d4842",
+    "audit/uci.py": "b0f6e8bc2c7307c9d3257b19fdcb6625e6863f59bb35ff98ebe75e031fb0461f"
+  }
+}

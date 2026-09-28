@@ -1,0 +1,27 @@
+{
+  "agent": "/home/edwardb/Documents/chessathon/snapshots/run1-baseline",
+  "agent_build": "e366620fe0e4",
+  "opponent": "/home/edwardb/Documents/chessathon/snapshots/draw-fixes",
+  "opponent_build": "856d26783588",
+  "pairs": 10,
+  "openings": 102,
+  "control": "20000ms + 200ms",
+  "node_limit": 0,
+  "base_ms": 20000,
+  "increment_ms": 200,
+  "ply_cap": 600,
+  "workers": 2,
+  "openings_file": "audit/next-strength/run1/openings-acceptance.json",
+  "clusters": 35,
+  "shuffle_seed": 20260909,
+  "stagger_s": 15.0,
+  "pinned_cores": [
+    0,
+    1
+  ]
+}
+
+10 pairs (20 games) at 20000ms + 200ms
+
+[  6.9 min] pair 1/10 (opening 0): 1.0/2  [checkmate, checkmate]
+[  7.2 min] pair 2/10 (opening 1): 2.0/2  [checkmate, checkmate]

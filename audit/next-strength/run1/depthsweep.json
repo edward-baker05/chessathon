@@ -1,0 +1,3940 @@
+{
+ "provenance": {
+  "classes": "audit/next-strength/run1/classes-cold.json",
+  "engine": "/home/edwardb/Documents/stockfish/stockfish-linux-x86-64-universal",
+  "max_depth": 12,
+  "node_cap": 3000000,
+  "nodes": 1000000,
+  "good_cp": 50,
+  "seconds": 201.9
+ },
+ "positions": [
+  {
+   "id": "0928",
+   "fen": "8/5p2/4pPN1/4n1P1/1pk5/p3K3/8/2B5 b - - 0 57",
+   "phase": "endgame",
+   "verdict": "missed_mate",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "f7g6",
+      "nodes": 25,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "f7g6",
+      "nodes": 56,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 3,
+      "move": "f7g6",
+      "nodes": 206,
+      "seconds": 0.0005
+     },
+     {
+      "depth": 4,
+      "move": "f7g6",
+      "nodes": 324,
+      "seconds": 0.0007
+     },
+     {
+      "depth": 5,
+      "move": "f7g6",
+      "nodes": 618,
+      "seconds": 0.0012
+     },
+     {
+      "depth": 6,
+      "move": "f7g6",
+      "nodes": 1471,
+      "seconds": 0.0025
+     },
+     {
+      "depth": 7,
+      "move": "f7g6",
+      "nodes": 2461,
+      "seconds": 0.0045
+     },
+     {
+      "depth": 8,
+      "move": "f7g6",
+      "nodes": 3866,
+      "seconds": 0.0085
+     },
+     {
+      "depth": 9,
+      "move": "e5g6",
+      "nodes": 7360,
+      "seconds": 0.0116
+     },
+     {
+      "depth": 10,
+      "move": "e5g6",
+      "nodes": 10463,
+      "seconds": 0.0171
+     },
+     {
+      "depth": 11,
+      "move": "e5g6",
+      "nodes": 14009,
+      "seconds": 0.0221
+     },
+     {
+      "depth": 12,
+      "move": "e5g6",
+      "nodes": 27104,
+      "seconds": 0.0421
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "f7g6",
+      "nodes": 25,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "f7g6",
+      "nodes": 94,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 3,
+      "move": "f7g6",
+      "nodes": 340,
+      "seconds": 0.0008
+     },
+     {
+      "depth": 4,
+      "move": "f7g6",
+      "nodes": 1148,
+      "seconds": 0.0021
+     },
+     {
+      "depth": 5,
+      "move": "e5g6",
+      "nodes": 6886,
+      "seconds": 0.012
+     },
+     {
+      "depth": 6,
+      "move": "e5g6",
+      "nodes": 15947,
+      "seconds": 0.027
+     },
+     {
+      "depth": 7,
+      "move": "e5g6",
+      "nodes": 46555,
+      "seconds": 0.0777
+     },
+     {
+      "depth": 8,
+      "move": "e5g6",
+      "nodes": 116817,
+      "seconds": 0.1942
+     },
+     {
+      "depth": 9,
+      "move": "e5g6",
+      "nodes": 415970,
+      "seconds": 0.6982
+     },
+     {
+      "depth": 10,
+      "move": "e5g6",
+      "nodes": 1177853,
+      "seconds": 1.9614
+     },
+     {
+      "depth": 11,
+      "move": "e5g6",
+      "nodes": 3000320,
+      "seconds": 4.9325
+     }
+    ]
+   },
+   "scores": {
+    "e5g6": {
+     "kind": "cp",
+     "cp": 1301,
+     "mate": null,
+     "depth": 27,
+     "pv": [
+      "e5g6",
+      "e3f3",
+      "c4b3",
+      "c1e3",
+      "e6e5",
+      "f3e4",
+      "a3a2",
+      "e4d5"
+     ]
+    },
+    "f7g6": {
+     "kind": "cp",
+     "cp": 990,
+     "mate": null,
+     "depth": 26,
+     "pv": [
+      "f7g6",
+      "f6f7",
+      "e5f7",
+      "e3e4",
+      "c4c3",
+      "c1e3",
+      "b4b3",
+      "e3d4"
+     ]
+    }
+   },
+   "shipped_first_good": 9,
+   "floor_first_good": 5
+  },
+  {
+   "id": "0128",
+   "fen": "8/4k3/K7/5p2/8/5q2/8/8 b - - 5 73",
+   "phase": "endgame",
+   "verdict": "slower_mate",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "f3a8",
+      "nodes": 55,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "f3g2",
+      "nodes": 146,
+      "seconds": 0.0004
+     },
+     {
+      "depth": 3,
+      "move": "f3g2",
+      "nodes": 254,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 4,
+      "move": "f3c6",
+      "nodes": 852,
+      "seconds": 0.0015
+     },
+     {
+      "depth": 5,
+      "move": "f3c6",
+      "nodes": 1983,
+      "seconds": 0.0031
+     },
+     {
+      "depth": 6,
+      "move": "f3c6",
+      "nodes": 3273,
+      "seconds": 0.0045
+     },
+     {
+      "depth": 7,
+      "move": "f3c6",
+      "nodes": 4651,
+      "seconds": 0.0061
+     },
+     {
+      "depth": 8,
+      "move": "f3h1",
+      "nodes": 6728,
+      "seconds": 0.0086
+     },
+     {
+      "depth": 9,
+      "move": "e7d6",
+      "nodes": 11281,
+      "seconds": 0.0154
+     },
+     {
+      "depth": 10,
+      "move": "e7d6",
+      "nodes": 21340,
+      "seconds": 0.0261
+     },
+     {
+      "depth": 11,
+      "move": "f3e4",
+      "nodes": 29299,
+      "seconds": 0.0371
+     },
+     {
+      "depth": 12,
+      "move": "f3a8",
+      "nodes": 45766,
+      "seconds": 0.0561
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "f3a8",
+      "nodes": 55,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "f3e3",
+      "nodes": 414,
+      "seconds": 0.0008
+     },
+     {
+      "depth": 3,
+      "move": "f3a8",
+      "nodes": 2663,
+      "seconds": 0.0048
+     },
+     {
+      "depth": 4,
+      "move": "f3a8",
+      "nodes": 10301,
+      "seconds": 0.0163
+     },
+     {
+      "depth": 5,
+      "move": "f3a8",
+      "nodes": 41954,
+      "seconds": 0.0625
+     },
+     {
+      "depth": 6,
+      "move": "e7d6",
+      "nodes": 160292,
+      "seconds": 0.2288
+     },
+     {
+      "depth": 7,
+      "move": "e7d6",
+      "nodes": 160292,
+      "seconds": 0.2239
+     },
+     {
+      "depth": 8,
+      "move": "e7d6",
+      "nodes": 160292,
+      "seconds": 0.2278
+     },
+     {
+      "depth": 9,
+      "move": "e7d6",
+      "nodes": 160292,
+      "seconds": 0.2401
+     },
+     {
+      "depth": 10,
+      "move": "e7d6",
+      "nodes": 160292,
+      "seconds": 0.24
+     },
+     {
+      "depth": 11,
+      "move": "e7d6",
+      "nodes": 160292,
+      "seconds": 0.2325
+     },
+     {
+      "depth": 12,
+      "move": "e7d6",
+      "nodes": 160292,
+      "seconds": 0.2292
+     }
+    ]
+   },
+   "scores": {
+    "e7d6": {
+     "kind": "mate",
+     "mate": 4,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "e7d6",
+      "a6b5",
+      "f3b3",
+      "b5a6",
+      "d6c6",
+      "a6a5",
+      "b3b5"
+     ]
+    },
+    "f3a8": {
+     "kind": "mate",
+     "mate": 8,
+     "cp": null,
+     "depth": 57,
+     "pv": [
+      "f3a8",
+      "a6b5",
+      "a8c8",
+      "b5b4",
+      "f5f4",
+      "b4b3",
+      "f4f3",
+      "b3a4"
+     ]
+    },
+    "f3c6": {
+     "kind": "mate",
+     "mate": 6,
+     "cp": null,
+     "depth": 72,
+     "pv": [
+      "f3c6",
+      "a6a5",
+      "c6c4",
+      "a5b6",
+      "e7d6",
+      "b6b7",
+      "c4b3",
+      "b7c8"
+     ]
+    },
+    "f3e3": {
+     "kind": "mate",
+     "mate": 6,
+     "cp": null,
+     "depth": 66,
+     "pv": [
+      "f3e3",
+      "a6b5",
+      "e7d6",
+      "b5b4",
+      "e3d3",
+      "b4a5",
+      "d3b3",
+      "a5a6"
+     ]
+    },
+    "f3e4": {
+     "kind": "mate",
+     "mate": 6,
+     "cp": null,
+     "depth": 73,
+     "pv": [
+      "f3e4",
+      "a6b6",
+      "e7d6",
+      "b6b5",
+      "f5f4",
+      "b5b6",
+      "e4b4",
+      "b6a7"
+     ]
+    },
+    "f3g2": {
+     "kind": "mate",
+     "mate": 8,
+     "cp": null,
+     "depth": 52,
+     "pv": [
+      "f3g2",
+      "a6b5",
+      "g2b2",
+      "b5c4",
+      "f5f4",
+      "c4d3",
+      "f4f3",
+      "d3e4"
+     ]
+    },
+    "f3h1": {
+     "kind": "mate",
+     "mate": 8,
+     "cp": null,
+     "depth": 55,
+     "pv": [
+      "f3h1",
+      "a6b5",
+      "f5f4",
+      "b5c4",
+      "f4f3",
+      "c4d3",
+      "f3f2",
+      "d3c2"
+     ]
+    }
+   },
+   "shipped_first_good": 9,
+   "floor_first_good": 6
+  },
+  {
+   "id": "0077",
+   "fen": "2b2rk1/p3pp1p/r4bpQ/P1pq3P/1p1N4/3P1PP1/1PP3B1/R1B1R1K1 b - - 0 19",
+   "phase": "middlegame",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "d5d4",
+      "nodes": 193,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 2,
+      "move": "d5d4",
+      "nodes": 422,
+      "seconds": 0.001
+     },
+     {
+      "depth": 3,
+      "move": "d5d4",
+      "nodes": 747,
+      "seconds": 0.0016
+     },
+     {
+      "depth": 4,
+      "move": "d5d4",
+      "nodes": 1376,
+      "seconds": 0.0026
+     },
+     {
+      "depth": 5,
+      "move": "d5d4",
+      "nodes": 5970,
+      "seconds": 0.011
+     },
+     {
+      "depth": 6,
+      "move": "f6g7",
+      "nodes": 10459,
+      "seconds": 0.0192
+     },
+     {
+      "depth": 7,
+      "move": "d5d4",
+      "nodes": 22373,
+      "seconds": 0.0414
+     },
+     {
+      "depth": 8,
+      "move": "d5d4",
+      "nodes": 39346,
+      "seconds": 0.076
+     },
+     {
+      "depth": 9,
+      "move": "f6d4",
+      "nodes": 61714,
+      "seconds": 0.117
+     },
+     {
+      "depth": 10,
+      "move": "f6d4",
+      "nodes": 74586,
+      "seconds": 0.1443
+     },
+     {
+      "depth": 11,
+      "move": "f6d4",
+      "nodes": 108736,
+      "seconds": 0.2051
+     },
+     {
+      "depth": 12,
+      "move": "f6d4",
+      "nodes": 191623,
+      "seconds": 0.3687
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "d5d4",
+      "nodes": 193,
+      "seconds": 0.0007
+     },
+     {
+      "depth": 2,
+      "move": "d5d4",
+      "nodes": 654,
+      "seconds": 0.0029
+     },
+     {
+      "depth": 3,
+      "move": "d5d4",
+      "nodes": 4454,
+      "seconds": 0.0108
+     },
+     {
+      "depth": 4,
+      "move": "f6d4",
+      "nodes": 26959,
+      "seconds": 0.0543
+     },
+     {
+      "depth": 5,
+      "move": "f6d4",
+      "nodes": 99135,
+      "seconds": 0.1891
+     },
+     {
+      "depth": 6,
+      "move": "f6d4",
+      "nodes": 401066,
+      "seconds": 0.7886
+     },
+     {
+      "depth": 7,
+      "move": "f6d4",
+      "nodes": 2032622,
+      "seconds": 4.0054
+     },
+     {
+      "depth": 8,
+      "move": "f6d4",
+      "nodes": 3000320,
+      "seconds": 5.8724
+     }
+    ]
+   },
+   "scores": {
+    "d5d4": {
+     "kind": "cp",
+     "cp": 287,
+     "mate": null,
+     "depth": 21,
+     "pv": [
+      "d5d4",
+      "g1h2",
+      "d4d5",
+      "e1e4",
+      "f8e8",
+      "h5g6",
+      "h7g6",
+      "h2g1"
+     ]
+    },
+    "f6d4": {
+     "kind": "cp",
+     "cp": 287,
+     "mate": null,
+     "depth": 22,
+     "pv": [
+      "f6d4",
+      "g1h2",
+      "d4f6",
+      "h5g6",
+      "h7g6",
+      "g3g4",
+      "a6e6",
+      "e1e6"
+     ]
+    },
+    "f6g7": {
+     "kind": "cp",
+     "cp": 176,
+     "mate": null,
+     "depth": 22,
+     "pv": [
+      "f6g7",
+      "h6g5",
+      "g7d4",
+      "g1h2",
+      "d5g5",
+      "c1g5",
+      "d4b2",
+      "g5e7"
+     ]
+    }
+   },
+   "shipped_first_good": 1,
+   "floor_first_good": 1
+  },
+  {
+   "id": "0246",
+   "fen": "8/4Q3/3B2k1/3K4/8/8/8/8 w - - 17 84",
+   "phase": "endgame",
+   "verdict": "slower_mate",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "e7e6",
+      "nodes": 71,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "e7e6",
+      "nodes": 260,
+      "seconds": 0.0005
+     },
+     {
+      "depth": 3,
+      "move": "e7e6",
+      "nodes": 547,
+      "seconds": 0.001
+     },
+     {
+      "depth": 4,
+      "move": "e7e6",
+      "nodes": 1253,
+      "seconds": 0.002
+     },
+     {
+      "depth": 5,
+      "move": "e7e6",
+      "nodes": 3040,
+      "seconds": 0.0046
+     },
+     {
+      "depth": 6,
+      "move": "e7e6",
+      "nodes": 4968,
+      "seconds": 0.0073
+     },
+     {
+      "depth": 7,
+      "move": "e7e6",
+      "nodes": 6412,
+      "seconds": 0.0092
+     },
+     {
+      "depth": 8,
+      "move": "e7e6",
+      "nodes": 7926,
+      "seconds": 0.0115
+     },
+     {
+      "depth": 9,
+      "move": "e7e6",
+      "nodes": 19505,
+      "seconds": 0.027
+     },
+     {
+      "depth": 10,
+      "move": "d6f4",
+      "nodes": 20885,
+      "seconds": 0.031
+     },
+     {
+      "depth": 11,
+      "move": "d6f4",
+      "nodes": 20885,
+      "seconds": 0.0293
+     },
+     {
+      "depth": 12,
+      "move": "d6f4",
+      "nodes": 20885,
+      "seconds": 0.0298
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "e7e6",
+      "nodes": 71,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "d6f4",
+      "nodes": 449,
+      "seconds": 0.0009
+     },
+     {
+      "depth": 3,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.001
+     },
+     {
+      "depth": 4,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.001
+     },
+     {
+      "depth": 5,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.0011
+     },
+     {
+      "depth": 6,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.001
+     },
+     {
+      "depth": 7,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.001
+     },
+     {
+      "depth": 8,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.001
+     },
+     {
+      "depth": 9,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.001
+     },
+     {
+      "depth": 10,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.001
+     },
+     {
+      "depth": 11,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.0011
+     },
+     {
+      "depth": 12,
+      "move": "d6f4",
+      "nodes": 535,
+      "seconds": 0.0011
+     }
+    ]
+   },
+   "scores": {
+    "d6f4": {
+     "kind": "mate",
+     "mate": 2,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "d6f4",
+      "g6h5",
+      "e7g5"
+     ]
+    },
+    "e7e6": {
+     "kind": "mate",
+     "mate": 4,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "e7e6",
+      "g6g7",
+      "d6e5",
+      "g7f8",
+      "e6d7",
+      "f8g8",
+      "d7g7"
+     ]
+    }
+   },
+   "shipped_first_good": 10,
+   "floor_first_good": 2
+  },
+  {
+   "id": "0069",
+   "fen": "1q3rk1/5p1p/3p2p1/p1pQ4/P3P2P/2b3P1/5PB1/R5K1 w - - 0 26",
+   "phase": "middlegame",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "a1d1",
+      "nodes": 72,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "a1d1",
+      "nodes": 198,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 3,
+      "move": "a1d1",
+      "nodes": 384,
+      "seconds": 0.0009
+     },
+     {
+      "depth": 4,
+      "move": "a1d1",
+      "nodes": 1080,
+      "seconds": 0.0023
+     },
+     {
+      "depth": 5,
+      "move": "a1a2",
+      "nodes": 3741,
+      "seconds": 0.0072
+     },
+     {
+      "depth": 6,
+      "move": "a1a3",
+      "nodes": 6221,
+      "seconds": 0.0118
+     },
+     {
+      "depth": 7,
+      "move": "a1a2",
+      "nodes": 9813,
+      "seconds": 0.0187
+     },
+     {
+      "depth": 8,
+      "move": "a1a2",
+      "nodes": 14208,
+      "seconds": 0.0308
+     },
+     {
+      "depth": 9,
+      "move": "a1a2",
+      "nodes": 27989,
+      "seconds": 0.0545
+     },
+     {
+      "depth": 10,
+      "move": "a1a2",
+      "nodes": 36986,
+      "seconds": 0.072
+     },
+     {
+      "depth": 11,
+      "move": "a1a2",
+      "nodes": 51707,
+      "seconds": 0.1
+     },
+     {
+      "depth": 12,
+      "move": "a1f1",
+      "nodes": 103186,
+      "seconds": 0.2086
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "a1d1",
+      "nodes": 72,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "a1d1",
+      "nodes": 223,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 3,
+      "move": "a1d1",
+      "nodes": 1414,
+      "seconds": 0.0027
+     },
+     {
+      "depth": 4,
+      "move": "a1d1",
+      "nodes": 4778,
+      "seconds": 0.0085
+     },
+     {
+      "depth": 5,
+      "move": "a1f1",
+      "nodes": 31669,
+      "seconds": 0.055
+     },
+     {
+      "depth": 6,
+      "move": "a1f1",
+      "nodes": 88759,
+      "seconds": 0.1573
+     },
+     {
+      "depth": 7,
+      "move": "a1a2",
+      "nodes": 456028,
+      "seconds": 0.8042
+     },
+     {
+      "depth": 8,
+      "move": "a1a2",
+      "nodes": 1475571,
+      "seconds": 2.6149
+     },
+     {
+      "depth": 9,
+      "move": "a1a2",
+      "nodes": 3000320,
+      "seconds": 5.4114
+     }
+    ]
+   },
+   "scores": {
+    "a1a2": {
+     "kind": "cp",
+     "cp": -93,
+     "mate": null,
+     "depth": 22,
+     "pv": [
+      "a1a2",
+      "f8e8",
+      "a2a3",
+      "e8e5",
+      "a3b3",
+      "c3b4",
+      "d5c4",
+      "b8e8"
+     ]
+    },
+    "a1a3": {
+     "kind": "cp",
+     "cp": -192,
+     "mate": null,
+     "depth": 20,
+     "pv": [
+      "a1a3",
+      "b8b4",
+      "a3a2",
+      "f8e8",
+      "g1h2",
+      "b4d4",
+      "d5d4",
+      "c3d4"
+     ]
+    },
+    "a1d1": {
+     "kind": "cp",
+     "cp": -141,
+     "mate": null,
+     "depth": 23,
+     "pv": [
+      "a1d1",
+      "c3d4",
+      "d1d3",
+      "b8c8",
+      "g2f1",
+      "c8e6",
+      "d3f3",
+      "e6d5"
+     ]
+    },
+    "a1f1": {
+     "kind": "cp",
+     "cp": -113,
+     "mate": null,
+     "depth": 20,
+     "pv": [
+      "a1f1",
+      "c3d4",
+      "g2f3",
+      "f8e8",
+      "g1g2",
+      "h7h5",
+      "d5a2",
+      "b8c7"
+     ]
+    }
+   },
+   "shipped_first_good": 1,
+   "floor_first_good": 1
+  },
+  {
+   "id": "0843",
+   "fen": "r1bq1rk1/1p1nppbp/3p2p1/p7/Pn1NP3/R1N1B3/1PPQBPPP/5RK1 b - - 10 15",
+   "phase": "middlegame",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "b4c6",
+      "nodes": 51,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "b4c6",
+      "nodes": 368,
+      "seconds": 0.0011
+     },
+     {
+      "depth": 3,
+      "move": "b4c6",
+      "nodes": 778,
+      "seconds": 0.0017
+     },
+     {
+      "depth": 4,
+      "move": "b4c6",
+      "nodes": 1538,
+      "seconds": 0.0031
+     },
+     {
+      "depth": 5,
+      "move": "b4c6",
+      "nodes": 3658,
+      "seconds": 0.007
+     },
+     {
+      "depth": 6,
+      "move": "d6d5",
+      "nodes": 13741,
+      "seconds": 0.0266
+     },
+     {
+      "depth": 7,
+      "move": "d7f6",
+      "nodes": 17974,
+      "seconds": 0.0344
+     },
+     {
+      "depth": 8,
+      "move": "d7f6",
+      "nodes": 29350,
+      "seconds": 0.0562
+     },
+     {
+      "depth": 9,
+      "move": "d7f6",
+      "nodes": 37248,
+      "seconds": 0.0688
+     },
+     {
+      "depth": 10,
+      "move": "d7c5",
+      "nodes": 63404,
+      "seconds": 0.1235
+     },
+     {
+      "depth": 11,
+      "move": "d7c5",
+      "nodes": 103827,
+      "seconds": 0.1977
+     },
+     {
+      "depth": 12,
+      "move": "d7f6",
+      "nodes": 179112,
+      "seconds": 0.3363
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "b4c6",
+      "nodes": 51,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "b4c6",
+      "nodes": 287,
+      "seconds": 0.0009
+     },
+     {
+      "depth": 3,
+      "move": "d7c5",
+      "nodes": 2009,
+      "seconds": 0.0037
+     },
+     {
+      "depth": 4,
+      "move": "b4c6",
+      "nodes": 9622,
+      "seconds": 0.0167
+     },
+     {
+      "depth": 5,
+      "move": "d7c5",
+      "nodes": 55874,
+      "seconds": 0.1006
+     },
+     {
+      "depth": 6,
+      "move": "d7c5",
+      "nodes": 217075,
+      "seconds": 0.4031
+     },
+     {
+      "depth": 7,
+      "move": "d7c5",
+      "nodes": 1233787,
+      "seconds": 2.1491
+     },
+     {
+      "depth": 8,
+      "move": "d7c5",
+      "nodes": 3000320,
+      "seconds": 5.2217
+     }
+    ]
+   },
+   "scores": {
+    "b4c6": {
+     "kind": "cp",
+     "cp": -97,
+     "mate": null,
+     "depth": 21,
+     "pv": [
+      "b4c6",
+      "f1d1",
+      "d7f6",
+      "d4b5",
+      "c6b4",
+      "h2h3",
+      "c8d7",
+      "f2f4"
+     ]
+    },
+    "d6d5": {
+     "kind": "cp",
+     "cp": -201,
+     "mate": null,
+     "depth": 22,
+     "pv": [
+      "d6d5",
+      "c3d5",
+      "d7c5",
+      "d5b4",
+      "c5e4",
+      "d2e1",
+      "a5b4",
+      "e1b4"
+     ]
+    },
+    "d7c5": {
+     "kind": "cp",
+     "cp": -57,
+     "mate": null,
+     "depth": 20,
+     "pv": [
+      "d7c5",
+      "f2f4",
+      "c8d7",
+      "g1h1",
+      "d7c6",
+      "e2f3",
+      "c6d7",
+      "d4b5"
+     ]
+    },
+    "d7f6": {
+     "kind": "cp",
+     "cp": -63,
+     "mate": null,
+     "depth": 23,
+     "pv": [
+      "d7f6",
+      "f2f3",
+      "d6d5",
+      "e4e5",
+      "f6e8",
+      "f3f4",
+      "f7f6",
+      "e5e6"
+     ]
+    }
+   },
+   "shipped_first_good": 1,
+   "floor_first_good": 1
+  },
+  {
+   "id": "0787",
+   "fen": "8/1p5p/7r/P5p1/4pk2/5n2/R3KP2/8 w - - 0 52",
+   "phase": "endgame",
+   "verdict": "into_mate",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "a2a3",
+      "nodes": 12,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "a2b2",
+      "nodes": 191,
+      "seconds": 0.0005
+     },
+     {
+      "depth": 3,
+      "move": "a2b2",
+      "nodes": 325,
+      "seconds": 0.0007
+     },
+     {
+      "depth": 4,
+      "move": "a2b2",
+      "nodes": 841,
+      "seconds": 0.0016
+     },
+     {
+      "depth": 5,
+      "move": "a2b2",
+      "nodes": 1842,
+      "seconds": 0.0034
+     },
+     {
+      "depth": 6,
+      "move": "a2b2",
+      "nodes": 2784,
+      "seconds": 0.0047
+     },
+     {
+      "depth": 7,
+      "move": "e2d1",
+      "nodes": 10262,
+      "seconds": 0.0166
+     },
+     {
+      "depth": 8,
+      "move": "e2d1",
+      "nodes": 12560,
+      "seconds": 0.0211
+     },
+     {
+      "depth": 9,
+      "move": "e2d1",
+      "nodes": 13372,
+      "seconds": 0.0226
+     },
+     {
+      "depth": 10,
+      "move": "e2d1",
+      "nodes": 14532,
+      "seconds": 0.0229
+     },
+     {
+      "depth": 11,
+      "move": "e2d1",
+      "nodes": 17619,
+      "seconds": 0.0274
+     },
+     {
+      "depth": 12,
+      "move": "e2d1",
+      "nodes": 27476,
+      "seconds": 0.0463
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "a2a3",
+      "nodes": 12,
+      "seconds": 0.0001
+     },
+     {
+      "depth": 2,
+      "move": "a2b2",
+      "nodes": 240,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 3,
+      "move": "a2b2",
+      "nodes": 503,
+      "seconds": 0.0011
+     },
+     {
+      "depth": 4,
+      "move": "e2d1",
+      "nodes": 6999,
+      "seconds": 0.0116
+     },
+     {
+      "depth": 5,
+      "move": "e2d1",
+      "nodes": 11801,
+      "seconds": 0.0205
+     },
+     {
+      "depth": 6,
+      "move": "e2d1",
+      "nodes": 38120,
+      "seconds": 0.0656
+     },
+     {
+      "depth": 7,
+      "move": "e2d1",
+      "nodes": 160627,
+      "seconds": 0.2751
+     },
+     {
+      "depth": 8,
+      "move": "e2d1",
+      "nodes": 568679,
+      "seconds": 0.9625
+     },
+     {
+      "depth": 9,
+      "move": "e2d1",
+      "nodes": 2232467,
+      "seconds": 3.7005
+     },
+     {
+      "depth": 10,
+      "move": "e2d1",
+      "nodes": 3000320,
+      "seconds": 4.9964
+     }
+    ]
+   },
+   "scores": {
+    "a2a3": {
+     "kind": "mate",
+     "mate": -11,
+     "cp": null,
+     "depth": 42,
+     "pv": [
+      "a2a3",
+      "h6d6",
+      "a3a2",
+      "g5g4",
+      "a2c2",
+      "h7h5",
+      "c2b2",
+      "h5h4"
+     ]
+    },
+    "a2b2": {
+     "kind": "mate",
+     "mate": -3,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "a2b2",
+      "h6h1",
+      "b2b1",
+      "h1b1",
+      "a5a6",
+      "b1e1"
+     ]
+    },
+    "e2d1": {
+     "kind": "cp",
+     "cp": -780,
+     "mate": null,
+     "depth": 25,
+     "pv": [
+      "e2d1",
+      "h6d6",
+      "d1c1",
+      "h7h5",
+      "a2b2",
+      "h5h4",
+      "b2b7",
+      "h4h3"
+     ]
+    }
+   },
+   "shipped_first_good": 7,
+   "floor_first_good": 4
+  },
+  {
+   "id": "0805",
+   "fen": "8/6p1/3pkr1p/8/2r1p3/P5RP/3R1P2/5K2 w - - 2 42",
+   "phase": "middlegame",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "g3g7",
+      "nodes": 41,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "g3g7",
+      "nodes": 139,
+      "seconds": 0.0004
+     },
+     {
+      "depth": 3,
+      "move": "g3g7",
+      "nodes": 345,
+      "seconds": 0.001
+     },
+     {
+      "depth": 4,
+      "move": "g3g7",
+      "nodes": 897,
+      "seconds": 0.0018
+     },
+     {
+      "depth": 5,
+      "move": "g3g7",
+      "nodes": 2201,
+      "seconds": 0.0041
+     },
+     {
+      "depth": 6,
+      "move": "a3a4",
+      "nodes": 9238,
+      "seconds": 0.0166
+     },
+     {
+      "depth": 7,
+      "move": "f1g2",
+      "nodes": 15222,
+      "seconds": 0.0272
+     },
+     {
+      "depth": 8,
+      "move": "f1g2",
+      "nodes": 22969,
+      "seconds": 0.0428
+     },
+     {
+      "depth": 9,
+      "move": "g3g7",
+      "nodes": 36704,
+      "seconds": 0.069
+     },
+     {
+      "depth": 10,
+      "move": "g3g7",
+      "nodes": 49862,
+      "seconds": 0.0912
+     },
+     {
+      "depth": 11,
+      "move": "g3g7",
+      "nodes": 80361,
+      "seconds": 0.1501
+     },
+     {
+      "depth": 12,
+      "move": "g3g7",
+      "nodes": 106673,
+      "seconds": 0.1999
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "g3g7",
+      "nodes": 41,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "g3g7",
+      "nodes": 162,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 3,
+      "move": "g3g7",
+      "nodes": 1018,
+      "seconds": 0.0019
+     },
+     {
+      "depth": 4,
+      "move": "d2b2",
+      "nodes": 6336,
+      "seconds": 0.0119
+     },
+     {
+      "depth": 5,
+      "move": "f1e2",
+      "nodes": 22144,
+      "seconds": 0.0402
+     },
+     {
+      "depth": 6,
+      "move": "f1g2",
+      "nodes": 91699,
+      "seconds": 0.164
+     },
+     {
+      "depth": 7,
+      "move": "g3g7",
+      "nodes": 360383,
+      "seconds": 0.6389
+     },
+     {
+      "depth": 8,
+      "move": "g3g7",
+      "nodes": 1009393,
+      "seconds": 1.7735
+     },
+     {
+      "depth": 9,
+      "move": "g3g7",
+      "nodes": 3000320,
+      "seconds": 5.1802
+     }
+    ]
+   },
+   "scores": {
+    "a3a4": {
+     "kind": "cp",
+     "cp": -229,
+     "mate": null,
+     "depth": 20,
+     "pv": [
+      "a3a4",
+      "c4a4",
+      "g3g7",
+      "d6d5",
+      "d2b2",
+      "a4a3",
+      "f1g2",
+      "e6e5"
+     ]
+    },
+    "d2b2": {
+     "kind": "cp",
+     "cp": -344,
+     "mate": null,
+     "depth": 21,
+     "pv": [
+      "d2b2",
+      "f6f7",
+      "g3b3",
+      "d6d5",
+      "b3b4",
+      "c4c1",
+      "f1g2",
+      "f7f5"
+     ]
+    },
+    "f1e2": {
+     "kind": "cp",
+     "cp": -294,
+     "mate": null,
+     "depth": 22,
+     "pv": [
+      "f1e2",
+      "g7g5",
+      "g3b3",
+      "e6e5",
+      "b3b5",
+      "c4c5",
+      "b5b8",
+      "c5a5"
+     ]
+    },
+    "f1g2": {
+     "kind": "cp",
+     "cp": -235,
+     "mate": null,
+     "depth": 23,
+     "pv": [
+      "f1g2",
+      "g7g5",
+      "g3b3",
+      "e6e5",
+      "b3b6",
+      "c4c5",
+      "a3a4",
+      "c5a5"
+     ]
+    },
+    "g3g7": {
+     "kind": "cp",
+     "cp": -95,
+     "mate": null,
+     "depth": 19,
+     "pv": [
+      "g3g7",
+      "d6d5",
+      "d2b2",
+      "e6e5",
+      "f1e2",
+      "f6f3",
+      "g7e7",
+      "e5f6"
+     ]
+    }
+   },
+   "shipped_first_good": 1,
+   "floor_first_good": 1
+  },
+  {
+   "id": "0696",
+   "fen": "7Q/8/8/1k6/4BP2/B7/P4PK1/8 b - - 2 49",
+   "phase": "endgame",
+   "verdict": "into_mate",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "b5b6",
+      "nodes": 7,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "b5a4",
+      "nodes": 318,
+      "seconds": 0.0008
+     },
+     {
+      "depth": 3,
+      "move": "b5c4",
+      "nodes": 893,
+      "seconds": 0.0016
+     },
+     {
+      "depth": 4,
+      "move": "b5a5",
+      "nodes": 1669,
+      "seconds": 0.0027
+     },
+     {
+      "depth": 5,
+      "move": "b5c4",
+      "nodes": 5071,
+      "seconds": 0.0079
+     },
+     {
+      "depth": 6,
+      "move": "b5c4",
+      "nodes": 5679,
+      "seconds": 0.0101
+     },
+     {
+      "depth": 7,
+      "move": "b5c4",
+      "nodes": 6466,
+      "seconds": 0.0098
+     },
+     {
+      "depth": 8,
+      "move": "b5c4",
+      "nodes": 8465,
+      "seconds": 0.015
+     },
+     {
+      "depth": 9,
+      "move": "b5c4",
+      "nodes": 8465,
+      "seconds": 0.0136
+     },
+     {
+      "depth": 10,
+      "move": "b5c4",
+      "nodes": 8465,
+      "seconds": 0.0137
+     },
+     {
+      "depth": 11,
+      "move": "b5c4",
+      "nodes": 8465,
+      "seconds": 0.0149
+     },
+     {
+      "depth": 12,
+      "move": "b5c4",
+      "nodes": 8465,
+      "seconds": 0.0134
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "b5b6",
+      "nodes": 7,
+      "seconds": 0.0001
+     },
+     {
+      "depth": 2,
+      "move": "b5a4",
+      "nodes": 391,
+      "seconds": 0.0008
+     },
+     {
+      "depth": 3,
+      "move": "b5a5",
+      "nodes": 1648,
+      "seconds": 0.0028
+     },
+     {
+      "depth": 4,
+      "move": "b5a5",
+      "nodes": 9397,
+      "seconds": 0.0149
+     },
+     {
+      "depth": 5,
+      "move": "b5a5",
+      "nodes": 13942,
+      "seconds": 0.0214
+     },
+     {
+      "depth": 6,
+      "move": "b5a5",
+      "nodes": 13942,
+      "seconds": 0.02
+     },
+     {
+      "depth": 7,
+      "move": "b5a5",
+      "nodes": 13942,
+      "seconds": 0.021
+     },
+     {
+      "depth": 8,
+      "move": "b5a5",
+      "nodes": 13942,
+      "seconds": 0.0202
+     },
+     {
+      "depth": 9,
+      "move": "b5a5",
+      "nodes": 13942,
+      "seconds": 0.021
+     },
+     {
+      "depth": 10,
+      "move": "b5a5",
+      "nodes": 13942,
+      "seconds": 0.0214
+     },
+     {
+      "depth": 11,
+      "move": "b5a5",
+      "nodes": 13942,
+      "seconds": 0.0221
+     },
+     {
+      "depth": 12,
+      "move": "b5a5",
+      "nodes": 13942,
+      "seconds": 0.0213
+     }
+    ]
+   },
+   "scores": {
+    "b5a4": {
+     "kind": "mate",
+     "mate": -3,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "b5a4",
+      "h8a8",
+      "a4b5",
+      "a8a7",
+      "b5c4",
+      "a7c5"
+     ]
+    },
+    "b5a5": {
+     "kind": "mate",
+     "mate": -3,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "b5a5",
+      "h8b8",
+      "a5a6",
+      "e4d3",
+      "a6a5",
+      "b8a7"
+     ]
+    },
+    "b5b6": {
+     "kind": "mate",
+     "mate": -3,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "b5b6",
+      "h8b8",
+      "b6a5",
+      "e4d3",
+      "a5a4",
+      "b8a8"
+     ]
+    },
+    "b5c4": {
+     "kind": "mate",
+     "mate": -2,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "b5c4",
+      "h8b8",
+      "c4c3",
+      "b8b4"
+     ]
+    }
+   },
+   "shipped_first_good": 1,
+   "floor_first_good": 1
+  },
+  {
+   "id": "0743",
+   "fen": "7K/q7/8/4k3/8/8/8/8 b - - 5 62",
+   "phase": "endgame",
+   "verdict": "slower_mate",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "a7a8",
+      "nodes": 42,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "a7a8",
+      "nodes": 124,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 3,
+      "move": "a7a8",
+      "nodes": 304,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 4,
+      "move": "e5e6",
+      "nodes": 650,
+      "seconds": 0.0011
+     },
+     {
+      "depth": 5,
+      "move": "e5e6",
+      "nodes": 848,
+      "seconds": 0.0017
+     },
+     {
+      "depth": 6,
+      "move": "e5e6",
+      "nodes": 1184,
+      "seconds": 0.0019
+     },
+     {
+      "depth": 7,
+      "move": "e5e6",
+      "nodes": 1845,
+      "seconds": 0.0033
+     },
+     {
+      "depth": 8,
+      "move": "e5e6",
+      "nodes": 3046,
+      "seconds": 0.0051
+     },
+     {
+      "depth": 9,
+      "move": "e5e6",
+      "nodes": 4383,
+      "seconds": 0.0059
+     },
+     {
+      "depth": 10,
+      "move": "e5f6",
+      "nodes": 9823,
+      "seconds": 0.0134
+     },
+     {
+      "depth": 11,
+      "move": "e5f6",
+      "nodes": 9823,
+      "seconds": 0.013
+     },
+     {
+      "depth": 12,
+      "move": "e5f6",
+      "nodes": 9823,
+      "seconds": 0.0146
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "a7a8",
+      "nodes": 42,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "e5e6",
+      "nodes": 201,
+      "seconds": 0.0005
+     },
+     {
+      "depth": 3,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0026
+     },
+     {
+      "depth": 4,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0023
+     },
+     {
+      "depth": 5,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0023
+     },
+     {
+      "depth": 6,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0033
+     },
+     {
+      "depth": 7,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0029
+     },
+     {
+      "depth": 8,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0034
+     },
+     {
+      "depth": 9,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0023
+     },
+     {
+      "depth": 10,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0022
+     },
+     {
+      "depth": 11,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0023
+     },
+     {
+      "depth": 12,
+      "move": "e5f6",
+      "nodes": 1376,
+      "seconds": 0.0023
+     }
+    ]
+   },
+   "scores": {
+    "a7a8": {
+     "kind": "mate",
+     "mate": 5,
+     "cp": null,
+     "depth": 194,
+     "pv": [
+      "a7a8",
+      "h8g7",
+      "a8e4",
+      "g7f7",
+      "e4h7",
+      "f7e8",
+      "e5e6",
+      "e8d8"
+     ]
+    },
+    "e5e6": {
+     "kind": "mate",
+     "mate": 3,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "e5e6",
+      "h8g8",
+      "e6f6",
+      "g8h8",
+      "a7g7"
+     ]
+    },
+    "e5f6": {
+     "kind": "mate",
+     "mate": 2,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "e5f6",
+      "h8g8",
+      "a7g7"
+     ]
+    }
+   },
+   "shipped_first_good": 10,
+   "floor_first_good": 3
+  },
+  {
+   "id": "0405",
+   "fen": "5rk1/4q1p1/4p2p/p2bPp2/P6P/8/3Q1PP1/4RBK1 w - - 0 28",
+   "phase": "middlegame",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "g2g3",
+      "nodes": 49,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "g2g3",
+      "nodes": 214,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 3,
+      "move": "d2d4",
+      "nodes": 837,
+      "seconds": 0.0019
+     },
+     {
+      "depth": 4,
+      "move": "h4h5",
+      "nodes": 2083,
+      "seconds": 0.0039
+     },
+     {
+      "depth": 5,
+      "move": "d2f4",
+      "nodes": 4089,
+      "seconds": 0.0086
+     },
+     {
+      "depth": 6,
+      "move": "e1b1",
+      "nodes": 5951,
+      "seconds": 0.0106
+     },
+     {
+      "depth": 7,
+      "move": "e1b1",
+      "nodes": 8039,
+      "seconds": 0.0144
+     },
+     {
+      "depth": 8,
+      "move": "e1b1",
+      "nodes": 10809,
+      "seconds": 0.0206
+     },
+     {
+      "depth": 9,
+      "move": "e1b1",
+      "nodes": 17379,
+      "seconds": 0.0335
+     },
+     {
+      "depth": 10,
+      "move": "e1b1",
+      "nodes": 24774,
+      "seconds": 0.0465
+     },
+     {
+      "depth": 11,
+      "move": "e1b1",
+      "nodes": 35428,
+      "seconds": 0.0631
+     },
+     {
+      "depth": 12,
+      "move": "e1b1",
+      "nodes": 50599,
+      "seconds": 0.0902
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "g2g3",
+      "nodes": 49,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "g2g3",
+      "nodes": 201,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 3,
+      "move": "d2d4",
+      "nodes": 2134,
+      "seconds": 0.0046
+     },
+     {
+      "depth": 4,
+      "move": "h4h5",
+      "nodes": 6903,
+      "seconds": 0.012
+     },
+     {
+      "depth": 5,
+      "move": "h4h5",
+      "nodes": 30428,
+      "seconds": 0.0531
+     },
+     {
+      "depth": 6,
+      "move": "d2a5",
+      "nodes": 129301,
+      "seconds": 0.2233
+     },
+     {
+      "depth": 7,
+      "move": "h4h5",
+      "nodes": 528082,
+      "seconds": 0.964
+     },
+     {
+      "depth": 8,
+      "move": "h4h5",
+      "nodes": 1519365,
+      "seconds": 2.6737
+     },
+     {
+      "depth": 9,
+      "move": "h4h5",
+      "nodes": 3000320,
+      "seconds": 5.4255
+     }
+    ]
+   },
+   "scores": {
+    "d2a5": {
+     "kind": "cp",
+     "cp": -11,
+     "mate": null,
+     "depth": 19,
+     "pv": [
+      "d2a5",
+      "e7h4",
+      "a5b5",
+      "h4g4",
+      "e1b1",
+      "h6h5",
+      "b1b4",
+      "g4g5"
+     ]
+    },
+    "d2d4": {
+     "kind": "cp",
+     "cp": -47,
+     "mate": null,
+     "depth": 21,
+     "pv": [
+      "d2d4",
+      "f8b8",
+      "f1b5",
+      "b8c8",
+      "e1d1",
+      "e7b4",
+      "d4b4",
+      "a5b4"
+     ]
+    },
+    "d2f4": {
+     "kind": "cp",
+     "cp": -49,
+     "mate": null,
+     "depth": 20,
+     "pv": [
+      "d2f4",
+      "f8b8",
+      "f1b5",
+      "b8c8",
+      "e1b1",
+      "e7f7",
+      "b5d3",
+      "f7g6"
+     ]
+    },
+    "e1b1": {
+     "kind": "cp",
+     "cp": -169,
+     "mate": null,
+     "depth": 23,
+     "pv": [
+      "e1b1",
+      "e7h4",
+      "b1b5",
+      "h4e4",
+      "d2a5",
+      "f8c8",
+      "b5c5",
+      "c8c5"
+     ]
+    },
+    "g2g3": {
+     "kind": "cp",
+     "cp": -108,
+     "mate": null,
+     "depth": 23,
+     "pv": [
+      "g2g3",
+      "e7a3",
+      "f1g2",
+      "d5g2",
+      "g1g2",
+      "a3a4",
+      "d2d6",
+      "f8e8"
+     ]
+    },
+    "h4h5": {
+     "kind": "cp",
+     "cp": -34,
+     "mate": null,
+     "depth": 21,
+     "pv": [
+      "h4h5",
+      "f8a8",
+      "e1b1",
+      "e7h4",
+      "b1b5",
+      "g8h7",
+      "b5a5",
+      "a8d8"
+     ]
+    }
+   },
+   "shipped_first_good": 3,
+   "floor_first_good": 3
+  },
+  {
+   "id": "0378",
+   "fen": "6k1/r2r1p2/5Q2/5R2/2B4p/4P1P1/8/6K1 w - - 0 59",
+   "phase": "endgame",
+   "verdict": "slower_mate",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "f5g5",
+      "nodes": 71,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "f5g5",
+      "nodes": 213,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 3,
+      "move": "f5g5",
+      "nodes": 562,
+      "seconds": 0.0012
+     },
+     {
+      "depth": 4,
+      "move": "f5g5",
+      "nodes": 1057,
+      "seconds": 0.002
+     },
+     {
+      "depth": 5,
+      "move": "f5g5",
+      "nodes": 1961,
+      "seconds": 0.0035
+     },
+     {
+      "depth": 6,
+      "move": "f5g5",
+      "nodes": 2509,
+      "seconds": 0.0043
+     },
+     {
+      "depth": 7,
+      "move": "f5g5",
+      "nodes": 3514,
+      "seconds": 0.0057
+     },
+     {
+      "depth": 8,
+      "move": "f5g5",
+      "nodes": 10376,
+      "seconds": 0.0181
+     },
+     {
+      "depth": 9,
+      "move": "f6g6",
+      "nodes": 21967,
+      "seconds": 0.0375
+     },
+     {
+      "depth": 10,
+      "move": "f6g6",
+      "nodes": 41601,
+      "seconds": 0.075
+     },
+     {
+      "depth": 11,
+      "move": "f6g6",
+      "nodes": 49117,
+      "seconds": 0.0853
+     },
+     {
+      "depth": 12,
+      "move": "f6g6",
+      "nodes": 64880,
+      "seconds": 0.1111
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "f5g5",
+      "nodes": 71,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "f5g5",
+      "nodes": 619,
+      "seconds": 0.0014
+     },
+     {
+      "depth": 3,
+      "move": "f5g5",
+      "nodes": 4207,
+      "seconds": 0.0079
+     },
+     {
+      "depth": 4,
+      "move": "f5h5",
+      "nodes": 24471,
+      "seconds": 0.0446
+     },
+     {
+      "depth": 5,
+      "move": "f5h5",
+      "nodes": 159824,
+      "seconds": 0.2959
+     },
+     {
+      "depth": 6,
+      "move": "f5h5",
+      "nodes": 700713,
+      "seconds": 1.3238
+     },
+     {
+      "depth": 7,
+      "move": "f5h5",
+      "nodes": 3000320,
+      "seconds": 5.2885
+     }
+    ]
+   },
+   "scores": {
+    "f5g5": {
+     "kind": "mate",
+     "mate": 9,
+     "cp": null,
+     "depth": 43,
+     "pv": [
+      "f5g5",
+      "g8f8",
+      "f6g7",
+      "f8e8",
+      "g7g8",
+      "e8e7",
+      "g8f7",
+      "e7d6"
+     ]
+    },
+    "f5h5": {
+     "kind": "mate",
+     "mate": 6,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "f5h5",
+      "d7d1",
+      "g1g2",
+      "a7a2",
+      "g2h3",
+      "a2h2",
+      "h3g4",
+      "d1d4"
+     ]
+    },
+    "f6g6": {
+     "kind": "mate",
+     "mate": 9,
+     "cp": null,
+     "depth": 44,
+     "pv": [
+      "f6g6",
+      "g8f8",
+      "g6h6",
+      "f8e8",
+      "h6h8",
+      "e8e7",
+      "f5f7",
+      "e7d6"
+     ]
+    }
+   },
+   "shipped_first_good": null,
+   "floor_first_good": 4
+  },
+  {
+   "id": "0217",
+   "fen": "4r2r/ppk3pp/1q2pp2/3pN3/2pP1P2/2P1Q2N/PP4PP/R5K1 w - - 1 20",
+   "phase": "middlegame",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "e5f7",
+      "nodes": 317,
+      "seconds": 0.001
+     },
+     {
+      "depth": 2,
+      "move": "e5f7",
+      "nodes": 635,
+      "seconds": 0.0014
+     },
+     {
+      "depth": 3,
+      "move": "e5f7",
+      "nodes": 1042,
+      "seconds": 0.0021
+     },
+     {
+      "depth": 4,
+      "move": "h3g5",
+      "nodes": 1846,
+      "seconds": 0.0034
+     },
+     {
+      "depth": 5,
+      "move": "h3g5",
+      "nodes": 3614,
+      "seconds": 0.0064
+     },
+     {
+      "depth": 6,
+      "move": "h3g5",
+      "nodes": 5531,
+      "seconds": 0.0096
+     },
+     {
+      "depth": 7,
+      "move": "h3g5",
+      "nodes": 10137,
+      "seconds": 0.0186
+     },
+     {
+      "depth": 8,
+      "move": "h3g5",
+      "nodes": 17161,
+      "seconds": 0.0306
+     },
+     {
+      "depth": 9,
+      "move": "e5f3",
+      "nodes": 53011,
+      "seconds": 0.102
+     },
+     {
+      "depth": 10,
+      "move": "e5f3",
+      "nodes": 65306,
+      "seconds": 0.1158
+     },
+     {
+      "depth": 11,
+      "move": "e5f3",
+      "nodes": 82396,
+      "seconds": 0.1463
+     },
+     {
+      "depth": 12,
+      "move": "e5f3",
+      "nodes": 107434,
+      "seconds": 0.1874
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "e5f7",
+      "nodes": 317,
+      "seconds": 0.0007
+     },
+     {
+      "depth": 2,
+      "move": "e5f7",
+      "nodes": 639,
+      "seconds": 0.0017
+     },
+     {
+      "depth": 3,
+      "move": "e5f3",
+      "nodes": 2410,
+      "seconds": 0.0044
+     },
+     {
+      "depth": 4,
+      "move": "e5f3",
+      "nodes": 6872,
+      "seconds": 0.0119
+     },
+     {
+      "depth": 5,
+      "move": "e5f3",
+      "nodes": 36076,
+      "seconds": 0.0625
+     },
+     {
+      "depth": 6,
+      "move": "e5f3",
+      "nodes": 136604,
+      "seconds": 0.2422
+     },
+     {
+      "depth": 7,
+      "move": "e5f3",
+      "nodes": 520680,
+      "seconds": 0.9284
+     },
+     {
+      "depth": 8,
+      "move": "e5f3",
+      "nodes": 1934372,
+      "seconds": 3.4015
+     },
+     {
+      "depth": 9,
+      "move": "e5f3",
+      "nodes": 3000320,
+      "seconds": 5.3334
+     }
+    ]
+   },
+   "scores": {
+    "e5f3": {
+     "kind": "cp",
+     "cp": -38,
+     "mate": null,
+     "depth": 21,
+     "pv": [
+      "e5f3",
+      "b6b2",
+      "e3e1",
+      "c7b8",
+      "a2a4",
+      "e8c8",
+      "a4a5",
+      "h8e8"
+     ]
+    },
+    "e5f7": {
+     "kind": "cp",
+     "cp": -419,
+     "mate": null,
+     "depth": 20,
+     "pv": [
+      "e5f7",
+      "h8f8",
+      "f7g5",
+      "f6g5",
+      "a1e1",
+      "h7h6",
+      "e1e2",
+      "g5g4"
+     ]
+    },
+    "h3g5": {
+     "kind": "cp",
+     "cp": -215,
+     "mate": null,
+     "depth": 21,
+     "pv": [
+      "h3g5",
+      "f6g5",
+      "b2b4",
+      "g5f4",
+      "e3f4",
+      "b6d6",
+      "f4g3",
+      "h8f8"
+     ]
+    }
+   },
+   "shipped_first_good": 9,
+   "floor_first_good": 3
+  },
+  {
+   "id": "0231",
+   "fen": "1r6/1P2R3/6p1/8/8/2K1N2p/5k2/8 w - - 8 65",
+   "phase": "endgame",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "e3g4",
+      "nodes": 46,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "e3c4",
+      "nodes": 175,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 3,
+      "move": "e3c4",
+      "nodes": 416,
+      "seconds": 0.0012
+     },
+     {
+      "depth": 4,
+      "move": "e3g4",
+      "nodes": 1469,
+      "seconds": 0.0027
+     },
+     {
+      "depth": 5,
+      "move": "e3g4",
+      "nodes": 2776,
+      "seconds": 0.0046
+     },
+     {
+      "depth": 6,
+      "move": "e3d1",
+      "nodes": 9924,
+      "seconds": 0.0173
+     },
+     {
+      "depth": 7,
+      "move": "e3d1",
+      "nodes": 13783,
+      "seconds": 0.0218
+     },
+     {
+      "depth": 8,
+      "move": "e3d1",
+      "nodes": 31347,
+      "seconds": 0.052
+     },
+     {
+      "depth": 9,
+      "move": "c3d4",
+      "nodes": 43624,
+      "seconds": 0.0744
+     },
+     {
+      "depth": 10,
+      "move": "c3d4",
+      "nodes": 72227,
+      "seconds": 0.1201
+     },
+     {
+      "depth": 11,
+      "move": "c3d4",
+      "nodes": 118385,
+      "seconds": 0.1971
+     },
+     {
+      "depth": 12,
+      "move": "c3d4",
+      "nodes": 140577,
+      "seconds": 0.2342
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "e3g4",
+      "nodes": 46,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "e3c4",
+      "nodes": 288,
+      "seconds": 0.0007
+     },
+     {
+      "depth": 3,
+      "move": "e3g4",
+      "nodes": 1707,
+      "seconds": 0.003
+     },
+     {
+      "depth": 4,
+      "move": "e3g4",
+      "nodes": 6785,
+      "seconds": 0.0129
+     },
+     {
+      "depth": 5,
+      "move": "c3c4",
+      "nodes": 32895,
+      "seconds": 0.0542
+     },
+     {
+      "depth": 6,
+      "move": "c3d4",
+      "nodes": 100502,
+      "seconds": 0.1718
+     },
+     {
+      "depth": 7,
+      "move": "c3d3",
+      "nodes": 379144,
+      "seconds": 0.6247
+     },
+     {
+      "depth": 8,
+      "move": "c3d4",
+      "nodes": 1258856,
+      "seconds": 2.0411
+     },
+     {
+      "depth": 9,
+      "move": "c3d4",
+      "nodes": 3000320,
+      "seconds": 4.8307
+     }
+    ]
+   },
+   "scores": {
+    "c3c4": {
+     "kind": "cp",
+     "cp": 0,
+     "mate": null,
+     "depth": 36,
+     "pv": [
+      "c3c4",
+      "h3h2",
+      "e3g4",
+      "f2g2",
+      "g4h2",
+      "g2h2",
+      "c4b5",
+      "g6g5"
+     ]
+    },
+    "c3d3": {
+     "kind": "cp",
+     "cp": 0,
+     "mate": null,
+     "depth": 37,
+     "pv": [
+      "c3d3",
+      "h3h2",
+      "e7f7",
+      "f2g3",
+      "e3f1",
+      "g3g2",
+      "f1e3",
+      "g2g3"
+     ]
+    },
+    "c3d4": {
+     "kind": "cp",
+     "cp": 396,
+     "mate": null,
+     "depth": 18,
+     "pv": [
+      "c3d4",
+      "f2e2",
+      "d4d5",
+      "g6g5",
+      "d5c6",
+      "e2f3",
+      "e3f1",
+      "f3g2"
+     ]
+    },
+    "e3c4": {
+     "kind": "cp",
+     "cp": -2,
+     "mate": null,
+     "depth": 26,
+     "pv": [
+      "e3c4",
+      "h3h2",
+      "e7h7",
+      "f2g1",
+      "c4e5",
+      "h2h1q",
+      "h7h1",
+      "g1h1"
+     ]
+    },
+    "e3d1": {
+     "kind": "cp",
+     "cp": 0,
+     "mate": null,
+     "depth": 24,
+     "pv": [
+      "e3d1",
+      "f2g1",
+      "e7e1",
+      "g1g2",
+      "e1e2",
+      "g2g1",
+      "e2b2",
+      "h3h2"
+     ]
+    },
+    "e3g4": {
+     "kind": "cp",
+     "cp": 0,
+     "mate": null,
+     "depth": 24,
+     "pv": [
+      "e3g4",
+      "f2g3",
+      "g4e3",
+      "h3h2",
+      "e3f1",
+      "g3g2",
+      "f1h2",
+      "g2h2"
+     ]
+    }
+   },
+   "shipped_first_good": 9,
+   "floor_first_good": 6
+  },
+  {
+   "id": "0660",
+   "fen": "8/kr6/8/2KQ4/1P6/8/8/8 w - - 31 109",
+   "phase": "endgame",
+   "verdict": "slower_mate",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "d5a2",
+      "nodes": 33,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "d5a2",
+      "nodes": 117,
+      "seconds": 0.0004
+     },
+     {
+      "depth": 3,
+      "move": "d5e4",
+      "nodes": 358,
+      "seconds": 0.0008
+     },
+     {
+      "depth": 4,
+      "move": "d5e4",
+      "nodes": 580,
+      "seconds": 0.0012
+     },
+     {
+      "depth": 5,
+      "move": "d5a2",
+      "nodes": 1427,
+      "seconds": 0.0024
+     },
+     {
+      "depth": 6,
+      "move": "d5a2",
+      "nodes": 2857,
+      "seconds": 0.0049
+     },
+     {
+      "depth": 7,
+      "move": "d5a2",
+      "nodes": 10660,
+      "seconds": 0.0182
+     },
+     {
+      "depth": 8,
+      "move": "d5g5",
+      "nodes": 15724,
+      "seconds": 0.0238
+     },
+     {
+      "depth": 9,
+      "move": "c5c6",
+      "nodes": 21873,
+      "seconds": 0.0344
+     },
+     {
+      "depth": 10,
+      "move": "c5c6",
+      "nodes": 26375,
+      "seconds": 0.0409
+     },
+     {
+      "depth": 11,
+      "move": "c5c6",
+      "nodes": 28520,
+      "seconds": 0.0454
+     },
+     {
+      "depth": 12,
+      "move": "c5c6",
+      "nodes": 34936,
+      "seconds": 0.0525
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "d5a2",
+      "nodes": 33,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "d5e5",
+      "nodes": 261,
+      "seconds": 0.0007
+     },
+     {
+      "depth": 3,
+      "move": "d5c6",
+      "nodes": 1937,
+      "seconds": 0.0035
+     },
+     {
+      "depth": 4,
+      "move": "c5c6",
+      "nodes": 6872,
+      "seconds": 0.0125
+     },
+     {
+      "depth": 5,
+      "move": "c5c6",
+      "nodes": 24970,
+      "seconds": 0.0415
+     },
+     {
+      "depth": 6,
+      "move": "c5c6",
+      "nodes": 92062,
+      "seconds": 0.1486
+     },
+     {
+      "depth": 7,
+      "move": "c5c6",
+      "nodes": 327995,
+      "seconds": 0.5113
+     },
+     {
+      "depth": 8,
+      "move": "c5c6",
+      "nodes": 911494,
+      "seconds": 1.3947
+     },
+     {
+      "depth": 9,
+      "move": "c5c6",
+      "nodes": 2243042,
+      "seconds": 3.3639
+     },
+     {
+      "depth": 10,
+      "move": "c5c6",
+      "nodes": 3000320,
+      "seconds": 4.3982
+     }
+    ]
+   },
+   "scores": {
+    "c5c6": {
+     "kind": "mate",
+     "mate": 7,
+     "cp": null,
+     "depth": 71,
+     "pv": [
+      "c5c6",
+      "a7b8",
+      "d5d8",
+      "b8a7",
+      "b4b5",
+      "b7b5",
+      "c6b5",
+      "a7b7"
+     ]
+    },
+    "d5a2": {
+     "kind": "mate",
+     "mate": 12,
+     "cp": null,
+     "depth": 40,
+     "pv": [
+      "d5a2",
+      "a7b8",
+      "a2h2",
+      "b8c8",
+      "c5c6",
+      "c8d8",
+      "h2d6",
+      "d8e8"
+     ]
+    },
+    "d5c6": {
+     "kind": "mate",
+     "mate": 10,
+     "cp": null,
+     "depth": 41,
+     "pv": [
+      "d5c6",
+      "a7b8",
+      "c6e4",
+      "b8a8",
+      "c5c6",
+      "a8a7",
+      "e4d5",
+      "a7b8"
+     ]
+    },
+    "d5e4": {
+     "kind": "mate",
+     "mate": 11,
+     "cp": null,
+     "depth": 36,
+     "pv": [
+      "d5e4",
+      "b7c7",
+      "c5b5",
+      "c7f7",
+      "e4d4",
+      "a7b8",
+      "d4d6",
+      "b8b7"
+     ]
+    },
+    "d5e5": {
+     "kind": "mate",
+     "mate": 9,
+     "cp": null,
+     "depth": 49,
+     "pv": [
+      "d5e5",
+      "b7b6",
+      "b4b5",
+      "b6b7",
+      "e5d6",
+      "a7a8",
+      "d6d8",
+      "b7b8"
+     ]
+    },
+    "d5g5": {
+     "kind": "cp",
+     "cp": 1411,
+     "mate": null,
+     "depth": 28,
+     "pv": [
+      "d5g5",
+      "b7c7",
+      "c5b5",
+      "c7b7",
+      "b5a5",
+      "b7d7",
+      "g5c5",
+      "a7b7"
+     ]
+    }
+   },
+   "shipped_first_good": 9,
+   "floor_first_good": 4
+  },
+  {
+   "id": "0899",
+   "fen": "6k1/2p2pp1/7p/pq1PpN1P/1P6/2Pn1PP1/2Q4K/8 b - - 2 39",
+   "phase": "middlegame",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "a5a4",
+      "nodes": 37,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "d3e1",
+      "nodes": 245,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 3,
+      "move": "a5a4",
+      "nodes": 1028,
+      "seconds": 0.0034
+     },
+     {
+      "depth": 4,
+      "move": "a5a4",
+      "nodes": 1360,
+      "seconds": 0.0026
+     },
+     {
+      "depth": 5,
+      "move": "a5a4",
+      "nodes": 2016,
+      "seconds": 0.0037
+     },
+     {
+      "depth": 6,
+      "move": "a5b4",
+      "nodes": 5605,
+      "seconds": 0.0119
+     },
+     {
+      "depth": 7,
+      "move": "a5a4",
+      "nodes": 9561,
+      "seconds": 0.017
+     },
+     {
+      "depth": 8,
+      "move": "d3e1",
+      "nodes": 12217,
+      "seconds": 0.0203
+     },
+     {
+      "depth": 9,
+      "move": "d3e1",
+      "nodes": 16351,
+      "seconds": 0.0292
+     },
+     {
+      "depth": 10,
+      "move": "d3e1",
+      "nodes": 21780,
+      "seconds": 0.0367
+     },
+     {
+      "depth": 11,
+      "move": "e5e4",
+      "nodes": 41602,
+      "seconds": 0.0754
+     },
+     {
+      "depth": 12,
+      "move": "d3e1",
+      "nodes": 67498,
+      "seconds": 0.1174
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "a5a4",
+      "nodes": 37,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "d3e1",
+      "nodes": 313,
+      "seconds": 0.0007
+     },
+     {
+      "depth": 3,
+      "move": "a5a4",
+      "nodes": 1945,
+      "seconds": 0.0037
+     },
+     {
+      "depth": 4,
+      "move": "a5a4",
+      "nodes": 4983,
+      "seconds": 0.0092
+     },
+     {
+      "depth": 5,
+      "move": "a5a4",
+      "nodes": 22755,
+      "seconds": 0.0385
+     },
+     {
+      "depth": 6,
+      "move": "d3e1",
+      "nodes": 71253,
+      "seconds": 0.13
+     },
+     {
+      "depth": 7,
+      "move": "e5e4",
+      "nodes": 319635,
+      "seconds": 0.5822
+     },
+     {
+      "depth": 8,
+      "move": "d3e1",
+      "nodes": 836468,
+      "seconds": 1.4947
+     },
+     {
+      "depth": 9,
+      "move": "d3e1",
+      "nodes": 2537704,
+      "seconds": 4.4594
+     },
+     {
+      "depth": 10,
+      "move": "d3e1",
+      "nodes": 3000321,
+      "seconds": 5.301
+     }
+    ]
+   },
+   "scores": {
+    "a5a4": {
+     "kind": "cp",
+     "cp": -95,
+     "mate": null,
+     "depth": 22,
+     "pv": [
+      "a5a4",
+      "c3c4",
+      "d3b4",
+      "c2c3",
+      "b5d7",
+      "g3g4",
+      "g7g6",
+      "f5h6"
+     ]
+    },
+    "a5b4": {
+     "kind": "cp",
+     "cp": -345,
+     "mate": null,
+     "depth": 21,
+     "pv": [
+      "a5b4",
+      "c3c4",
+      "b4b3",
+      "c2d3",
+      "b5b4",
+      "d5d6",
+      "c7d6",
+      "c4c5"
+     ]
+    },
+    "d3e1": {
+     "kind": "cp",
+     "cp": 0,
+     "mate": null,
+     "depth": 36,
+     "pv": [
+      "d3e1",
+      "c2f2",
+      "e1d3",
+      "f2a7",
+      "d3e1",
+      "a7f2"
+     ]
+    },
+    "e5e4": {
+     "kind": "cp",
+     "cp": 0,
+     "mate": null,
+     "depth": 32,
+     "pv": [
+      "e5e4",
+      "b4a5",
+      "e4f3",
+      "f5d4",
+      "b5c4",
+      "c2b3",
+      "f3f2",
+      "b3c4"
+     ]
+    }
+   },
+   "shipped_first_good": 2,
+   "floor_first_good": 2
+  },
+  {
+   "id": "1125",
+   "fen": "r2q1rk1/1p2bppp/pn1pbn2/4p3/P3P3/1NN1B2P/1PP1BPP1/R2Q1RK1 w - - 5 12",
+   "phase": "opening",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "a4a5",
+      "nodes": 52,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "a4a5",
+      "nodes": 412,
+      "seconds": 0.001
+     },
+     {
+      "depth": 3,
+      "move": "a4a5",
+      "nodes": 1264,
+      "seconds": 0.0027
+     },
+     {
+      "depth": 4,
+      "move": "a4a5",
+      "nodes": 2357,
+      "seconds": 0.0048
+     },
+     {
+      "depth": 5,
+      "move": "a4a5",
+      "nodes": 6371,
+      "seconds": 0.0146
+     },
+     {
+      "depth": 6,
+      "move": "b3d4",
+      "nodes": 12471,
+      "seconds": 0.0245
+     },
+     {
+      "depth": 7,
+      "move": "a4a5",
+      "nodes": 19501,
+      "seconds": 0.0386
+     },
+     {
+      "depth": 8,
+      "move": "a4a5",
+      "nodes": 29366,
+      "seconds": 0.0572
+     },
+     {
+      "depth": 9,
+      "move": "a4a5",
+      "nodes": 48096,
+      "seconds": 0.0928
+     },
+     {
+      "depth": 10,
+      "move": "a4a5",
+      "nodes": 68087,
+      "seconds": 0.1345
+     },
+     {
+      "depth": 11,
+      "move": "a4a5",
+      "nodes": 94694,
+      "seconds": 0.1852
+     },
+     {
+      "depth": 12,
+      "move": "a4a5",
+      "nodes": 193866,
+      "seconds": 0.3776
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "a4a5",
+      "nodes": 52,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 2,
+      "move": "a4a5",
+      "nodes": 420,
+      "seconds": 0.001
+     },
+     {
+      "depth": 3,
+      "move": "a4a5",
+      "nodes": 3340,
+      "seconds": 0.0069
+     },
+     {
+      "depth": 4,
+      "move": "a4a5",
+      "nodes": 11861,
+      "seconds": 0.0228
+     },
+     {
+      "depth": 5,
+      "move": "a4a5",
+      "nodes": 94646,
+      "seconds": 0.1678
+     },
+     {
+      "depth": 6,
+      "move": "a4a5",
+      "nodes": 299262,
+      "seconds": 0.5626
+     },
+     {
+      "depth": 7,
+      "move": "a4a5",
+      "nodes": 2279986,
+      "seconds": 3.9257
+     },
+     {
+      "depth": 8,
+      "move": "a4a5",
+      "nodes": 3000320,
+      "seconds": 5.2034
+     }
+    ]
+   },
+   "scores": {
+    "a4a5": {
+     "kind": "cp",
+     "cp": 8,
+     "mate": null,
+     "depth": 25,
+     "pv": [
+      "a4a5",
+      "b6c4",
+      "e2c4",
+      "e6c4",
+      "f1e1",
+      "a8c8",
+      "e3b6",
+      "d8d7"
+     ]
+    },
+    "b3d4": {
+     "kind": "cp",
+     "cp": -369,
+     "mate": null,
+     "depth": 19,
+     "pv": [
+      "b3d4",
+      "e5d4",
+      "d1d4",
+      "b6d7",
+      "f2f4",
+      "d6d5",
+      "d4d1",
+      "e7c5"
+     ]
+    }
+   },
+   "shipped_first_good": 1,
+   "floor_first_good": 1
+  },
+  {
+   "id": "1500",
+   "fen": "5q2/k7/2P5/1r1KB3/3P4/p1Q5/6P1/8 w - - 17 58",
+   "phase": "endgame",
+   "verdict": "severe",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "d5c4",
+      "nodes": 14,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "d5e4",
+      "nodes": 125,
+      "seconds": 0.0004
+     },
+     {
+      "depth": 3,
+      "move": "d5e4",
+      "nodes": 258,
+      "seconds": 0.0007
+     },
+     {
+      "depth": 4,
+      "move": "d5e4",
+      "nodes": 731,
+      "seconds": 0.0015
+     },
+     {
+      "depth": 5,
+      "move": "d5e6",
+      "nodes": 1632,
+      "seconds": 0.003
+     },
+     {
+      "depth": 6,
+      "move": "d5e6",
+      "nodes": 3059,
+      "seconds": 0.0056
+     },
+     {
+      "depth": 7,
+      "move": "d5e6",
+      "nodes": 5485,
+      "seconds": 0.01
+     },
+     {
+      "depth": 8,
+      "move": "d5e4",
+      "nodes": 13146,
+      "seconds": 0.025
+     },
+     {
+      "depth": 9,
+      "move": "d5e4",
+      "nodes": 15150,
+      "seconds": 0.0302
+     },
+     {
+      "depth": 10,
+      "move": "d5e4",
+      "nodes": 21727,
+      "seconds": 0.0406
+     },
+     {
+      "depth": 11,
+      "move": "d5e4",
+      "nodes": 38375,
+      "seconds": 0.0723
+     },
+     {
+      "depth": 12,
+      "move": "d5e4",
+      "nodes": 65893,
+      "seconds": 0.1283
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "d5c4",
+      "nodes": 14,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "d5e4",
+      "nodes": 200,
+      "seconds": 0.0005
+     },
+     {
+      "depth": 3,
+      "move": "d5c4",
+      "nodes": 1063,
+      "seconds": 0.0033
+     },
+     {
+      "depth": 4,
+      "move": "d5e4",
+      "nodes": 5439,
+      "seconds": 0.0102
+     },
+     {
+      "depth": 5,
+      "move": "d5e6",
+      "nodes": 24569,
+      "seconds": 0.0477
+     },
+     {
+      "depth": 6,
+      "move": "d5e4",
+      "nodes": 59059,
+      "seconds": 0.1155
+     },
+     {
+      "depth": 7,
+      "move": "d5e4",
+      "nodes": 163010,
+      "seconds": 0.3162
+     },
+     {
+      "depth": 8,
+      "move": "d5e4",
+      "nodes": 539597,
+      "seconds": 1.0359
+     },
+     {
+      "depth": 9,
+      "move": "d5e4",
+      "nodes": 1948143,
+      "seconds": 3.6541
+     },
+     {
+      "depth": 10,
+      "move": "d5e4",
+      "nodes": 3000320,
+      "seconds": 5.6521
+     }
+    ]
+   },
+   "scores": {
+    "d5c4": {
+     "kind": "cp",
+     "cp": -675,
+     "mate": null,
+     "depth": 31,
+     "pv": [
+      "d5c4",
+      "f8f1",
+      "c3d3",
+      "b5b4",
+      "c4b4",
+      "f1d3",
+      "c6c7",
+      "a3a2"
+     ]
+    },
+    "d5e4": {
+     "kind": "cp",
+     "cp": -10,
+     "mate": null,
+     "depth": 21,
+     "pv": [
+      "d5e4",
+      "f8b4",
+      "c3b4",
+      "b5b4",
+      "e4f5",
+      "b4b8",
+      "d4d5",
+      "b8f8"
+     ]
+    },
+    "d5e6": {
+     "kind": "cp",
+     "cp": -262,
+     "mate": null,
+     "depth": 18,
+     "pv": [
+      "d5e6",
+      "a3a2",
+      "g2g4",
+      "a7b6",
+      "d4d5",
+      "f8g8",
+      "e6f6",
+      "g8d8"
+     ]
+    }
+   },
+   "shipped_first_good": 2,
+   "floor_first_good": 2
+  },
+  {
+   "id": "0118",
+   "fen": "8/5P2/2Q3P1/3R4/8/4p3/2kr4/4K3 b - - 6 99",
+   "phase": "endgame",
+   "verdict": "into_mate",
+   "curves": {
+    "shipped": [
+     {
+      "depth": 1,
+      "move": "c2b3",
+      "nodes": 22,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "c2b3",
+      "nodes": 108,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 3,
+      "move": "c2b1",
+      "nodes": 243,
+      "seconds": 0.0006
+     },
+     {
+      "depth": 4,
+      "move": "c2b1",
+      "nodes": 461,
+      "seconds": 0.0009
+     },
+     {
+      "depth": 5,
+      "move": "c2b2",
+      "nodes": 1752,
+      "seconds": 0.003
+     },
+     {
+      "depth": 6,
+      "move": "c2b2",
+      "nodes": 2410,
+      "seconds": 0.0038
+     },
+     {
+      "depth": 7,
+      "move": "c2b2",
+      "nodes": 4109,
+      "seconds": 0.0082
+     },
+     {
+      "depth": 8,
+      "move": "c2b2",
+      "nodes": 5614,
+      "seconds": 0.0084
+     },
+     {
+      "depth": 9,
+      "move": "c2b2",
+      "nodes": 7258,
+      "seconds": 0.0107
+     },
+     {
+      "depth": 10,
+      "move": "c2b2",
+      "nodes": 11018,
+      "seconds": 0.0162
+     },
+     {
+      "depth": 11,
+      "move": "c2b2",
+      "nodes": 15304,
+      "seconds": 0.0243
+     },
+     {
+      "depth": 12,
+      "move": "c2b1",
+      "nodes": 26460,
+      "seconds": 0.0402
+     }
+    ],
+    "floor": [
+     {
+      "depth": 1,
+      "move": "c2b3",
+      "nodes": 22,
+      "seconds": 0.0002
+     },
+     {
+      "depth": 2,
+      "move": "c2b3",
+      "nodes": 104,
+      "seconds": 0.0003
+     },
+     {
+      "depth": 3,
+      "move": "c2b1",
+      "nodes": 1114,
+      "seconds": 0.0026
+     },
+     {
+      "depth": 4,
+      "move": "c2b1",
+      "nodes": 3518,
+      "seconds": 0.0061
+     },
+     {
+      "depth": 5,
+      "move": "c2b1",
+      "nodes": 16223,
+      "seconds": 0.0276
+     },
+     {
+      "depth": 6,
+      "move": "c2b1",
+      "nodes": 112390,
+      "seconds": 0.1833
+     },
+     {
+      "depth": 7,
+      "move": "c2b1",
+      "nodes": 112390,
+      "seconds": 0.1813
+     },
+     {
+      "depth": 8,
+      "move": "c2b1",
+      "nodes": 112390,
+      "seconds": 0.1853
+     },
+     {
+      "depth": 9,
+      "move": "c2b1",
+      "nodes": 112390,
+      "seconds": 0.1836
+     },
+     {
+      "depth": 10,
+      "move": "c2b1",
+      "nodes": 112390,
+      "seconds": 0.2075
+     },
+     {
+      "depth": 11,
+      "move": "c2b1",
+      "nodes": 112390,
+      "seconds": 0.1858
+     },
+     {
+      "depth": 12,
+      "move": "c2b1",
+      "nodes": 112390,
+      "seconds": 0.1861
+     }
+    ]
+   },
+   "scores": {
+    "c2b1": {
+     "kind": "mate",
+     "mate": -4,
+     "cp": null,
+     "depth": 91,
+     "pv": [
+      "c2b1",
+      "f7f8q",
+      "d2c2",
+      "f8b4",
+      "c2b2",
+      "d5d1",
+      "b1a2",
+      "b4a4"
+     ]
+    },
+    "c2b2": {
+     "kind": "mate",
+     "mate": -3,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "c2b2",
+      "d5b5",
+      "b2a1",
+      "c6c3",
+      "a1a2",
+      "c3a5"
+     ]
+    },
+    "c2b3": {
+     "kind": "mate",
+     "mate": -2,
+     "cp": null,
+     "depth": 245,
+     "pv": [
+      "c2b3",
+      "d5b5",
+      "b3a2",
+      "c6a6"
+     ]
+    }
+   },
+   "shipped_first_good": 3,
+   "floor_first_good": 3
+  }
+ ]
+}

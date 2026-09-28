@@ -1,0 +1,2 @@
+checkpoint metadata {'l1': 512, 'buckets': 8, 'epoch': 30, 'holdout_loss': 0.008602036590632713, 'positions': 269059156}
+{'checkpoint': '/home/edwardb/Documents/chessathon/data/checkpoints/epoch030.pt', 'metadata': {'l1': 512, 'buckets': 8, 'epoch': 30, 'holdout_loss': 0.008602036590632713, 'positions': 269059156}, 'positions': 65536, 'mean_abs_float_quant_cp': 4.518185764774444, 'p99_abs_float_quant_cp': 19.410998535156253, 'max_abs_float_quant_cp': 53.55859375, 'float_mse': 0.008467510045848104, 'quant_mse': 0.008478559346926514}

@@ -98,8 +98,8 @@ def main() -> int:
 
     # Both processes inherit this, so the two sides search identically.
     if arguments.nodes:
-        os.environ["CHESSATHON_NODE_LIMIT"] = str(arguments.nodes)
-    os.environ["CHESSATHON_INCREMENT_MS"] = str(arguments.increment_ms)
+        os.environ["ENGINE_NODE_LIMIT"] = str(arguments.nodes)
+    os.environ["ENGINE_INCREMENT_MS"] = str(arguments.increment_ms)
 
     agent = arguments.agent.resolve()
     opponent = arguments.opponent.resolve()

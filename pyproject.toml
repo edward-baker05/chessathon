@@ -1,5 +1,5 @@
 [project]
-name = "aichessathon-starter"
+name = "chess-engine"
 version = "0.1.0"
 requires-python = ">=3.12,<3.14"
 dependencies = [
@@ -43,7 +43,7 @@ testpaths = ["tests"]
 
 [tool.mypy]
 strict = true
-files = ["agent.py", "bitboard.py", "position.py", "movegen.py", "tt.py", "evaluate.py", "nnue.py", "search.py", "harness", "tests", "tools"]
+files = ["agent.py", "bitboard.py", "position.py", "movegen.py", "tt.py", "evaluate.py", "nnue.py", "search.py", "harness", "tests", "tools", "lichess/zygote.py", "lichess/uci_client.py"]
 
 [tool.pyright]
 venvPath = "."

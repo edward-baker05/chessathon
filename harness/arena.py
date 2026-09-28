@@ -2,7 +2,6 @@ import argparse
 from pathlib import Path
 
 from harness.referee import FAILED_TERMINATIONS, play_match
-from harness.rules import PLY_CAP
 from harness.sandbox import local
 
 FAST_BASE_MS = 10_000
@@ -16,7 +15,7 @@ def main() -> None:
     parser.add_argument("--games", type=int, default=20)
     parser.add_argument("--base-ms", type=int, default=FAST_BASE_MS)
     parser.add_argument("--increment-ms", type=int, default=FAST_INCREMENT_MS)
-    parser.add_argument("--ply-cap", type=int, default=PLY_CAP)
+    parser.add_argument("--ply-cap", type=int, default=None)
     arguments = parser.parse_args()
 
     agent = arguments.agent.resolve()
@@ -50,7 +49,7 @@ def main() -> None:
     broken = {name: count for name, count in terminations.items() if name in FAILED_TERMINATIONS}
     if broken:
         raise SystemExit(
-            "your agent failed to finish a game: "
+            "the agent failed to finish a game: "
             + ", ".join(f"{name} {count}" for name, count in broken.items())
         )
 

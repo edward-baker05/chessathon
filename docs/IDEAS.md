@@ -1,6 +1,6 @@
 # Where the strength comes from
 
-A model is optional. Material plus piece-square tables is a legal entry, and the winning
+A model is optional. Material plus piece-square tables is a real evaluation, and the strong
 shape is usually a search that calls a small evaluation, learned or not. This is what tends to
 matter, roughly in order.
 
@@ -18,11 +18,11 @@ respectable is mostly move ordering, because alpha-beta only pays off when good 
 - Quiescence search at the leaves, captures only. Without it your evaluation is measured in
   positions that are mid-exchange and it will be wrong.
 
-You are on one core in Python, so node counts are small: expect thousands, not millions. That
+On one core in Python, node counts are small: expect thousands, not millions. That
 changes the trade. Depth is expensive, so evaluation quality and ordering buy more than they
-would in a C engine. numba closes most of that gap: the platform preinstalls it, and a jitted
+would in a C engine. numba closes most of that gap: a jitted
 movegen and evaluation reach node counts pure Python cannot. Warm every jitted function once at
-import so compilation happens inside the init budget, and warm it with the argument types the
+import so compilation happens at import, and warm it with the argument types the
 real calls use, since numba compiles per signature. `baselines/numba` shows the pattern. Note
 that it scores barely better than `baselines/minimax`, because jitting a two-ply search wins
 nothing on its own. The gain is the depth the speed lets you afford.
@@ -32,7 +32,7 @@ nothing on its own. The gain is the depth the speed lets you afford.
 Material plus piece-square tables is a real evaluation and it beats both baselines. It is also
 the thing to build first, because it gives you a reference to measure a model against.
 
-The base image ships torch and onnxruntime, so a small network is practical. Export to ONNX and
+torch and onnxruntime are dependencies, so a small network is practical. Export to ONNX and
 run it with onnxruntime: startup is faster than torch and inference on one core is competitive.
 Keep it small. A net you can evaluate thousands of times per move is worth more than a better net
 you can evaluate fifty times.
@@ -47,16 +47,13 @@ search evaluation's.
 
 ## Training data
 
-You have no network at runtime, so everything ships in the zip inside the 50 MB cap. Data
-gathering happens on your machine, before you upload. Public game databases and self-play against
-your own earlier versions are both reasonable starting points, and labelling positions with an
-existing engine is explicitly allowed: the ban covers what ships inside the zip, not what you
-learn from. Whatever you train on, the model has to be one you trained.
+Public game databases and self-play against your own earlier versions are both reasonable
+starting points, and labelling positions with an existing engine is a normal way to get targets.
 
 ## Time management
 
-120 seconds plus 0.5 per move. A flag is a loss unless the other side cannot mate, and it is
-the most common self-inflicted one.
+The default local control is 120 seconds plus 0.5 per move. A flag is a loss unless the other
+side cannot mate, and it is the most common self-inflicted one.
 
 - Budget per move from the clock you were handed, not from a constant. Something like
   `time_left_ms / max(20, expected_moves_left)` is enough to start.
@@ -72,10 +69,9 @@ The process stays alive between your moves, so you can keep state. Two things ar
   so if you are winning and shuffling, you can draw a won game without ever being told.
 - Your own search results. A transposition table that survives across moves is a real gain.
 
-An opening book is worth less here than it looks. Rated games start from curated positions
+An opening book is worth less here than it looks. Games can start from arbitrary positions
 rather than the standard start, so a book keyed on move one is often already out of book. Test
-with `make play FEN=...` from positions you have not prepared, and spend the effort on the search
-instead.
+with `make play FEN=...` from positions you have not prepared.
 
 ## Measuring a change
 
@@ -89,6 +85,5 @@ fast time control is how you get them. Keep the previous version around as an op
 - Flagging. See above.
 - Crashing on an edge case: no legal moves, a promotion, an en passant capture. Play a few hundred
   games against a random baseline and the rare paths show up.
-- Blowing the 60 second import budget loading weights.
-- Writing anywhere but `/tmp`. Everything else is read-only.
+- A slow import: every game pays it before the first move.
 - More threads than cores. `torch.set_num_threads(1)`.

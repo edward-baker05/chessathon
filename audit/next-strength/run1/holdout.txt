@@ -1,0 +1,27 @@
+204 games from 70 clusters, 6 workers
+  10/204 games  57s
+  20/204 games  102s
+  30/204 games  143s
+  40/204 games  181s
+  50/204 games  225s
+  60/204 games  263s
+  70/204 games  303s
+  80/204 games  342s
+  90/204 games  379s
+  100/204 games  420s
+  110/204 games  459s
+  120/204 games  506s
+  130/204 games  564s
+  140/204 games  621s
+  150/204 games  678s
+  160/204 games  751s
+  170/204 games  819s
+  180/204 games  868s
+  190/204 games  925s
+  200/204 games  974s
+
+6095 positions, 204 games, 70 clusters
+unstable  250
+phases    {'endgame': 2090, 'middlegame': 3701, 'opening': 304}
+tags      {'king_active': 1332, 'plain': 3373, 'imbalance': 2110, 'rook_ending': 385, 'pawn_race': 115, 'king_exposed': 145}
+wrote audit/next-strength/run1/holdout.json

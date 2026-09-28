@@ -1,0 +1,38 @@
+300 positions at depth 6, floor beats shipped by more than 50cp counts as a loss
+
+  25/300  7s
+  50/300  13s
+  75/300  21s
+  100/300  24s
+  125/300  30s
+  150/300  37s
+  175/300  42s
+  200/300  47s
+  225/300  57s
+  250/300  62s
+  275/300  67s
+  300/300  71s
+
+positions                          300
+floor picked a different move      122 (40.7%)
+floor scored more than 50cp higher  15 (5.0%)
+  of those, the floor's move was quiet          12
+  of those, it gave check                       3
+  of those, it was a quiet move giving check    2 (0.67% of all positions)
+
+  largest gaps:
+     25432cp  shipped c3b2   4563  floor c3b2  29995  quiet        8/8/8/8/8/2q3k1/8/3K4 b - - 0 94
+     24128cp  shipped d3d2   5869  floor c1c7  29997  quiet        8/6pk/4Kp2/7p/5P1P/3q4/3N4/2r5 b - - 11 70
+       581cp  shipped b3g3    727  floor b3g3   1308  capture      3r2k1/5ppp/Ppp5/8/1p2P1P1/1q4P1/5R2/1NRrQ1K1 b - - 0 35
+       274cp  shipped b1c1    629  floor b1b7    903  capture      8/pR4pk/P4p2/3p3p/5P1P/5N2/6K1/rr6 b - - 2 49
+       187cp  shipped d3d4   -110  floor d3d4     77  quiet        8/4R3/2q2k2/2B1pbpr/1p6/1P1P1P2/1P1K1Q2/8 w - - 1 63
+        93cp  shipped b5b6    914  floor b5b6   1007  quiet check  7r/R7/4kp2/1R6/6K1/8/8/8 w - - 27 82
+
+  given the floor's own node budget the shipped search closes 11 of those 15 gaps; 4 survive (1.33% of all positions)
+    floor  -2107 at depth 6   shipped  -2542 at depth 11  quiet        8/6pk/2N2p2/7p/p4P1P/3p1K2/1r6/8 w - - 0 60
+    floor  29997 at depth 6   shipped   5839 at depth 7   quiet        8/6pk/4Kp2/7p/5P1P/3q4/3N4/2r5 b - - 11 70
+    floor   1308 at depth 6   shipped    850 at depth 15  capture      3r2k1/5ppp/Ppp5/8/1p2P1P1/1q4P1/5R2/1NRrQ1K1 b - - 0 35
+    floor  29995 at depth 6   shipped   4496 at depth 9   quiet        8/8/8/8/8/2q3k1/8/3K4 b - - 0 94
+
+nodes: shipped 1,460,473, floor 36,726,730 (25x)
+wrote audit/selectivity/failures-d6.json

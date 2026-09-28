@@ -23,8 +23,7 @@ POSITIONS = [
     ("tactical", "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8"),
 ]
 
-# The platform allows 90 s to import the agent. Fail well below that so drift is caught
-# here rather than as a rejected upload.
+# Fail if import time drifts up, since every game pays it before the first move.
 IMPORT_BUDGET_S = 30.0
 NODES_PER_POSITION = 400_000
 
@@ -42,7 +41,7 @@ def measure_import() -> float:
 
 def main() -> int:
     import_seconds = measure_import()
-    print(f"import (fresh process): {import_seconds:.2f}s of the platform's 90s budget")
+    print(f"import (fresh process): {import_seconds:.2f}s to import")
 
     import search
 
@@ -67,7 +66,7 @@ def main() -> int:
     if import_seconds > IMPORT_BUDGET_S:
         print(
             f"\nFAIL: import takes {import_seconds:.1f}s, over the {IMPORT_BUDGET_S:.0f}s "
-            f"guard. The platform allows 90s, so this is drift worth investigating now."
+            f"guard. That is drift worth investigating now."
         )
         return 1
     return 0

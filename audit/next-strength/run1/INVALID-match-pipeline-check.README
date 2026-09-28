@@ -1,0 +1,18 @@
+INVALID. Do not read a score off this run.
+
+It was a ten-pair plumbing check of the acceptance setup: frozen directories, the
+acceptance opening half, two workers pinned to their own physical cores. Sixteen minutes
+in, while it was still drawing players from `snapshots/run1-baseline`, that directory was
+deleted and rewritten so that all three agent directories would share byte-identical
+source. The only textual difference was a comment in search.py and the engine's behaviour
+is unchanged, but the run spans two directory states, and a run that does that is not
+evidence. It is kept, marked, and not counted. It was stopped rather than finished.
+
+What it did establish, and what is safe to take from it: the harness starts frozen
+directories correctly, `--pin` gave the workers cores 0 and 1 as intended, the 35-cluster
+acceptance opening file loads, and one pair of games at 20000ms + 200ms takes about seven
+minutes of one worker. Two pairs finished cleanly with no agent failure.
+
+The lesson is the one the previous handoff already wrote down: never touch a directory a
+match is drawing players from. Everything after this point freezes its directories before
+the match starts and does not touch them again.

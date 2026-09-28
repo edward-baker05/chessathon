@@ -2,7 +2,6 @@
 __pycache__/
 .mypy_cache/
 .ruff_cache/
-submission.zip
 *.pgn
 .pytest_cache/
 snapshots/
@@ -11,3 +10,9 @@ docs/superpowers/
 # The shipped network is added deliberately with `git add -f`, so that a random
 # smoke-test net can never be committed and mistaken for a trained one.
 weights/*.npz
+# lichess-bot is cloned by `make lichess-setup`; the token and game records stay local.
+lichess/lichess-bot/
+lichess/token
+lichess/games/
+lichess/zygote.sock
+lichess/zygote.log

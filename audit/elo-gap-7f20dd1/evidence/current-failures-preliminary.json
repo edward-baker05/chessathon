@@ -1,0 +1,2048 @@
+[
+  {
+    "source": {
+      "game": "aichessathon-round-54-rmfe.pgn",
+      "fen": "5r1k/1p6/p2p1n2/P2P1pbq/3P1p2/5R1p/7P/5QRK b - - 5 36",
+      "played": "h8g7",
+      "best": "g5h4",
+      "cp": 156,
+      "mate": null,
+      "pieces": 19,
+      "depth": 15,
+      "pv": [
+        "g5h4",
+        "f3h3"
+      ],
+      "played_cp": 30,
+      "played_mate": null,
+      "loss": 126
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "h8g7",
+        "depth": 14,
+        "seldepth": 25,
+        "cp": 376,
+        "nodes": 262145,
+        "seconds": 0.526637077331543,
+        "tt_line": [
+          "h8g7",
+          "f3h3",
+          "h5g6",
+          "h3f3",
+          "f6g4",
+          "h2h4",
+          "g5h4",
+          "f3h3",
+          "g4f2",
+          "h1h2",
+          "h4g3",
+          "g1g3",
+          "f4g3",
+          "h3g3",
+          "f2g4",
+          "h2g1",
+          "g6g5",
+          "f1e1"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "h8g7",
+        "depth": 22,
+        "seldepth": 39,
+        "cp": 358,
+        "nodes": 2097153,
+        "seconds": 3.941577672958374,
+        "tt_line": [
+          "h8g7",
+          "f3f4",
+          "f8f7",
+          "f4f5",
+          "f6e4",
+          "f5g5",
+          "e4g5",
+          "g1g5",
+          "g7f8",
+          "f1c1",
+          "h5f3",
+          "h1g1",
+          "f3f2",
+          "g1h1",
+          "f2f4",
+          "c1f4",
+          "f7f4",
+          "h1g1",
+          "f4d4"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "g5h4",
+        "depth": 23,
+        "seldepth": 39,
+        "cp": 212,
+        "nodes": 8388609,
+        "seconds": 15.817052602767944,
+        "tt_line": [
+          "g5h4",
+          "f3h3",
+          "f4f3",
+          "h3f3",
+          "f6g4",
+          "g1g2",
+          "g4h6",
+          "f1e2",
+          "h4f6",
+          "g2g3",
+          "f8g8",
+          "g3g8",
+          "h6g8",
+          "e2d3",
+          "g8e7",
+          "f3h3",
+          "f6h4",
+          "d3f3",
+          "h5f3",
+          "h3f3",
+          "h8g7",
+          "f3b3",
+          "f5f4",
+          "h1g2",
+          "e7d5",
+          "b3b7",
+          "g7g6"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "f8g8",
+        "depth": 8,
+        "seldepth": 19,
+        "cp": 355,
+        "nodes": 2097152,
+        "seconds": 3.944350004196167,
+        "tt_line": [
+          "f8g8",
+          "f3h3",
+          "g5h4",
+          "f1f4",
+          "g8g1",
+          "h1g1",
+          "f6g4",
+          "f4d6",
+          "h8g7",
+          "d6f4"
+        ]
+      }
+    ],
+    "judged": {
+      "f8g8": {
+        "cp": 0,
+        "mate": null,
+        "depth": 38,
+        "wdl": null,
+        "pv": [
+          "f8g8",
+          "f3h3",
+          "g5h4",
+          "f1f4",
+          "g8g1",
+          "h1g1",
+          "h5d1",
+          "g1g2",
+          "d1e2",
+          "g2g1",
+          "e2e1",
+          "g1g2",
+          "f6g4",
+          "f4g3",
+          "e1d2",
+          "g2f1",
+          "d2d1",
+          "f1g2",
+          "d1c2",
+          "g2g1",
+          "c2b1",
+          "g1g2"
+        ]
+      },
+      "g5h4": {
+        "cp": 203,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "g5h4",
+          "f3f4",
+          "f6d5",
+          "f4f3",
+          "d5e7",
+          "f1h3",
+          "f8g8",
+          "f3g3",
+          "h8h7",
+          "g3g8",
+          "e7g8",
+          "h3g2",
+          "h5f7",
+          "g2h3",
+          "f7d5",
+          "h3g2",
+          "d5e4",
+          "g2e4",
+          "f5e4",
+          "g1g4",
+          "h4e1"
+        ]
+      },
+      "h8g7": {
+        "cp": 0,
+        "mate": null,
+        "depth": 36,
+        "wdl": null,
+        "pv": [
+          "h8g7",
+          "f3f4",
+          "f6h7",
+          "f4f5",
+          "f8f5",
+          "f1f5",
+          "g7h6",
+          "g1g3",
+          "h5d1",
+          "g3g1",
+          "d1d4",
+          "g1g5",
+          "h7g5",
+          "f5g6",
+          "h6g6"
+        ]
+      }
+    },
+    "static_cp": 452
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-63-mate-in-one.pgn",
+      "fen": "r4r2/pb4kp/1p3qp1/1Bpp3P/4p3/P1P1P3/1PQ2PP1/R3K2R w KQ - 1 21",
+      "played": "c2d2",
+      "best": "e1c1",
+      "cp": -20,
+      "mate": null,
+      "pieces": 24,
+      "depth": 15,
+      "pv": [
+        "e1c1",
+        "a7a6"
+      ],
+      "played_cp": -120,
+      "played_mate": null,
+      "loss": 100
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "h5g6",
+        "depth": 13,
+        "seldepth": 22,
+        "cp": -25,
+        "nodes": 262146,
+        "seconds": 0.5030958652496338,
+        "tt_line": [
+          "h5g6",
+          "h7g6",
+          "c2d2",
+          "a8d8",
+          "e1c1",
+          "f6f2",
+          "b5e2",
+          "b7c8",
+          "c1b1",
+          "f2g3",
+          "b1a1",
+          "g3g5",
+          "g2g4",
+          "c8g4"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "c2e2",
+        "depth": 17,
+        "seldepth": 32,
+        "cp": 1,
+        "nodes": 2097153,
+        "seconds": 4.33266544342041,
+        "tt_line": [
+          "c2e2",
+          "a7a6",
+          "b5a4",
+          "a8d8",
+          "h5g6",
+          "h7g6",
+          "a4b3",
+          "b7c8",
+          "e1c1",
+          "f6f2",
+          "e2f2",
+          "f8f2",
+          "d1d5",
+          "d8f8",
+          "b3c2",
+          "c8e6",
+          "d5e5",
+          "f2f1",
+          "h1f1"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "c2e2",
+        "depth": 20,
+        "seldepth": 34,
+        "cp": -13,
+        "nodes": 8388610,
+        "seconds": 16.64659309387207,
+        "tt_line": [
+          "c2e2",
+          "a7a6",
+          "b5a4",
+          "a8d8",
+          "a4b3",
+          "h7h6",
+          "h5g6",
+          "d8d6",
+          "b3c2",
+          "d6e6",
+          "e1g1",
+          "f6g6",
+          "f2f4",
+          "g7h8",
+          "e2f2",
+          "b7c6",
+          "f2e1",
+          "f8f7",
+          "f1f2"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "h5g6",
+        "depth": 7,
+        "seldepth": 18,
+        "cp": -29,
+        "nodes": 2097152,
+        "seconds": 3.9336190223693848,
+        "tt_line": [
+          "h5g6",
+          "h7g6",
+          "c2d2",
+          "a7a6",
+          "b5d7",
+          "f8f7",
+          "d7g4",
+          "a8f8"
+        ]
+      }
+    ],
+    "judged": {
+      "c2d2": {
+        "cp": -87,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "c2d2",
+          "a8d8"
+        ]
+      },
+      "c2e2": {
+        "cp": -112,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "c2e2",
+          "a8d8"
+        ]
+      },
+      "e1c1": {
+        "cp": -4,
+        "mate": null,
+        "depth": 23,
+        "wdl": null,
+        "pv": [
+          "e1c1",
+          "a7a6"
+        ]
+      },
+      "h5g6": {
+        "cp": -85,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "h5g6",
+          "h7g6"
+        ]
+      }
+    },
+    "static_cp": -37
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-58-danya-s-disciple.pgn",
+      "fen": "r2r1nk1/p1q2pp1/2pRp2p/2p1P3/5P2/4B1R1/PP2Q1P1/6K1 w - - 3 24",
+      "played": "f4f5",
+      "best": "e3c5",
+      "cp": 12,
+      "mate": null,
+      "pieces": 22,
+      "depth": 16,
+      "pv": [
+        "e3c5",
+        "f8g6"
+      ],
+      "played_cp": -85,
+      "played_mate": null,
+      "loss": 97
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "f4f5",
+        "depth": 12,
+        "seldepth": 24,
+        "cp": 269,
+        "nodes": 262145,
+        "seconds": 0.5722031593322754,
+        "tt_line": [
+          "f4f5",
+          "e6f5",
+          "e3h6",
+          "f8g6",
+          "g3g6",
+          "f7g6",
+          "h6f4",
+          "d8d6",
+          "e5d6",
+          "c7d7",
+          "e2c4",
+          "d7f7"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "f4f5",
+        "depth": 19,
+        "seldepth": 30,
+        "cp": 163,
+        "nodes": 2097152,
+        "seconds": 3.921081066131592,
+        "tt_line": [
+          "f4f5",
+          "d8d6",
+          "e3h6",
+          "g7g6",
+          "h6f8",
+          "d6d1",
+          "e2d1",
+          "g8f8",
+          "f5g6",
+          "c7e5",
+          "d1b3",
+          "f7g6",
+          "b3f3",
+          "f8e7",
+          "f3c6"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "f4f5",
+        "depth": 25,
+        "seldepth": 41,
+        "cp": 69,
+        "nodes": 8388608,
+        "seconds": 15.419939279556274,
+        "tt_line": [
+          "f4f5",
+          "d8d6",
+          "e3h6",
+          "g7g6",
+          "e5d6",
+          "c7d6",
+          "g3d3",
+          "d6c7",
+          "h6f8",
+          "a8f8",
+          "f5g6",
+          "f7g6",
+          "e2e6",
+          "c7f7",
+          "d3d6",
+          "f7e6",
+          "d6e6",
+          "f8b8",
+          "b2b3",
+          "c5c4",
+          "b3c4",
+          "b8b2",
+          "e6g6",
+          "g8f7",
+          "g6c6",
+          "b2a2",
+          "g1h2",
+          "a7a5"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "f4f5",
+        "depth": 7,
+        "seldepth": 15,
+        "cp": 120,
+        "nodes": 2097152,
+        "seconds": 3.974865198135376,
+        "tt_line": [
+          "f4f5",
+          "e6f5",
+          "e2d2",
+          "f8g6",
+          "d6g6",
+          "d8d2",
+          "g6g7",
+          "g8h8",
+          "e3d2"
+        ]
+      }
+    ],
+    "judged": {
+      "e3c5": {
+        "cp": 12,
+        "mate": null,
+        "depth": 22,
+        "wdl": null,
+        "pv": [
+          "e3c5",
+          "f8g6"
+        ]
+      },
+      "f4f5": {
+        "cp": -12,
+        "mate": null,
+        "depth": 24,
+        "wdl": null,
+        "pv": [
+          "f4f5",
+          "e6f5",
+          "e3h6",
+          "f8g6",
+          "g3g6",
+          "f7g6",
+          "d6g6",
+          "d8d7",
+          "g6g3",
+          "g8f8",
+          "e2h5",
+          "c7e5",
+          "h6g7",
+          "d7g7",
+          "h5h8",
+          "f8f7",
+          "g3g7",
+          "e5g7",
+          "h8a8",
+          "g7d4",
+          "g1h2",
+          "d4d6",
+          "h2h1",
+          "d6d7",
+          "b2b3",
+          "f7e6",
+          "a8g8",
+          "d7f7",
+          "g8a8"
+        ]
+      }
+    },
+    "static_cp": 177
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-69-rmfe.pgn",
+      "fen": "2r3k1/3r2p1/2qp3p/1p2pPbn/p1b5/P1N2P1P/1PPR1BP1/1N1RQ2K w - - 1 30",
+      "played": "h1g1",
+      "best": "f2e3",
+      "cp": -72,
+      "mate": null,
+      "pieces": 27,
+      "depth": 16,
+      "pv": [
+        "f2e3",
+        "h5g3"
+      ],
+      "played_cp": -157,
+      "played_mate": null,
+      "loss": 85
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "h1g1",
+        "depth": 13,
+        "seldepth": 27,
+        "cp": -96,
+        "nodes": 262144,
+        "seconds": 0.4840390682220459,
+        "tt_line": [
+          "h1g1",
+          "g5d2",
+          "b1d2",
+          "h5f4",
+          "g1h2",
+          "c4f7",
+          "d2f1"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "f2e3",
+        "depth": 18,
+        "seldepth": 27,
+        "cp": -98,
+        "nodes": 2097153,
+        "seconds": 4.199295520782471,
+        "tt_line": [
+          "f2e3",
+          "g5e3",
+          "e1e3",
+          "h5g3",
+          "h1h2",
+          "g3f5",
+          "e3e4",
+          "c6e4",
+          "f3e4",
+          "f5d4",
+          "d2f2",
+          "c4e6",
+          "h2g1",
+          "d7f7",
+          "f2f7",
+          "g8f7",
+          "g1h2",
+          "c8c6",
+          "d1d2",
+          "h6h5"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "f2e3",
+        "depth": 23,
+        "seldepth": 33,
+        "cp": -86,
+        "nodes": 8388611,
+        "seconds": 17.535844802856445,
+        "tt_line": [
+          "f2e3",
+          "g5e3",
+          "e1e3",
+          "h5g3",
+          "h1h2",
+          "g3f5",
+          "e3e4",
+          "c6e4",
+          "c3e4",
+          "d6d5",
+          "e4g3",
+          "f5g3",
+          "h2g3",
+          "d5d4",
+          "b1c3",
+          "g8f7",
+          "c3e4",
+          "f7e6",
+          "c2c3",
+          "c4b3",
+          "d1e1",
+          "e6d5",
+          "h3h4",
+          "c8c4",
+          "c3d4"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "f2e3",
+        "depth": 7,
+        "seldepth": 20,
+        "cp": -84,
+        "nodes": 2097152,
+        "seconds": 4.462754011154175,
+        "tt_line": [
+          "f2e3",
+          "h5g3",
+          "e1g3",
+          "g5e3",
+          "d2d5",
+          "c8f8",
+          "g3e1",
+          "e3d4",
+          "f5f6"
+        ]
+      }
+    ],
+    "judged": {
+      "f2e3": {
+        "cp": -68,
+        "mate": null,
+        "depth": 19,
+        "wdl": null,
+        "pv": [
+          "f2e3",
+          "h5g3"
+        ]
+      },
+      "h1g1": {
+        "cp": -176,
+        "mate": null,
+        "depth": 20,
+        "wdl": null,
+        "pv": [
+          "h1g1",
+          "c8f8"
+        ]
+      }
+    },
+    "static_cp": 32
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-69-rmfe.pgn",
+      "fen": "4r1k1/1r4p1/7p/8/7P/3bBP2/6P1/4RNK1 w - - 1 51",
+      "played": "f1g3",
+      "best": "e3f2",
+      "cp": -21,
+      "mate": null,
+      "pieces": 13,
+      "depth": 14,
+      "pv": [
+        "e3f2",
+        "e8a8"
+      ],
+      "played_cp": -102,
+      "played_mate": null,
+      "loss": 81
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "f1g3",
+        "depth": 17,
+        "seldepth": 22,
+        "cp": -143,
+        "nodes": 262144,
+        "seconds": 0.5768845081329346,
+        "tt_line": [
+          "f1g3",
+          "b7b1",
+          "e1b1",
+          "d3b1",
+          "g1f2",
+          "e8a8",
+          "g3h5",
+          "b1g6",
+          "h5f4",
+          "g6e8",
+          "f2g3",
+          "a8a5",
+          "g3g4",
+          "e8f7",
+          "g4g3",
+          "a5a6",
+          "g3g4",
+          "a6a3"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "f1g3",
+        "depth": 24,
+        "seldepth": 31,
+        "cp": -141,
+        "nodes": 2097152,
+        "seconds": 4.110545873641968,
+        "tt_line": [
+          "f1g3",
+          "b7b1",
+          "e1b1",
+          "d3b1",
+          "g1f2",
+          "e8a8",
+          "g3h5",
+          "a8a2",
+          "f2g1",
+          "b1g6",
+          "h5f4",
+          "g6e8",
+          "e3d4",
+          "a2a4",
+          "d4e3",
+          "a4c4",
+          "g1f2",
+          "c4c2",
+          "f2g3",
+          "c2a2",
+          "e3d4",
+          "a2a5",
+          "d4e3",
+          "e8b5",
+          "e3b6",
+          "a5a2",
+          "b6e3",
+          "b5e8",
+          "e3d4",
+          "a2a5",
+          "d4e3"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "f1g3",
+        "depth": 24,
+        "seldepth": 35,
+        "cp": -141,
+        "nodes": 8388612,
+        "seconds": 17.000121593475342,
+        "tt_line": [
+          "f1g3",
+          "b7b4",
+          "g1f2",
+          "b4b2",
+          "f2g1",
+          "d3g6",
+          "g1f1",
+          "e8a8",
+          "e3d4",
+          "b2b1",
+          "g3e2",
+          "a8a4",
+          "e2f4",
+          "b1e1",
+          "f1e1",
+          "a4d4",
+          "f4g6",
+          "g8f7",
+          "h4h5",
+          "d4d5",
+          "g2g4",
+          "d5a5",
+          "e1f2",
+          "a5a4",
+          "f2g3",
+          "a4a6",
+          "g6f4"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "f1g3",
+        "depth": 8,
+        "seldepth": 16,
+        "cp": -141,
+        "nodes": 2097152,
+        "seconds": 3.912692070007324,
+        "tt_line": [
+          "f1g3",
+          "b7b3",
+          "g3h5",
+          "d3a6",
+          "g1f2",
+          "g7g5",
+          "h4g5",
+          "b3b2",
+          "f2g3",
+          "e8e3"
+        ]
+      }
+    ],
+    "judged": {
+      "e3d2": {
+        "cp": 0,
+        "mate": null,
+        "depth": 20,
+        "wdl": null,
+        "pv": [
+          "e3d2",
+          "e8a8"
+        ]
+      },
+      "e3f2": {
+        "cp": -8,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "e3f2",
+          "e8e1"
+        ]
+      },
+      "f1g3": {
+        "cp": -113,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "f1g3",
+          "b7b4"
+        ]
+      }
+    },
+    "static_cp": -74
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-61-ms.pgn",
+      "fen": "r1bq1rk1/1p1nbpp1/2p1pn2/3p4/p1PP3p/1P4P1/PBNNPPBP/2RQ1RK1 b - - 1 12",
+      "played": "g7g6",
+      "best": "a4b3",
+      "cp": -3,
+      "mate": null,
+      "pieces": 32,
+      "depth": 17,
+      "pv": [
+        "a4b3",
+        "a2b3"
+      ],
+      "played_cp": -75,
+      "played_mate": null,
+      "loss": 72
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "g7g6",
+        "depth": 10,
+        "seldepth": 22,
+        "cp": 37,
+        "nodes": 262145,
+        "seconds": 0.527137279510498,
+        "tt_line": [
+          "g7g6",
+          "e2e4",
+          "a4b3",
+          "a2b3",
+          "d5e4",
+          "d2e4",
+          "f6e4",
+          "g2e4",
+          "a8a2",
+          "c1b1",
+          "f7f5"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "e7d6",
+        "depth": 13,
+        "seldepth": 27,
+        "cp": 40,
+        "nodes": 2097152,
+        "seconds": 4.042911052703857,
+        "tt_line": [
+          "e7d6",
+          "b2c3",
+          "e6e5",
+          "c4d5",
+          "f6d5",
+          "c3a1",
+          "a4b3",
+          "d2b3",
+          "h4g3",
+          "g2d5"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "e7d6",
+        "depth": 17,
+        "seldepth": 30,
+        "cp": 42,
+        "nodes": 8388609,
+        "seconds": 16.265106678009033,
+        "tt_line": [
+          "e7d6",
+          "b3b4",
+          "a4a3",
+          "b2a1",
+          "d6b8",
+          "c2e1",
+          "f8e8",
+          "e1d3",
+          "h4g3",
+          "h2g3",
+          "e6e5",
+          "d4e5",
+          "d7e5",
+          "d3e5",
+          "b8e5",
+          "a1e5",
+          "e8e5",
+          "c4d5"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "h4g3",
+        "depth": 7,
+        "seldepth": 25,
+        "cp": 48,
+        "nodes": 2097152,
+        "seconds": 3.8297598361968994,
+        "tt_line": [
+          "h4g3",
+          "h2g3",
+          "a4b3",
+          "a2b3",
+          "a8a2",
+          "c1b1",
+          "f6g4",
+          "e2e4"
+        ]
+      }
+    ],
+    "judged": {
+      "a4b3": {
+        "cp": -7,
+        "mate": null,
+        "depth": 24,
+        "wdl": null,
+        "pv": [
+          "a4b3",
+          "a2b3"
+        ]
+      },
+      "e7d6": {
+        "cp": -31,
+        "mate": null,
+        "depth": 22,
+        "wdl": null,
+        "pv": [
+          "e7d6",
+          "b3b4",
+          "e6e5",
+          "e2e4",
+          "f8e8",
+          "f1e1",
+          "e5d4",
+          "e4d5",
+          "e8e1",
+          "c2e1",
+          "d6b4",
+          "b2d4",
+          "b4c5",
+          "d4a1",
+          "c6d5",
+          "c4d5",
+          "c5f8",
+          "e1f3",
+          "d7b6",
+          "f3h4",
+          "b6d5",
+          "d2e4",
+          "c8e6"
+        ]
+      },
+      "g7g6": {
+        "cp": -53,
+        "mate": null,
+        "depth": 22,
+        "wdl": null,
+        "pv": [
+          "g7g6",
+          "b3b4"
+        ]
+      },
+      "h4g3": {
+        "cp": -14,
+        "mate": null,
+        "depth": 22,
+        "wdl": null,
+        "pv": [
+          "h4g3",
+          "h2g3"
+        ]
+      }
+    },
+    "static_cp": 32
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-64-slopfish.pgn",
+      "fen": "1r6/5pbk/Rp4p1/1Qp2n1p/2N1q3/4B1P1/1P2PK1P/2R5 b - - 1 30",
+      "played": "h5h4",
+      "best": "b8e8",
+      "cp": -69,
+      "mate": null,
+      "pieces": 20,
+      "depth": 13,
+      "pv": [
+        "b8e8",
+        "a6a3"
+      ],
+      "played_cp": -136,
+      "played_mate": null,
+      "loss": 67
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "b8e8",
+        "depth": 13,
+        "seldepth": 22,
+        "cp": 163,
+        "nodes": 262144,
+        "seconds": 0.5510540008544922,
+        "tt_line": [
+          "b8e8",
+          "a6a3",
+          "f5h4",
+          "g3h4",
+          "e4h4",
+          "f2g1",
+          "g7b2"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "h5h4",
+        "depth": 15,
+        "seldepth": 29,
+        "cp": 116,
+        "nodes": 2097152,
+        "seconds": 4.628591060638428,
+        "tt_line": [
+          "h5h4",
+          "a6a7",
+          "b8e8",
+          "c1f1",
+          "f5e3",
+          "c4e3",
+          "e4e3",
+          "f2g2",
+          "e3e2",
+          "b5e2",
+          "e8e2",
+          "g2h3",
+          "e2e4",
+          "g3h4",
+          "e4e3",
+          "h3g2",
+          "e3e2",
+          "f1f2"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "h5h4",
+        "depth": 20,
+        "seldepth": 32,
+        "cp": 25,
+        "nodes": 8388608,
+        "seconds": 18.344029903411865,
+        "tt_line": [
+          "h5h4",
+          "a6a7",
+          "b8e8",
+          "c4b6",
+          "f5e3",
+          "b5d3",
+          "h4g3",
+          "f2g1",
+          "e4d3",
+          "e2d3",
+          "g3h2",
+          "g1h2",
+          "g7b2",
+          "a7f7",
+          "h7g8",
+          "b6d5"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "b8e8",
+        "depth": 6,
+        "seldepth": 18,
+        "cp": 153,
+        "nodes": 2097152,
+        "seconds": 4.6094419956207275,
+        "tt_line": [
+          "b8e8",
+          "b5b3",
+          "g7d4",
+          "b3d3",
+          "e4d3",
+          "e2d3",
+          "e8e3"
+        ]
+      }
+    ],
+    "judged": {
+      "b8e8": {
+        "cp": -145,
+        "mate": null,
+        "depth": 20,
+        "wdl": null,
+        "pv": [
+          "b8e8",
+          "a6a3"
+        ]
+      },
+      "h5h4": {
+        "cp": -123,
+        "mate": null,
+        "depth": 22,
+        "wdl": null,
+        "pv": [
+          "h5h4",
+          "a6a3"
+        ]
+      }
+    },
+    "static_cp": 169
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-63-mate-in-one.pgn",
+      "fen": "3r1r2/p5kp/1pb3p1/2pp3P/4p3/P1P1P3/1P1QBqP1/2KR3R w - - 2 24",
+      "played": "c1b1",
+      "best": "h5g6",
+      "cp": -30,
+      "mate": null,
+      "pieces": 23,
+      "depth": 15,
+      "pv": [
+        "h5g6",
+        "h7g6"
+      ],
+      "played_cp": -94,
+      "played_mate": null,
+      "loss": 64
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "c1b1",
+        "depth": 12,
+        "seldepth": 23,
+        "cp": -32,
+        "nodes": 262145,
+        "seconds": 0.558239221572876,
+        "tt_line": [
+          "c1b1",
+          "f2g3",
+          "h1h3",
+          "g3g5",
+          "h5g6",
+          "g5g6",
+          "d1g1",
+          "f8f2",
+          "g1h1",
+          "d8f8",
+          "h3h7",
+          "g6h7",
+          "h1h7",
+          "g7h7"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "c1b1",
+        "depth": 15,
+        "seldepth": 24,
+        "cp": -69,
+        "nodes": 2097153,
+        "seconds": 4.587780714035034,
+        "tt_line": [
+          "c1b1",
+          "f2g3",
+          "h5g6",
+          "h7g6",
+          "h1h3",
+          "g3e5",
+          "d1h1",
+          "f8h8",
+          "h3h8",
+          "d8h8",
+          "h1h8",
+          "g7h8",
+          "d2e1",
+          "h8g7",
+          "e1f1",
+          "c6e8",
+          "g2g4"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "c1b1",
+        "depth": 21,
+        "seldepth": 33,
+        "cp": -59,
+        "nodes": 8388609,
+        "seconds": 19.01230549812317,
+        "tt_line": [
+          "c1b1",
+          "f2g3",
+          "h1h3",
+          "g3e5",
+          "h5g6",
+          "h7g6",
+          "d1h1",
+          "f8h8",
+          "d2e1",
+          "h8h3",
+          "h1h3",
+          "d8h8",
+          "h3h8",
+          "g7h8",
+          "e1h4",
+          "h8g7",
+          "h4d8",
+          "c6e8",
+          "d8a8",
+          "e5e7",
+          "a8d5",
+          "e8f7",
+          "d5d2"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "h5g6",
+        "depth": 7,
+        "seldepth": 19,
+        "cp": 8,
+        "nodes": 2097153,
+        "seconds": 4.424488306045532,
+        "tt_line": [
+          "h5g6",
+          "h7g6",
+          "h1h3",
+          "f2g2",
+          "h3h1",
+          "f8h8",
+          "h1g1",
+          "g2h2"
+        ]
+      }
+    ],
+    "judged": {
+      "c1b1": {
+        "cp": -57,
+        "mate": null,
+        "depth": 20,
+        "wdl": null,
+        "pv": [
+          "c1b1",
+          "f2f5"
+        ]
+      },
+      "h5g6": {
+        "cp": -38,
+        "mate": null,
+        "depth": 23,
+        "wdl": null,
+        "pv": [
+          "h5g6",
+          "h7g6"
+        ]
+      }
+    },
+    "static_cp": 101
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-70-omega3-fish.pgn",
+      "fen": "r2r1b2/p1p2p1k/1p2q1pp/P3p2n/1PP1P3/2Q2N1P/3B1PP1/R3R1K1 b - - 2 24",
+      "played": "h5f4",
+      "best": "h5f6",
+      "cp": -34,
+      "mate": null,
+      "pieces": 26,
+      "depth": 14,
+      "pv": [
+        "h5f6",
+        "d2g5"
+      ],
+      "played_cp": -91,
+      "played_mate": null,
+      "loss": 57
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "h5f4",
+        "depth": 11,
+        "seldepth": 25,
+        "cp": -33,
+        "nodes": 262144,
+        "seconds": 0.6190531253814697,
+        "tt_line": [
+          "h5f4",
+          "d2f4",
+          "e5f4",
+          "e4e5",
+          "d8d7",
+          "a5b6",
+          "c7b6",
+          "a1d1",
+          "a8d8",
+          "d1d7"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "h5f6",
+        "depth": 16,
+        "seldepth": 27,
+        "cp": -43,
+        "nodes": 2097154,
+        "seconds": 4.762152910232544,
+        "tt_line": [
+          "h5f6",
+          "a5b6",
+          "c7b6",
+          "c4c5",
+          "b6c5",
+          "b4c5",
+          "a8c8",
+          "c5c6",
+          "c8c6",
+          "c3e5",
+          "d8e8",
+          "e5e6",
+          "c6e6",
+          "e4e5",
+          "f6d7",
+          "g2g3",
+          "d7e5"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "h5f6",
+        "depth": 18,
+        "seldepth": 32,
+        "cp": -39,
+        "nodes": 8388608,
+        "seconds": 19.344109296798706,
+        "tt_line": [
+          "h5f6",
+          "d2c1",
+          "f6d7",
+          "a5a6",
+          "d8e8",
+          "c1b2",
+          "a8d8",
+          "e1d1",
+          "f8d6",
+          "a1c1",
+          "d7f6",
+          "c3e3",
+          "f6d7",
+          "b2a3",
+          "d6e7",
+          "e3b3",
+          "d7f6",
+          "d1d5",
+          "f6d5"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "h5f4",
+        "depth": 6,
+        "seldepth": 21,
+        "cp": -38,
+        "nodes": 2097152,
+        "seconds": 4.092888355255127,
+        "tt_line": [
+          "h5f4",
+          "d2f4",
+          "e5f4",
+          "e4e5",
+          "a8c8",
+          "c3b3",
+          "c7c5"
+        ]
+      }
+    ],
+    "judged": {
+      "h5f4": {
+        "cp": -94,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "h5f4",
+          "d2f4"
+        ]
+      },
+      "h5f6": {
+        "cp": -30,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "h5f6",
+          "d2g5"
+        ]
+      }
+    },
+    "static_cp": -12
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-51-pgn.pgn",
+      "fen": "r2qb2k/5rpn/2p1p2p/1pPp4/1P1P1BNP/p4PPB/P2Q2RK/8 w - - 9 33",
+      "played": "d2e3",
+      "best": "g2e2",
+      "cp": 157,
+      "mate": null,
+      "pieces": 26,
+      "depth": 15,
+      "pv": [
+        "g2e2",
+        "h7f8",
+        "h2g2",
+        "f7d7",
+        "g4e5",
+        "d7b7",
+        "h3g4",
+        "h8g8",
+        "h4h5",
+        "d8f6",
+        "d2e3",
+        "g7g5",
+        "h5g6",
+        "f8g6",
+        "e5g6"
+      ],
+      "played_cp": 102,
+      "played_mate": null,
+      "loss": 55
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "d2e3",
+        "depth": 13,
+        "seldepth": 22,
+        "cp": 241,
+        "nodes": 262145,
+        "seconds": 0.5636990070343018,
+        "tt_line": [
+          "d2e3",
+          "f7f4",
+          "e3f4",
+          "d8e7",
+          "f4e3",
+          "h7f6",
+          "g4e5",
+          "a8a4",
+          "e3d2",
+          "a4a7",
+          "g2e2",
+          "a7a4",
+          "d2c1",
+          "a4b4"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "d2e3",
+        "depth": 20,
+        "seldepth": 28,
+        "cp": 261,
+        "nodes": 2097152,
+        "seconds": 4.449609994888306,
+        "tt_line": [
+          "d2e3",
+          "f7f4",
+          "e3f4",
+          "d8e7",
+          "f4e3",
+          "h7f8",
+          "g4e5",
+          "h8g8",
+          "g2e2",
+          "e7c7",
+          "f3f4",
+          "e8h5",
+          "e2f2",
+          "h5e8",
+          "f2g2",
+          "a8a4",
+          "e3e1",
+          "e8h5",
+          "e1c3",
+          "h5f7",
+          "g2e2",
+          "f7h5",
+          "e2g2",
+          "h5f7",
+          "g2e2",
+          "f7h5"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "d2e3",
+        "depth": 24,
+        "seldepth": 32,
+        "cp": 268,
+        "nodes": 8388612,
+        "seconds": 17.74759006500244,
+        "tt_line": [
+          "d2e3",
+          "h6h5",
+          "g4e5",
+          "f7f4",
+          "e3f4",
+          "d8f6",
+          "f4d2",
+          "h7f8",
+          "g2e2",
+          "h8g8",
+          "d2e1",
+          "a8a4",
+          "f3f4",
+          "g8h8",
+          "e1d2",
+          "h8g8",
+          "e2e3",
+          "g8h8",
+          "d2c3",
+          "h8g8",
+          "c3e1",
+          "f6d8",
+          "e5f3",
+          "e8f7",
+          "f3e5"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "d2e3",
+        "depth": 7,
+        "seldepth": 18,
+        "cp": 262,
+        "nodes": 2097152,
+        "seconds": 4.5485146045684814,
+        "tt_line": [
+          "d2e3",
+          "f7f4",
+          "e3f4",
+          "d8e7",
+          "g4e5",
+          "h7f6",
+          "f4e3",
+          "h8g8"
+        ]
+      }
+    ],
+    "judged": {
+      "d2e3": {
+        "cp": 120,
+        "mate": null,
+        "depth": 22,
+        "wdl": null,
+        "pv": [
+          "d2e3",
+          "a8a4"
+        ]
+      },
+      "g2e2": {
+        "cp": 188,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "g2e2",
+          "h7f8"
+        ]
+      }
+    },
+    "static_cp": 206
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-59-alphabeta.pgn",
+      "fen": "6k1/4npp1/1prb3p/1R1p4/r2P4/6P1/3B1PKP/1Q6 w - - 5 36",
+      "played": "b5b6",
+      "best": "d2e3",
+      "cp": 149,
+      "mate": null,
+      "pieces": 18,
+      "depth": 16,
+      "pv": [
+        "d2e3",
+        "d6c7"
+      ],
+      "played_cp": 96,
+      "played_mate": null,
+      "loss": 53
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "b5b6",
+        "depth": 15,
+        "seldepth": 22,
+        "cp": 204,
+        "nodes": 262145,
+        "seconds": 0.541550874710083,
+        "tt_line": [
+          "b5b6",
+          "a4d4",
+          "b6c6",
+          "e7c6",
+          "b1f5",
+          "d4d2",
+          "f5c8",
+          "d6f8",
+          "c8c6",
+          "d2e2",
+          "c6d5"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "b5b6",
+        "depth": 22,
+        "seldepth": 30,
+        "cp": 175,
+        "nodes": 2097152,
+        "seconds": 4.036628723144531,
+        "tt_line": [
+          "b5b6",
+          "a4d4",
+          "b6c6",
+          "e7c6",
+          "d2e3",
+          "d4c4",
+          "b1b5",
+          "c6b4",
+          "h2h4",
+          "d6f8",
+          "h4h5",
+          "b4c2",
+          "e3d2",
+          "c4d4",
+          "d2f4",
+          "c2e1",
+          "g2h3",
+          "d4c4",
+          "b5e8",
+          "c4e4",
+          "e8a8",
+          "e1d3",
+          "f4d6",
+          "d3f2",
+          "h3g2"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "b5b6",
+        "depth": 26,
+        "seldepth": 36,
+        "cp": 183,
+        "nodes": 8388608,
+        "seconds": 17.069557905197144,
+        "tt_line": [
+          "b5b6",
+          "a4d4",
+          "b6c6",
+          "e7c6",
+          "d2e3",
+          "d4c4",
+          "b1b5",
+          "c6b4",
+          "h2h4",
+          "d6f8",
+          "h4h5",
+          "b4c2",
+          "e3d2",
+          "c4e4",
+          "b5b3",
+          "e4c4",
+          "b3b7",
+          "c2b4",
+          "b7b5",
+          "c4d4",
+          "d2f4",
+          "d4e4",
+          "f4e3",
+          "e4e6",
+          "e3d4",
+          "b4c2",
+          "d4b6",
+          "d5d4",
+          "g2f1",
+          "g8h7",
+          "b5d7"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "b5b6",
+        "depth": 7,
+        "seldepth": 16,
+        "cp": 151,
+        "nodes": 2097152,
+        "seconds": 4.5545876026153564,
+        "tt_line": [
+          "b5b6",
+          "a4d4",
+          "d2e3",
+          "d4c4",
+          "b6b7",
+          "c6c7",
+          "b1b5",
+          "c7b7"
+        ]
+      }
+    ],
+    "judged": {
+      "b5b6": {
+        "cp": 71,
+        "mate": null,
+        "depth": 20,
+        "wdl": null,
+        "pv": [
+          "b5b6",
+          "a4d4"
+        ]
+      },
+      "d2e3": {
+        "cp": 158,
+        "mate": null,
+        "depth": 20,
+        "wdl": null,
+        "pv": [
+          "d2e3",
+          "d6c7"
+        ]
+      }
+    },
+    "static_cp": 63
+  },
+  {
+    "source": {
+      "game": "aichessathon-round-64-slopfish.pgn",
+      "fen": "1r2r3/1q3pbk/Rp4p1/1Qp1pn1p/2N5/3PBPP1/1P2P1KP/2R5 b - - 2 27",
+      "played": "e5e4",
+      "best": "e8e6",
+      "cp": 21,
+      "mate": null,
+      "pieces": 24,
+      "depth": 14,
+      "pv": [
+        "e8e6",
+        "c1a1"
+      ],
+      "played_cp": -31,
+      "played_mate": null,
+      "loss": 52
+    },
+    "runs": [
+      {
+        "name": "262k",
+        "move": "e5e4",
+        "depth": 12,
+        "seldepth": 20,
+        "cp": 107,
+        "nodes": 262144,
+        "seconds": 0.601513147354126,
+        "tt_line": [
+          "e5e4",
+          "d3e4",
+          "e8e4",
+          "a6b6",
+          "f5e3",
+          "c4e3",
+          "b7b6",
+          "b5b6",
+          "b8b6",
+          "f3e4",
+          "b6b2",
+          "g2f3",
+          "b2b3",
+          "c1c5"
+        ]
+      },
+      {
+        "name": "2m",
+        "move": "e5e4",
+        "depth": 18,
+        "seldepth": 27,
+        "cp": 145,
+        "nodes": 2097152,
+        "seconds": 4.070993900299072,
+        "tt_line": [
+          "e5e4",
+          "d3e4",
+          "e8e4",
+          "a6b6",
+          "f5e3",
+          "c4e3",
+          "b7b6",
+          "b5b6",
+          "b8b6",
+          "f3e4",
+          "b6b2",
+          "c1c5",
+          "b2e2",
+          "g2f3",
+          "e2h2",
+          "c5d5",
+          "g7h6",
+          "d5d7",
+          "h6e3",
+          "f3e3",
+          "h7g7"
+        ]
+      },
+      {
+        "name": "8m",
+        "move": "e5e4",
+        "depth": 20,
+        "seldepth": 32,
+        "cp": 119,
+        "nodes": 8388609,
+        "seconds": 17.06583046913147,
+        "tt_line": [
+          "e5e4",
+          "d3e4",
+          "e8e4",
+          "a6b6",
+          "f5e3",
+          "c4e3",
+          "b7b6",
+          "b5b6",
+          "b8b6",
+          "f3e4",
+          "b6b2",
+          "c1c5",
+          "b2e2",
+          "g2f3",
+          "e2h2",
+          "c5c7",
+          "h7g8",
+          "c7d7",
+          "h2a2",
+          "d7d8",
+          "g8h7",
+          "d8d7",
+          "h7g8",
+          "d7d8",
+          "g8h7",
+          "d8d7"
+        ]
+      },
+      {
+        "name": "floor2m",
+        "move": "f5e3",
+        "depth": 6,
+        "seldepth": 19,
+        "cp": 132,
+        "nodes": 2097152,
+        "seconds": 3.9621546268463135,
+        "tt_line": [
+          "f5e3",
+          "c4e3",
+          "e5e4",
+          "d3e4",
+          "e8e4",
+          "a6b6",
+          "b7b6",
+          "b5b6"
+        ]
+      }
+    ],
+    "judged": {
+      "e5e4": {
+        "cp": -88,
+        "mate": null,
+        "depth": 21,
+        "wdl": null,
+        "pv": [
+          "e5e4",
+          "d3e4"
+        ]
+      },
+      "e8e6": {
+        "cp": 5,
+        "mate": null,
+        "depth": 23,
+        "wdl": null,
+        "pv": [
+          "e8e6",
+          "c1a1",
+          "b7d5",
+          "e3f2",
+          "f5d4",
+          "e2e4",
+          "d5e4",
+          "d3e4",
+          "d4b5",
+          "a6a8",
+          "b8a8",
+          "a1a8",
+          "b5d6",
+          "c4e3",
+          "g7h6",
+          "e3d5",
+          "d6c4",
+          "b2b3",
+          "c4d2",
+          "a8b8",
+          "d2b3",
+          "d5b6",
+          "b3d4",
+          "b6c4",
+          "h6g7",
+          "b8c8",
+          "e6a6"
+        ]
+      },
+      "f5e3": {
+        "cp": -21,
+        "mate": null,
+        "depth": 23,
+        "wdl": null,
+        "pv": [
+          "f5e3",
+          "c4e3"
+        ]
+      },
+      "h5h4": {
+        "cp": 32,
+        "mate": null,
+        "depth": 23,
+        "wdl": null,
+        "pv": [
+          "h5h4",
+          "c1a1"
+        ]
+      }
+    },
+    "static_cp": 111
+  }
+]

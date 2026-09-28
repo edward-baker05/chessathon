@@ -5,7 +5,7 @@ from typing import Literal
 import chess
 import chess.pgn
 
-from harness.rules import INIT_BUDGET_S, PLY_CAP
+from harness.rules import INIT_BUDGET_S
 from harness.sandbox import Agent, AgentFailure
 
 RESULT_HEADERS = {"white": "1-0", "black": "0-1", "draw": "1/2-1/2", "void": "*"}
@@ -27,7 +27,7 @@ def play_match(
     black: Agent,
     base_ms: int,
     increment_ms: int,
-    ply_cap: int = PLY_CAP,
+    ply_cap: int | None = None,
     start_fen: str = chess.STARTING_FEN,
 ) -> Outcome:
     try:
@@ -38,7 +38,7 @@ def play_match(
 
 
 def _play(
-    white: Agent, black: Agent, base_ms: int, increment_ms: int, ply_cap: int, start_fen: str
+    white: Agent, black: Agent, base_ms: int, increment_ms: int, ply_cap: int | None, start_fen: str
 ) -> Outcome:
     board = chess.Board(start_fen)
     agents = {chess.WHITE: white, chess.BLACK: black}
@@ -58,7 +58,7 @@ def _play(
         finish = board.outcome(claim_draw=True)
         if finish is not None:
             return _outcome(board, _decide(finish), finish.termination.name.lower())
-        if board.ply() >= ply_cap:
+        if ply_cap is not None and board.ply() >= ply_cap:
             return _outcome(board, "draw", "ply_cap")
 
         mover = board.turn

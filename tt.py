@@ -28,7 +28,7 @@ MATE_IN_MAX = MATE - 256
 
 BOUND_NONE, BOUND_UPPER, BOUND_LOWER, BOUND_EXACT = 0, 1, 2, 3
 
-# 128 MB: BUCKETS rows of 8 uint64. Comfortably inside the platform's 2 GB.
+# 128 MB: BUCKETS rows of 8 uint64. Small next to typical RAM.
 BUCKETS = 1 << 21
 ENTRIES_PER_BUCKET = 4
 

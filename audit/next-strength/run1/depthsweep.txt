@@ -1,0 +1,46 @@
+19 positions, depths 1 to 12, node cap 3,000,000
+  1/19  10s
+  2/19  14s
+  3/19  31s
+  4/19  31s
+  5/19  46s
+  6/19  61s
+  7/19  73s
+  8/19  86s
+  9/19  87s
+  10/19  88s
+  11/19  105s
+  12/19  114s
+  13/19  129s
+  14/19  142s
+  15/19  155s
+  16/19  172s
+  17/19  186s
+  18/19  200s
+  19/19  202s
+
+    id phase       verdict       shipped   floor   cost  fen
+  0928 endgame     missed_mate         9       5      4  8/5p2/4pPN1/4n1P1/1pk5/p3K3/8/2B5 b - - 0 57
+  0128 endgame     slower_mate         9       6      3  8/4k3/K7/5p2/8/5q2/8/8 b - - 5 73
+  0077 middlegame  severe              1       1      0  2b2rk1/p3pp1p/r4bpQ/P1pq3P/1p1N4/3P1PP1/1PP3B1/R1B1R1K1 b - - 0 19
+  0246 endgame     slower_mate        10       2      8  8/4Q3/3B2k1/3K4/8/8/8/8 w - - 17 84
+  0069 middlegame  severe              1       1      0  1q3rk1/5p1p/3p2p1/p1pQ4/P3P2P/2b3P1/5PB1/R5K1 w - - 0 26
+  0843 middlegame  severe              1       1      0  r1bq1rk1/1p1nppbp/3p2p1/p7/Pn1NP3/R1N1B3/1PPQBPPP/5RK1 b - - 10 15
+  0787 endgame     into_mate           7       4      3  8/1p5p/7r/P5p1/4pk2/5n2/R3KP2/8 w - - 0 52
+  0805 middlegame  severe              1       1      0  8/6p1/3pkr1p/8/2r1p3/P5RP/3R1P2/5K2 w - - 2 42
+  0696 endgame     into_mate           1       1      0  7Q/8/8/1k6/4BP2/B7/P4PK1/8 b - - 2 49
+  0743 endgame     slower_mate        10       3      7  7K/q7/8/4k3/8/8/8/8 b - - 5 62
+  0405 middlegame  severe              3       3      0  5rk1/4q1p1/4p2p/p2bPp2/P6P/8/3Q1PP1/4RBK1 w - - 0 28
+  0378 endgame     slower_mate       >12       4      -  6k1/r2r1p2/5Q2/5R2/2B4p/4P1P1/8/6K1 w - - 0 59
+  0217 middlegame  severe              9       3      6  4r2r/ppk3pp/1q2pp2/3pN3/2pP1P2/2P1Q2N/PP4PP/R5K1 w - - 1 20
+  0231 endgame     severe              9       6      3  1r6/1P2R3/6p1/8/8/2K1N2p/5k2/8 w - - 8 65
+  0660 endgame     slower_mate         9       4      5  8/kr6/8/2KQ4/1P6/8/8/8 w - - 31 109
+  0899 middlegame  severe              2       2      0  6k1/2p2pp1/7p/pq1PpN1P/1P6/2Pn1PP1/2Q4K/8 b - - 2 39
+  1125 opening     severe              1       1      0  r2q1rk1/1p2bppp/pn1pbn2/4p3/P3P3/1NN1B2P/1PP1BPP1/R2Q1RK1 w - - 5 12
+  1500 endgame     severe              2       2      0  5q2/k7/2P5/1r1KB3/3P4/p1Q5/6P1/8 w - - 17 58
+  0118 endgame     into_mate           3       3      0  8/5P2/2Q3P1/3R4/8/4p3/2kr4/4K3 b - - 6 99
+
+the shipped search reaches a move the reference is happy with in 18 of 19 within depth 12; 1 never do
+  when it does, median depth 3, max 10
+  plies selectivity costs, where both get there: median 0, mean 2.2, max 8
+wrote audit/next-strength/run1/depthsweep.json

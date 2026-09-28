@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import IO
 
-from harness.rules import STDOUT_CAP, WATCHDOG_GRACE_MS
+from harness.rules import READ_CHUNK, WATCHDOG_GRACE_MS
 
 RUNNER = Path(__file__).resolve().parent / "runner.py"
 DRAIN_GRACE_S = 0.2
@@ -20,12 +20,12 @@ class AgentFailure(Exception):
 
 
 def local(directory: Path) -> "Agent":
-    """Run an agent as a process on this machine, through the platform's runner."""
+    """Run an agent as a process on this machine, through harness/runner.py."""
     return Agent([sys.executable, str(RUNNER), str(directory.resolve())])
 
 
 class Agent:
-    """One agent process, spoken to exactly as the platform speaks to a container."""
+    """One agent process, spoken to over a line-based JSON protocol."""
 
     def __init__(self, command: list[str]) -> None:
         self.command = command
@@ -90,15 +90,13 @@ class Agent:
     def _forward(self, stream: IO[bytes], name: str) -> None:
         with stream:
             while True:
-                chunk = stream.read(STDOUT_CAP)
+                chunk = stream.read(READ_CHUNK)
                 self._chunks.put((name, chunk))
                 if not chunk:
                     return
 
     def _await_line(self, deadline: float) -> bytes | None:
         while b"\n" not in self._buffer:
-            if len(self._buffer) >= STDOUT_CAP:
-                raise AgentFailure("illegal")
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 return None

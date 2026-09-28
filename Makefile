@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: setup play arena zip gate test bench ab replay random-net data train quantise
+.PHONY: setup play arena gate test bench ab replay random-net data train quantise lichess-setup lichess
 
 setup:
 	uv sync
@@ -10,9 +10,6 @@ play:
 
 arena:
 	uv run python -m harness.arena --opponent baselines/numba --games 20
-
-zip:
-	uv run python -m harness.package
 
 gate:
 	uv run ruff check .
@@ -43,3 +40,14 @@ train:
 
 quantise:
 	uv run python tools/quantise.py
+
+# Play on lichess through lichess-bot. See lichess/zygote.py for why the agent runs behind a
+# fork server. ARGS go to lichess-bot, e.g. `make lichess ARGS=-u` upgrades the account.
+lichess-setup:
+	if [ -d lichess/lichess-bot ]; then git -C lichess/lichess-bot pull --ff-only; \
+	else git clone --depth 1 https://github.com/lichess-bot-devs/lichess-bot.git lichess/lichess-bot; fi
+	uv venv --allow-existing --python .venv/bin/python lichess/lichess-bot/venv
+	uv pip install --python lichess/lichess-bot/venv -r lichess/lichess-bot/requirements.txt
+
+lichess:
+	lichess/run.sh $(ARGS)

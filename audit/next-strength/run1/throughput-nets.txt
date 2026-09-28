@@ -1,0 +1,6 @@
+weights/net.npz {"king_buckets": 1, "nodes": 4816896, "seconds": 8.092, "knps": 595.3}
+audit/next-strength/run1/net-full-kb4.npz {"king_buckets": 4, "nodes": 4816899, "seconds": 8.534, "knps": 564.5}
+weights/net.npz {"king_buckets": 1, "nodes": 4816896, "seconds": 8.113, "knps": 593.7}
+audit/next-strength/run1/net-full-kb4.npz {"king_buckets": 4, "nodes": 4816899, "seconds": 8.506, "knps": 566.3}
+weights/net.npz {"king_buckets": 1, "nodes": 4816896, "seconds": 8.22, "knps": 586.0}
+audit/next-strength/run1/net-full-kb4.npz {"king_buckets": 4, "nodes": 4816899, "seconds": 8.552, "knps": 563.3}

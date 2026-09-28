@@ -1,0 +1,160 @@
+{
+  "agent": "/home/edwardb/Documents/chessathon/snapshots/run1-full-kb4",
+  "agent_build": "c8b9fe7e1157",
+  "opponent": "/home/edwardb/Documents/chessathon/snapshots/run1-baseline",
+  "opponent_build": "56cba1c25bfd",
+  "pairs": 120,
+  "openings": 102,
+  "control": "20000ms + 200ms",
+  "node_limit": 0,
+  "base_ms": 20000,
+  "increment_ms": 200,
+  "ply_cap": 600,
+  "workers": 5,
+  "openings_file": "audit/next-strength/run1/openings-acceptance.json",
+  "clusters": 35,
+  "shuffle_seed": 20260909,
+  "stagger_s": 15.0,
+  "pinned_cores": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ]
+}
+
+120 pairs (240 games) at 20000ms + 200ms
+
+[  6.2 min] pair 1/120 (opening 1): 2.0/2  [checkmate, checkmate]
+[  6.4 min] pair 2/120 (opening 0): 0.5/2  [threefold_repetition, checkmate]
+[  6.7 min] pair 3/120 (opening 3): 1.0/2  [checkmate, checkmate]
+[  6.7 min] pair 4/120 (opening 4): 1.0/2  [fifty_moves, threefold_repetition]
+[  6.8 min] pair 5/120 (opening 2): 1.0/2  [fifty_moves, threefold_repetition]
+[ 12.5 min] pair 6/120 (opening 9): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 12.5 min] pair 7/120 (opening 7): 0.5/2  [checkmate, threefold_repetition]
+[ 12.6 min] pair 8/120 (opening 8): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 12.9 min] pair 9/120 (opening 6): 2.0/2  [checkmate, checkmate]
+[ 13.7 min] pair 10/120 (opening 5): 1.0/2  [threefold_repetition, fifty_moves]
+[ 18.3 min] pair 11/120 (opening 12): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 18.7 min] pair 12/120 (opening 11): 1.5/2  [threefold_repetition, checkmate]
+[ 19.1 min] pair 13/120 (opening 10): 1.5/2  [threefold_repetition, checkmate]
+[ 19.4 min] pair 14/120 (opening 13): 0.0/2  [checkmate, checkmate]
+[ 20.0 min] pair 15/120 (opening 14): 0.5/2  [checkmate, threefold_repetition]
+[ 24.8 min] pair 16/120 (opening 15): 0.0/2  [checkmate, checkmate]
+[ 25.9 min] pair 17/120 (opening 18): 1.0/2  [checkmate, checkmate]
+[ 26.0 min] pair 18/120 (opening 17): 1.5/2  [checkmate, both_failed]
+[ 26.2 min] pair 19/120 (opening 16): 0.5/2  [checkmate, fifty_moves]
+[ 26.9 min] pair 20/120 (opening 19): 2.0/2  [checkmate, checkmate]
+[ 31.6 min] pair 21/120 (opening 20): 1.5/2  [checkmate, both_failed]
+[ 33.2 min] pair 22/120 (opening 21): 1.5/2  [fifty_moves, checkmate]
+[ 33.4 min] pair 23/120 (opening 22): 1.5/2  [checkmate, threefold_repetition]
+[ 33.6 min] pair 24/120 (opening 23): 1.0/2  [fifty_moves, insufficient_material]
+[ 34.0 min] pair 25/120 (opening 24): 1.0/2  [checkmate, checkmate]
+[ 38.5 min] pair 26/120 (opening 25): 1.5/2  [both_failed, checkmate]
+[ 40.2 min] pair 27/120 (opening 28): 1.0/2  [checkmate, checkmate]
+[ 40.7 min] pair 28/120 (opening 27): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 40.9 min] pair 29/120 (opening 26): 1.0/2  [fifty_moves, threefold_repetition]
+[ 40.9 min] pair 30/120 (opening 29): 0.5/2  [threefold_repetition, checkmate]
+[ 45.3 min] pair 31/120 (opening 30): 2.0/2  [checkmate, checkmate]
+[ 46.7 min] pair 32/120 (opening 32): 1.0/2  [both_failed, both_failed]
+[ 46.8 min] pair 33/120 (opening 31): 0.5/2  [threefold_repetition, checkmate]
+[ 47.7 min] pair 34/120 (opening 33): 1.5/2  [checkmate, threefold_repetition]
+[ 48.5 min] pair 35/120 (opening 34): 1.5/2  [checkmate, fifty_moves]
+[ 52.5 min] pair 36/120 (opening 35): 1.0/2  [checkmate, checkmate]
+[ 53.1 min] pair 37/120 (opening 36): 1.5/2  [both_failed, checkmate]
+[ 53.3 min] pair 38/120 (opening 37): 1.5/2  [checkmate, both_failed]
+[ 54.3 min] pair 39/120 (opening 38): 1.5/2  [checkmate, threefold_repetition]
+[ 55.4 min] pair 40/120 (opening 39): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 59.4 min] pair 41/120 (opening 40): 0.5/2  [threefold_repetition, checkmate]
+[ 60.1 min] pair 42/120 (opening 41): 0.5/2  [checkmate, threefold_repetition]
+[ 60.2 min] pair 43/120 (opening 42): 1.5/2  [both_failed, checkmate]
+[ 61.7 min] pair 44/120 (opening 43): 1.0/2  [threefold_repetition, fifty_moves]
+[ 62.7 min] pair 45/120 (opening 44): 1.5/2  [fifty_moves, checkmate]
+[ 66.4 min] pair 46/120 (opening 46): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 66.8 min] pair 47/120 (opening 45): 0.5/2  [threefold_repetition, checkmate]
+[ 68.0 min] pair 48/120 (opening 47): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 68.8 min] pair 49/120 (opening 48): 1.0/2  [fifty_moves, threefold_repetition]
+[ 70.0 min] pair 50/120 (opening 49): 1.5/2  [checkmate, fifty_moves]
+[ 73.3 min] pair 51/120 (opening 50): 1.5/2  [threefold_repetition, checkmate]
+[ 74.6 min] pair 52/120 (opening 51): 1.0/2  [checkmate, checkmate]
+[ 75.6 min] pair 53/120 (opening 52): 1.5/2  [threefold_repetition, checkmate]
+[ 75.9 min] pair 54/120 (opening 53): 1.5/2  [checkmate, threefold_repetition]
+[ 77.0 min] pair 55/120 (opening 54): 1.0/2  [checkmate, checkmate]
+[ 80.4 min] pair 56/120 (opening 55): 0.5/2  [insufficient_material, checkmate]
+[ 81.5 min] pair 57/120 (opening 56): 1.0/2  [fifty_moves, threefold_repetition]
+[ 82.3 min] pair 58/120 (opening 57): 0.5/2  [checkmate, threefold_repetition]
+[ 83.0 min] pair 59/120 (opening 58): 0.0/2  [checkmate, checkmate]
+[ 83.5 min] pair 60/120 (opening 59): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 86.8 min] pair 61/120 (opening 60): 1.5/2  [checkmate, threefold_repetition]
+[ 87.8 min] pair 62/120 (opening 61): 2.0/2  [checkmate, checkmate]
+[ 88.9 min] pair 63/120 (opening 62): 1.5/2  [threefold_repetition, checkmate]
+[ 89.5 min] pair 64/120 (opening 63): 1.0/2  [fifty_moves, threefold_repetition]
+[ 89.6 min] pair 65/120 (opening 64): 1.0/2  [checkmate, checkmate]
+[ 92.3 min] pair 66/120 (opening 65): 1.5/2  [threefold_repetition, checkmate]
+[ 94.2 min] pair 67/120 (opening 66): 0.5/2  [checkmate, insufficient_material]
+[ 95.6 min] pair 68/120 (opening 68): 0.5/2  [threefold_repetition, checkmate]
+[ 95.7 min] pair 69/120 (opening 67): 0.5/2  [stalemate, checkmate]
+[ 95.7 min] pair 70/120 (opening 69): 1.0/2  [threefold_repetition, threefold_repetition]
+[ 98.6 min] pair 71/120 (opening 70): 1.0/2  [threefold_repetition, insufficient_material]
+[100.2 min] pair 72/120 (opening 71): 2.0/2  [checkmate, checkmate]
+[101.7 min] pair 73/120 (opening 74): 1.0/2  [threefold_repetition, threefold_repetition]
+[102.3 min] pair 74/120 (opening 73): 1.5/2  [checkmate, threefold_repetition]
+[102.4 min] pair 75/120 (opening 72): 2.0/2  [checkmate, checkmate]
+[104.7 min] pair 76/120 (opening 75): 1.5/2  [checkmate, threefold_repetition]
+[106.8 min] pair 77/120 (opening 76): 1.5/2  [threefold_repetition, checkmate]
+[108.0 min] pair 78/120 (opening 77): 0.5/2  [threefold_repetition, checkmate]
+[108.5 min] pair 79/120 (opening 79): 1.0/2  [checkmate, checkmate]
+[108.9 min] pair 80/120 (opening 78): 0.5/2  [checkmate, threefold_repetition]
+[110.8 min] pair 81/120 (opening 80): 1.5/2  [threefold_repetition, checkmate]
+[113.3 min] pair 82/120 (opening 81): 1.0/2  [checkmate, checkmate]
+[114.9 min] pair 83/120 (opening 83): 1.0/2  [checkmate, checkmate]
+[115.0 min] pair 84/120 (opening 84): 1.0/2  [threefold_repetition, threefold_repetition]
+[115.1 min] pair 85/120 (opening 82): 0.5/2  [checkmate, fifty_moves]
+[118.1 min] pair 86/120 (opening 85): 0.5/2  [checkmate, fifty_moves]
+[119.0 min] pair 87/120 (opening 86): 1.0/2  [threefold_repetition, threefold_repetition]
+[121.5 min] pair 88/120 (opening 87): 1.0/2  [threefold_repetition, fifty_moves]
+[121.7 min] pair 89/120 (opening 89): 2.0/2  [checkmate, checkmate]
+[122.1 min] pair 90/120 (opening 88): 1.5/2  [checkmate, threefold_repetition]
+[124.2 min] pair 91/120 (opening 90): 0.5/2  [fifty_moves, init]
+[125.2 min] pair 92/120 (opening 91): 1.0/2  [threefold_repetition, both_failed]
+[128.1 min] pair 93/120 (opening 94): 1.0/2  [both_failed, both_failed]
+[129.2 min] pair 94/120 (opening 93): 0.5/2  [insufficient_material, checkmate]
+[129.4 min] pair 95/120 (opening 92): 0.5/2  [fifty_moves, checkmate]
+[130.7 min] pair 96/120 (opening 95): 1.0/2  [both_failed, threefold_repetition]
+[133.1 min] pair 97/120 (opening 96): 1.5/2  [checkmate, fifty_moves]
+[134.1 min] pair 98/120 (opening 97): 1.0/2  [both_failed, both_failed]
+[136.8 min] pair 99/120 (opening 99): 1.5/2  [checkmate, fifty_moves]
+[136.9 min] pair 100/120 (opening 98): 1.5/2  [fifty_moves, checkmate]
+[137.7 min] pair 101/120 (opening 100): 1.0/2  [checkmate, checkmate]
+[140.1 min] pair 102/120 (opening 0): 1.0/2  [both_failed, both_failed]
+[141.1 min] pair 103/120 (opening 101): 1.0/2  [checkmate, checkmate]
+[144.4 min] pair 104/120 (opening 1): 1.0/2  [checkmate, checkmate]
+[144.4 min] pair 105/120 (opening 2): 0.5/2  [checkmate, threefold_repetition]
+[145.7 min] pair 106/120 (opening 3): 1.0/2  [threefold_repetition, fifty_moves]
+[146.2 min] pair 107/120 (opening 4): 1.0/2  [both_failed, both_failed]
+[148.8 min] pair 108/120 (opening 5): 2.0/2  [checkmate, checkmate]
+[151.7 min] pair 109/120 (opening 7): 0.0/2  [checkmate, checkmate]
+[151.8 min] pair 110/120 (opening 6): 1.5/2  [threefold_repetition, checkmate]
+[152.2 min] pair 111/120 (opening 9): 1.0/2  [both_failed, both_failed]
+[153.6 min] pair 112/120 (opening 8): 1.5/2  [fifty_moves, checkmate]
+[156.4 min] pair 113/120 (opening 10): 1.0/2  [fifty_moves, threefold_repetition]
+[158.2 min] pair 114/120 (opening 13): 1.0/2  [both_failed, both_failed]
+[159.1 min] pair 115/120 (opening 11): 0.5/2  [threefold_repetition, checkmate]
+[159.3 min] pair 116/120 (opening 12): 1.0/2  [checkmate, checkmate]
+[160.6 min] pair 117/120 (opening 14): 1.0/2  [threefold_repetition, threefold_repetition]
+[164.1 min] pair 118/120 (opening 16): 1.5/2  [both_failed, init]
+[164.2 min] pair 119/120 (opening 15): 1.5/2  [checkmate, fifty_moves]
+[166.4 min] pair 120/120 (opening 17): 1.5/2  [fifty_moves, checkmate]
+
++67 =127 -46 over 240 games in 166.4 min
+score 54.375% on 120 pairs in 35 clusters
+terminations: both_failed 23, checkmate 111, fifty_moves 27, init 2, insufficient_material 5, stalemate 1, threefold_repetition 71
+
+RUN INVALID. both_failed 23, init 2.
+A game that ended this way was decided by something other than chess, and its result
+is in the score above. Fix the cause and run again; do not read the number.
+An init failure under a parallel run usually means too many agents compiled at once:
+lower --workers or raise --stagger.
+wrote audit/next-strength/run1/match-acceptance-kb4-vs-shipped.pgn
+wrote audit/next-strength/run1/match-acceptance-kb4-vs-shipped.json

@@ -2,8 +2,8 @@
 
 harness/arena.py never passes start_fen to play_match, so every arena game starts from
 the standard position. Against a deterministic engine that replays the same two games and
-measures nothing. These positions give each pairing real variety, and they also match the
-competition, where rated games start from curated openings rather than the start.
+measures nothing. These positions give each pairing real variety, and they avoid
+measuring the same opening over and over.
 
 The set is FIXED. Regenerating it makes new results incomparable with old ones.
 Reached after four plies of sound, roughly balanced opening play; two of the source lines

@@ -1,0 +1,243 @@
+{
+  "provenance": {
+    "agent": "/home/edwardb/Documents/chessathon/snapshots/draw-fixes",
+    "agent_build": "856d26783588",
+    "opponent": "/home/edwardb/Documents/chessathon/snapshots/pre-draw-fixes",
+    "opponent_build": "8e41db6849ab",
+    "pairs": 20,
+    "openings": 101,
+    "control": "20000ms + 200ms",
+    "node_limit": 0,
+    "base_ms": 20000,
+    "increment_ms": 200,
+    "ply_cap": 600,
+    "workers": 2,
+    "openings_file": "/tmp/claude-1000/-home-edwardb-Documents-chessathon/b7a06e54-7273-408d-9cc9-0da3ff9905a1/scratchpad/openings-a.json",
+    "clusters": 35,
+    "shuffle_seed": 20260909,
+    "stagger_s": 15.0,
+    "pinned_cores": [
+      0,
+      1
+    ]
+  },
+  "pairs": [
+    {
+      "opening": 0,
+      "fen": "r2q1rk1/pp2ppbp/2n3p1/2pb2N1/3P4/2P1P1P1/P4PBP/R1BQ1RK1 w - - 1 12",
+      "cluster": "aichessathon-round-40-therook",
+      "score": 1.0,
+      "terminations": [
+        "threefold_repetition",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 1,
+      "fen": "r1bqk2r/2p1bppp/p1np1n2/1p2p3/4P3/PB3N2/1PPP1PPP/RNBQR1K1 b kq - 0 8",
+      "cluster": "aichessathon-round-56-opus-carlsen",
+      "score": 0.5,
+      "terminations": [
+        "threefold_repetition",
+        "checkmate"
+      ]
+    },
+    {
+      "opening": 2,
+      "fen": "r1bqr1k1/4bpp1/p2p1n1p/1pp1p3/4P3/1P1P1NNP/1PP2PP1/R1BQR1K1 w - - 0 14",
+      "cluster": "aichessathon-round-60-amplifirm",
+      "score": 1.0,
+      "terminations": [
+        "threefold_repetition",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 3,
+      "fen": "r1bq1rk1/4bppp/p2p1n2/npp1p3/4P3/P2P1N1P/BPP2PP1/RNBQR1K1 b - - 0 11",
+      "cluster": "aichessathon-round-56-opus-carlsen",
+      "score": 1.0,
+      "terminations": [
+        "threefold_repetition",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 4,
+      "fen": "r2qk2r/pp1nbpp1/2p1pn1p/4N3/2PP3P/6N1/PP2QPP1/R1B2RK1 b kq - 0 13",
+      "cluster": "aichessathon-round-58-danya-s-disciple",
+      "score": 1.0,
+      "terminations": [
+        "threefold_repetition",
+        "insufficient_material"
+      ]
+    },
+    {
+      "opening": 5,
+      "fen": "r2r2k1/ppqn1ppp/2p1bn2/P3N3/1b1P4/2N1PB2/1P1B1PPP/R2Q1RK1 b - - 0 14",
+      "cluster": "aichessathon-round-48-finlay-phillips",
+      "score": 1.0,
+      "terminations": [
+        "checkmate",
+        "checkmate"
+      ]
+    },
+    {
+      "opening": 6,
+      "fen": "rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N1B3/PPP2PPP/R2QKB1R b KQkq - 1 6",
+      "cluster": "aichessathon-round-33-magnus-force",
+      "score": 1.0,
+      "terminations": [
+        "threefold_repetition",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 7,
+      "fen": "1rb2rk1/ppq3bp/2n1p1pn/P1p2p2/N4P2/3P2P1/1PPN2BP/R1BQK2R w KQ - 3 14",
+      "cluster": "aichessathon-round-55-team1",
+      "score": 1.5,
+      "terminations": [
+        "threefold_repetition",
+        "checkmate"
+      ]
+    },
+    {
+      "opening": 8,
+      "fen": "r4rk1/ppp2pbp/2n1bnp1/4p3/1PP1P3/2N1BN2/P3BPPP/R2R2K1 b - - 0 11",
+      "cluster": "aichessathon-round-46-octabasilissa",
+      "score": 0.5,
+      "terminations": [
+        "fifty_moves",
+        "checkmate"
+      ]
+    },
+    {
+      "opening": 9,
+      "fen": "r1b1qrk1/1p1n2pp/2pbp3/p2p1p2/2PPn3/1PN1PNP1/PBQ2PBP/2R2RK1 b - - 0 13",
+      "cluster": "aichessathon-round-57-jbg-fam-vs-ryan-vincent",
+      "score": 1.0,
+      "terminations": [
+        "threefold_repetition",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 10,
+      "fen": "r1bqk2r/1p1nbppp/8/p1Pp4/PP6/2P2N2/3N1PPP/R1BQK2R b KQkq - 0 11",
+      "cluster": "aichessathon-round-41-elbow-grease",
+      "score": 0.5,
+      "terminations": [
+        "threefold_repetition",
+        "checkmate"
+      ]
+    },
+    {
+      "opening": 11,
+      "fen": "r1bqkb1r/pp3ppp/2np4/1N1Pp3/8/8/PPP2PPP/R1BQKB1R b KQkq - 0 8",
+      "cluster": "aichessathon-round-36-epoch-mate",
+      "score": 0.5,
+      "terminations": [
+        "checkmate",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 12,
+      "fen": "r1bq1rk1/pppp1ppp/2n2n2/1B2p3/4P3/2P2N1P/PPP2PP1/R1BQ1RK1 b - - 0 7",
+      "cluster": "aichessathon-round-49-edward-vs-hal9000",
+      "score": 1.0,
+      "terminations": [
+        "threefold_repetition",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 13,
+      "fen": "rn1q1rk1/1p2bpp1/p2pbn1p/4p3/4P3/1NN1B1QP/PPP1BPP1/R3K2R b KQ - 3 11",
+      "cluster": "aichessathon-round-43-the-archer",
+      "score": 0.5,
+      "terminations": [
+        "checkmate",
+        "fifty_moves"
+      ]
+    },
+    {
+      "opening": 14,
+      "fen": "rnbq1rk1/ppp2pbp/5np1/4p3/2P1P3/2N1BN2/PP2BPPP/R2QK2R b KQ - 1 8",
+      "cluster": "aichessathon-round-46-octabasilissa",
+      "score": 0.5,
+      "terminations": [
+        "checkmate",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 15,
+      "fen": "r1q1k2r/ppp1bppp/2npbn2/3Np3/P1B1P3/2PP1N2/1P3PPP/R1BQK2R b KQkq - 0 8",
+      "cluster": "aichessathon-round-53-jsp",
+      "score": 1.0,
+      "terminations": [
+        "threefold_repetition",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 16,
+      "fen": "r1bq1rk1/1p1nbppn/2p1p2p/3pP3/p1PP4/5NP1/PPQN1PBP/R1BR2K1 w - - 1 12",
+      "cluster": "aichessathon-round-51-pgn",
+      "score": 1.5,
+      "terminations": [
+        "checkmate",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 17,
+      "fen": "r1bqr1k1/2p1bppp/p2p1n2/np2p3/4P3/1B1P1N1P/PPPN1PP1/R1BQR1K1 w - - 3 11",
+      "cluster": "aichessathon-round-60-amplifirm",
+      "score": 1.0,
+      "terminations": [
+        "checkmate",
+        "checkmate"
+      ]
+    },
+    {
+      "opening": 18,
+      "fen": "r1q4r/ppp1kppp/3pnn2/4p3/P3P3/2PP1N2/1P3PPP/R1BQ1RK1 b - - 1 11",
+      "cluster": "aichessathon-round-53-jsp",
+      "score": 1.0,
+      "terminations": [
+        "insufficient_material",
+        "threefold_repetition"
+      ]
+    },
+    {
+      "opening": 19,
+      "fen": "5rk1/ppp2pbp/n3bnp1/4p1N1/2P1P3/2N5/P3BPPP/R2R2K1 b - - 1 14",
+      "cluster": "aichessathon-round-46-octabasilissa",
+      "score": 1.0,
+      "terminations": [
+        "threefold_repetition",
+        "threefold_repetition"
+      ]
+    }
+  ],
+  "summary": {
+    "wins": 4,
+    "draws": 28,
+    "losses": 8,
+    "score": 0.45,
+    "pairs": 20,
+    "clusters": 15,
+    "ci": [
+      0.3854489299362363,
+      0.5423288478415416
+    ],
+    "elo": -34.86007028756008,
+    "elo_ci": [
+      -81.03645394632282,
+      29.483666939302104
+    ]
+  }
+}

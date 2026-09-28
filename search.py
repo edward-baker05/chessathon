@@ -858,7 +858,7 @@ def budget_ms(time_left_ms: int, increment_ms: int, ply: int = 0) -> tuple[float
 
     The share of the remaining clock rises with the ply, so that a draining clock does not
     drag the allocation down with it. A flat share spent 5.7 s on move one and 1.4 s on
-    move forty, which is backwards: move one comes out of a curated opening and move forty
+    move forty, which is backwards: move one comes out of an opening and move forty
     does not.
 
     Floored rather than allowed to go negative: late in a long game the base clock is gone
@@ -876,7 +876,7 @@ def budget_ms(time_left_ms: int, increment_ms: int, ply: int = 0) -> tuple[float
 def ply_of(board: chess.Board) -> int:
     """Plies played, from the FEN alone.
 
-    Rated games start from curated positions rather than the standard start, so the
+    Games may start from positions other than the standard start, so the
     fullmove number carries real information about how far into the game we are. Clamped
     because a hand-written FEN can say anything.
     """

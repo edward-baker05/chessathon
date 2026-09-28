@@ -6,9 +6,6 @@ forward pass and the search agree with each other and run at the speed the desig
 predicted, which is the part that has to be right before training is worth starting.
 
 `tools/quantise.py` writes the real thing in the same format.
-
-Not shipped: harness/package.py globs root *.py and weights/, so tools/ never reaches the
-zip.
 """
 
 import argparse

@@ -1,0 +1,48 @@
+320 positions from 64 files, depth 6, cold cache, net 57ab14b41b9f
+  20/320  40s
+  40/320  83s
+  60/320  133s
+  80/320  182s
+  100/320  227s
+  120/320  267s
+  140/320  309s
+  160/320  359s
+  180/320  409s
+  200/320  450s
+  220/320  492s
+  240/320  538s
+  260/320  584s
+  280/320  632s
+  300/320  685s
+  320/320  737s
+
+positions                     320  {'quiet': 290, 'check': 30}
+clusters                      232
+the three searches differ     164
+floor scored higher by >50cp  28
+floor scored lower by >50cp   28
+These are disagreements between two implementations. Which one is right is not a question this file can answer; run tools/judge.py on the output.
+wrote audit/next-strength/run1/probe-base-1m.json
+320 positions, 1 builds, arm 'budget', 1,000,000 reference nodes per move
+  40/320  22s
+  80/320  50s
+  120/320  73s
+  160/320  95s
+  200/320  117s
+  240/320  139s
+  280/320  165s
+  320/320  192s
+
+build            best  <50cp  severe  mate class   mean cp    95% over clusters       kn       s
+baseline          268     43       4           5      4.9c [    3.0,     7.0]   297444   554.9
+
+Same positions, same reference searches, same candidate set. 'mate class' is counted, never averaged into the centipawn mean.
+
+mean centipawn regret by phase:
+                       endgame    middlegame       opening
+  baseline                6.4c          5.1c          4.0c
+
+mean centipawn regret by stratum:
+                         check         quiet
+  baseline               10.3c          4.9c
+wrote audit/next-strength/run1/compare-base-1m.json

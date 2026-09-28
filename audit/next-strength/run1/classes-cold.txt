@@ -1,0 +1,56 @@
+320 judged, 27 where the shipped move is a real error
+
+   12  selectivity, and more nodes also find it
+    6  neither: evaluation or horizon
+    6  selectivity at equal depth only
+    3  more nodes, not selectivity
+
+by verdict and phase:
+  into_mate    endgame     6
+  missed_mate  endgame     2
+  severe       endgame     2
+  severe       middlegame  9
+  severe       opening     2
+  slower_mate  endgame     6
+
+unresolved at the top reference budget: 2
+
+the ones selectivity is responsible for:
+  0928 missed_mate  shipped f7g6 ('missed_mate', None)  floor e5g6 ('best', 0)
+       8/5p2/4pPN1/4n1P1/1pk5/p3K3/8/2B5 b - - 0 57
+  0128 slower_mate  shipped f3c6 ('slower_mate', None)  floor e7d6 ('best', 0)
+       8/4k3/K7/5p2/8/5q2/8/8 b - - 5 73
+  0077 severe       shipped f6g7 ('cp', 127)  floor f6d4 ('best', 0)
+       2b2rk1/p3pp1p/r4bpQ/P1pq3P/1p1N4/3P1PP1/1PP3B1/R1B1R1K1 b - - 0 19
+  0246 slower_mate  shipped e7e6 ('slower_mate', None)  floor d6f4 ('best', 0)
+       8/4Q3/3B2k1/3K4/8/8/8/8 w - - 17 84
+  0069 severe       shipped a1a3 ('cp', 110)  floor a1f1 ('best', 0)
+       1q3rk1/5p1p/3p2p1/p1pQ4/P3P2P/2b3P1/5PB1/R5K1 w - - 0 26
+  0843 severe       shipped d6d5 ('cp', 216)  floor d7c5 ('best', 0)
+       r1bq1rk1/1p1nppbp/3p2p1/p7/Pn1NP3/R1N1B3/1PPQBPPP/5RK1 b - - 10 15
+  0787 into_mate    shipped a2b2 ('into_mate', None)  floor e2d1 ('best', 0)
+       8/1p5p/7r/P5p1/4pk2/5n2/R3KP2/8 w - - 0 52
+  0696 into_mate    shipped b5c4 ('into_mate', None)  floor b5a5 ('best', 0)
+       7Q/8/8/1k6/4BP2/B7/P4PK1/8 b - - 2 49
+  0743 slower_mate  shipped e5e6 ('slower_mate', None)  floor e5f6 ('best', 0)
+       7K/q7/8/4k3/8/8/8/8 b - - 5 62
+  0405 severe       shipped e1b1 ('cp', 143)  floor d2a5 ('best', 0)
+       5rk1/4q1p1/4p2p/p2bPp2/P6P/8/3Q1PP1/4RBK1 w - - 0 28
+  0378 slower_mate  shipped f5g5 ('slower_mate', None)  floor f5h5 ('best', 0)
+       6k1/r2r1p2/5Q2/5R2/2B4p/4P1P1/8/6K1 w - - 0 59
+  0217 severe       shipped h3g5 ('cp', 189)  floor e5f3 ('best', 0)
+       4r2r/ppk3pp/1q2pp2/3pN3/2pP1P2/2P1Q2N/PP4PP/R5K1 w - - 1 20
+  0231 severe       shipped e3d1 ('cp', 427)  floor c3d4 ('best', 0)
+       1r6/1P2R3/6p1/8/8/2K1N2p/5k2/8 w - - 8 65
+  0660 slower_mate  shipped d5a2 ('slower_mate', None)  floor c5c6 ('best', 0)
+       8/kr6/8/2KQ4/1P6/8/8/8 w - - 31 109
+  0899 severe       shipped a5b4 ('cp', 334)  floor d3e1 ('best', 0)
+       6k1/2p2pp1/7p/pq1PpN1P/1P6/2Pn1PP1/2Q4K/8 b - - 2 39
+  1125 severe       shipped b3d4 ('cp', 432)  floor a4a5 ('best', 0)
+       r2q1rk1/1p2bppp/pn1pbn2/4p3/P3P3/1NN1B2P/1PP1BPP1/R2Q1RK1 w - - 5 12
+  1500 severe       shipped d5e6 ('cp', 189)  floor d5e4 ('best', 0)
+       5q2/k7/2P5/1r1KB3/3P4/p1Q5/6P1/8 w - - 17 58
+  0118 into_mate    shipped c2b2 ('into_mate', None)  floor c2b1 ('best', 0)
+       8/5P2/2Q3P1/3R4/8/4p3/2kr4/4K3 b - - 6 99
+
+wrote audit/next-strength/run1/classes-cold.json

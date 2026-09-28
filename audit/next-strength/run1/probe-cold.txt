@@ -1,0 +1,25 @@
+320 positions from 64 files, depth 6, cold cache, net 57ab14b41b9f
+  20/320  9s
+  40/320  17s
+  60/320  32s
+  80/320  47s
+  100/320  58s
+  120/320  65s
+  140/320  75s
+  160/320  87s
+  180/320  103s
+  200/320  109s
+  220/320  118s
+  240/320  129s
+  260/320  141s
+  280/320  158s
+  300/320  176s
+  320/320  194s
+
+positions                     320  {'quiet': 290, 'check': 30}
+clusters                      232
+the three searches differ     140
+floor scored higher by >50cp  28
+floor scored lower by >50cp   28
+These are disagreements between two implementations. Which one is right is not a question this file can answer; run tools/judge.py on the output.
+wrote audit/next-strength/run1/probe-cold.json

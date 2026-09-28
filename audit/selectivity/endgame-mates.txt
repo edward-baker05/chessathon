@@ -1,0 +1,46 @@
+
+queen-vs-bare-king  8/8/8/8/8/2q3k1/8/3K4 b - - 0 94
+  depth 6  window [4600,4601]  non-PV  in check: no  reference: -
+  From a played game. Mate is forced and the shipped search misses it at depth 9.
+  run               score  bound     nodes  fired / pv
+  all on             5181     ok         1  rfp=1 | -
+  none               4602     ok    12,824  - | c3a1 d1c2 a1a2 c2d1 a2b3 d1d2
+  oracle             4628      -       884  - | c3a1 d1d2 a1a4 d2c3 g3g4 c3b2
+  -rfp               4584  wrong       248  razor=20,futility=58,lmp=673,see=48,lmr=41,iir=4 | c3b2 d1e1 b2a3 e1e2
+  -razor             5181     ok         1  rfp=1 | -
+  -null              5181     ok         1  rfp=1 | -
+  -futility          5181     ok         1  rfp=1 | -
+  -lmp               5181     ok         1  rfp=1 | -
+  -see               5181     ok         1  rfp=1 | -
+  -lmr               5181     ok         1  rfp=1 | -
+  -iir               5181     ok         1  rfp=1 | -
+  verdict: the engine's bound agrees with the oracle; nothing to blame
+
+queen-and-rook-mate  8/6pk/4Kp2/7p/5P1P/3q4/3N4/2r5 b - - 11 70
+  depth 6  window [5900,5901]  non-PV  in check: no  reference: -
+  Also from a played game. Floor sees mate at depth 6, shipped does not at depth 7.
+  run               score  bound     nodes  fired / pv
+  all on             5520  wrong         2  rfp=1,futility=43,iir=1 | d3d2
+  none               5944     ok     2,754  - | d3d2 f4f5 d2e1 e6d7 e1e5 d7d8
+  oracle             5906      -       953  - | d3d2 f4f5 d2c3 e6f7 c3a3 f7e8
+  -rfp               5954     ok        69  razor=1,lmp=117,see=18,lmr=2,iir=2 | d3d2 e6f7 f6f5 f7f8
+  -razor             5520  wrong         2  rfp=1,futility=43,iir=1 | d3d2
+  -null              5520  wrong         2  rfp=1,futility=43,iir=1 | d3d2
+  -futility          5520  wrong        36  rfp=23,razor=6,lmp=8,see=7,lmr=27,iir=2 | d3d2
+  -lmp               5520  wrong         2  rfp=1,futility=43,iir=1 | d3d2
+  -see               5520  wrong         2  rfp=1,futility=43,iir=1 | d3d2
+  -lmr               5520  wrong         2  rfp=1,futility=43,iir=1 | d3d2
+  -iir               5520  wrong         2  rfp=1,futility=43 | d3d2
+  adding one mechanism at a time to the clean floor:
+  +rfp               5981     ok    18,307  rfp=4129 | d3e2 d2e4 e2e4 e6f7 e4d5 f7e8
+  +razor             5906     ok     1,078  razor=22 | d3d2 f4f5 d2c3 e6f7 c3a3 f7e8
+  +null              5944     ok     2,758  - | d3d2 f4f5 d2e1 e6d7 e1e5 d7d8
+  +futility          5906     ok       737  futility=622 | d3d2 f4f5 d2c3 e6f7 c3a3 f7e8
+  +lmp               5906     ok       396  lmp=1345 | d3d2 f4f5 d2b4 e6d7 b4a3 d7e8
+  +see               5944     ok     2,181  see=220 | d3d2 f4f5 d2e1 e6d7 e1e5 d7d8
+  +lmr               5941     ok     2,172  lmr=10 | d3d2 e6f5 h7g8 f5g6 c1g1 g6f5
+  +iir               5909     ok       183  iir=2 | d3d2 f4f5 c1b1 e6f7
+  pairs that are clean alone and wrong together:
+  +rfp+futility      5520  wrong         2  rfp=1,futility=43 | d3d2
+  +futility+lmp      5803  wrong       296  futility=837,lmp=799 | d3d2 f4f5 d2e1 e6d7 e1h4 d7d6
+  +lmp+lmr           5845  wrong       705  lmp=2495,lmr=116 | d3d2 f4f5 c1c3 e6f7

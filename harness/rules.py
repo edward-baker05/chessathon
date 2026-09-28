@@ -1,9 +1,7 @@
-"""Event constants. Canonical source: https://aichessathon.com/docs/rules.md"""
+"""Defaults for local games. Nothing here is a rule; every value can be overridden."""
 
-INIT_BUDGET_S = 90.0
 BASE_MS = 120_000
 INCREMENT_MS = 500
-PLY_CAP = 600
-STDOUT_CAP = 4096
-MAX_UNZIPPED_BYTES = 50_000_000
+INIT_BUDGET_S = 600.0
 WATCHDOG_GRACE_MS = 500
+READ_CHUNK = 65_536

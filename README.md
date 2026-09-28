@@ -1,83 +1,57 @@
-# AI Chessathon starter
+# Chess engine
 
-Fork this to build an agent for [AI Chessathon](https://aichessathon.com). It gives you a working
-submission, baselines to beat, and a local harness that speaks the same protocol and enforces the
-same clock as the platform, so you can see whether a change actually helped before you upload it.
+A chess engine in Python: a numba-jitted bitboard search with an NNUE evaluation. The whole
+engine is `agent.py`, which exposes one function:
+
+```python
+def get_move(fen: str, time_left_ms: int) -> str:  # UCI, e.g. "e2e4" or "e7e8q"
+```
+
+The process starts once per game and stays alive between moves, so module state (the
+transposition table, position history) lasts for one game.
 
 ```
-git clone https://github.com/advitrocks9/aichessathon-starter
-cd aichessathon-starter
 make setup
 make play
 ```
 
-That plays your agent against a baseline over a full 120 s + 0.5 s game and prints the result.
-When you like it, `make zip` and drop `submission.zip` on your dashboard.
-
-## Writing an agent
-
-`agent.py` is the whole submission. One function:
-
-```python
-def get_move(fen: str, time_left_ms: int) -> str:
-    return "e2e4"
-```
-
-The fork ships a legal random-mover, so the loop works before you write anything. Replace the body.
+## Commands
 
 ```
-make play                                          # one game, real time control
-make arena                                         # 20 fast games, prints a score
+make play                                          # one game, 120 s + 0.5 s
 make play FEN="<fen>"                              # start from a given position
-uv run python -m harness.play --black baselines/minimax --pgn game.pgn
+make arena                                         # 20 fast games against a baseline
+make test                                          # pytest
+make gate                                          # ruff, mypy, and two games that must finish
+make bench                                         # import time and search speed
+make ab OPPONENT=<dir>                             # fixed-opening A/B match, in tests/match.py
+make replay PGN=<file>                             # time allocation over a played game
+make train / quantise                            # train and ship a new network
+make lichess-setup / lichess                       # play on lichess through lichess-bot
 uv run python -m harness.arena --opponent ../my-old-version --games 200
 ```
 
-Anything your agent prints shows up under the result, so `print` debugging works. The platform
-keeps it too. Every rated game leaves a log on your dashboard next to the PGN, holding your
-output plus your init time, your time on each move, and the clock you had left. Only your team
-can read it.
+Anything the agent prints goes to stderr, so `print` debugging works.
 
-## The ladder
-
-Measured with `harness/arena.py`. Beating greedy is a search. Beating minimax is a search plus an
-evaluation worth searching with.
-
-| Matchup | Games | Time control | Score |
-|---|---|---|---|
-| random vs greedy | 20 | 10 s + 0.1 s | 10.0% (+1 =2 -17) |
-| greedy vs minimax | 6 | 120 s + 0.5 s | 0.0% (+0 =0 -6) |
-| numba vs minimax | 6 | 10 s + 0.5 s | 66.7% (+2 =4 -0) |
-
-- `baselines/random` plays a uniformly random legal move. It is what `agent.py` starts as.
-- `baselines/greedy` searches one ply on material.
-- `baselines/minimax` searches two plies on material and mobility, with no time management.
-- `baselines/numba` is `minimax` with the evaluation jitted. It is barely stronger, which is
-  the point: jitting a shallow search buys headroom, not depth. Read it for the warm-up call
-  at the bottom, which is how you keep compilation off your clock.
-
-## What's here
+## Layout
 
 ```
-agent.py             your submission
-baselines/           random, greedy, minimax, numba; each is a directory with an agent.py
-harness/runner.py    the process the platform runs your agent in
-harness/referee.py   the clock, legality, draw and cap rules
-harness/rules.py     the event constants the harness enforces
-harness/sandbox.py   the one process, spoken to as the platform speaks to a container
-harness/play.py      one game between two agent directories
-harness/arena.py     many games, with a score
-harness/package.py   builds submission.zip with agent.py at the root
-docs/IDEAS.md        where the strength actually comes from
+agent.py             get_move, game tracking, move validation
+search.py            iterative-deepening alpha-beta, time management
+position.py          position encoding and make/unmake
+movegen.py           pseudo-legal move generation
+bitboard.py          attack tables and Zobrist keys
+tt.py                transposition table
+nnue.py, evaluate.py the network runtime and evaluation
+weights/net.npz      the trained network
+tools/               dataset extraction, training, quantisation, replay
+baselines/           random, greedy, minimax and numba opponents
+harness/             the referee, clock and subprocess protocol used for local games
+tests/               unit tests, benchmarks and the A/B match runner
+lichess/             lichess-bot bridge
+docs/IDEAS.md        where the strength comes from
+audit/, logs/        historical measurements and game logs
 ```
 
-Local games start from the normal position unless you pass `--fen`. Rated games start from
-curated neutral positions.
-
-The harness is here so your games are honest, not so you can pre-validate an upload. Acceptance
-happens on the platform, and the validation log on your dashboard is the authority on it.
-
-## The rules
-
-[aichessathon.com/docs](https://aichessathon.com/docs) is canonical and changes. Read it before
-you upload.
+`harness/rules.py` holds the default time control and timeouts for local games. All of them can
+be overridden on the command line.

@@ -1,0 +1,2 @@
+ours_white=True Outcome(termination=<Termination.CHECKMATE: 1>, winner=False); losses [8911, 259, 91, 86, 84, 81, 67, 41]
+ours_white=False Outcome(termination=<Termination.THREEFOLD_REPETITION: 7>, winner=None); losses [32, 28, 26, 26, 25, 25, 22, 22]

@@ -1,0 +1,56 @@
+# lichess-bot configuration for the engine. Paths are relative to lichess/lichess-bot/,
+# where `make lichess` runs lichess-bot. The token comes from LICHESS_BOT_TOKEN or lichess/token,
+# never from this file. Every option not set here takes lichess-bot's default; see
+# lichess/lichess-bot/config.yml.default for the full list.
+token: "set LICHESS_BOT_TOKEN or write lichess/token"
+url: "https://lichess.org/"
+
+engine:
+  dir: "../"                       # lichess/
+  name: "uci_client.py"            # relays UCI to the zygote, which holds the warmed agent
+  protocol: "uci"
+  ponder: false                    # the engine does not search on the opponent's time
+  polyglot:
+    enabled: true                  # no book: games should show the agent, not a book
+  draw_or_resign:
+    resign_enabled: false          # the agent reports no score, so neither of these could fire
+    offer_draw_enabled: false
+  uci_options: {}                  # the agent declares no UCI options
+
+move_overhead: 1000                # ms held back from our clock for the round trip to lichess
+
+challenge:
+  concurrency: 1                   # one game at a time, so a game gets the whole core
+  accept_bot: false
+  only_bot: false
+  min_base: 10
+  max_base: 6000
+  min_increment: 0
+  max_increment: 60
+  bullet_requires_increment: true  # bullet with no increment tests the clock more than the agent
+  variants:
+    - standard
+    - fromPosition                 # games from a set position
+  time_controls:
+    - bullet
+    - blitz
+    - rapid
+  modes:
+    - casual
+    - rated
+
+greeting:
+  hello: "Hi, I'm {me}, an AI engine. Good luck!"
+  goodbye: "Good game!"
+  hello_spectators: ""
+  goodbye_spectators: ""
+
+pgn_directory: "../games"          # lichess/games/, one PGN per game
+
+matchmaking:
+  allow_matchmaking: false         # set true to have the bot challenge other bots when idle
+  challenge_initial_time:
+    - 120
+  challenge_increment:
+    - 1
+  challenge_mode: "casual"

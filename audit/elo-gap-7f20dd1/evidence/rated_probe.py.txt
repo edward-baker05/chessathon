@@ -1,0 +1,33 @@
+import sys,json,hashlib,time
+from pathlib import Path
+import chess,chess.pgn,chess.engine
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
+from audit.uci import Engine
+out=Path(__file__).resolve().parent
+engine=Engine('/home/edwardb/Documents/stockfish/stockfish-linux-x86-64-universal')
+engine.configure({'Threads':1,'Hash':32,'UCI_ShowWDL':True})
+rows=[];games=[]
+for path in sorted((out/'rated-pgn').glob('*.pgn')):
+    g=chess.pgn.read_game(path.open())
+    if g is None or 'Edward' not in (g.headers.get('White'),g.headers.get('Black')): continue
+    games.append(dict(file=path.name,headers=dict(g.headers),sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
+    side=g.headers['White']=='Edward';b=g.board()
+    for idx,move in enumerate(g.mainline_moves()):
+        if b.turn==side and b.fullmove_number>=12 and b.fullmove_number<=80 and b.fullmove_number%3==0 and not b.is_game_over(claim_draw=True):
+            engine.configure({'Clear Hash':None})
+            info=engine.analyse(b,chess.engine.Limit(nodes=100000))
+            pov=info['score'].pov(b.turn);best=info['pv'][0]
+            row=dict(game=path.name,fen=b.fen(),played=move.uci(),best=best.uci(),cp=pov.score(),mate=pov.mate(),pieces=len(b.piece_map()),depth=info.get('depth'),pv=[m.uci() for m in info['pv']])
+            if move==best:
+                row.update(played_cp=row['cp'],played_mate=row['mate'],loss=0)
+            else:
+                engine.configure({'Clear Hash':None})
+                choice=engine.analyse(b,chess.engine.Limit(nodes=100000),root_moves=[move])
+                cp=choice['score'].pov(b.turn)
+                row.update(played_cp=cp.score(),played_mate=cp.mate(),loss=None if cp.score() is None or row['cp'] is None else row['cp']-cp.score())
+            rows.append(row)
+        b.push(move)
+    (out/'rated-reference.json').write_text(json.dumps(dict(engine=engine.id,games=games,rows=rows),indent=2))
+    print(path.name,len(rows),flush=True)
+engine.quit()

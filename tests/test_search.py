@@ -182,8 +182,8 @@ def test_oracle_holds_at_depth_three() -> None:
 
 
 @pytest.mark.skipif(
-    os.environ.get("CHESSATHON_SLOW_TESTS") != "1",
-    reason="the python-chess reference quiescence is slow; set CHESSATHON_SLOW_TESTS=1",
+    os.environ.get("ENGINE_SLOW_TESTS") != "1",
+    reason="the python-chess reference quiescence is slow; set ENGINE_SLOW_TESTS=1",
 )
 def test_oracle_holds_deeply() -> None:
     """The thorough version. Minutes, not seconds, so it is opt-in rather than default."""
