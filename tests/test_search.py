@@ -239,6 +239,45 @@ def test_think_on_a_terminal_position_fails_loudly() -> None:
         search.think(stalemate, time_left_ms=1_000, max_depth=2)
 
 
+# --------------------------------------------------------------- reporting
+
+
+def test_info_reports_the_move_played_and_a_legal_line() -> None:
+    board = chess.Board("r2q1rk1/pp2bppp/2np1n2/2p1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 9")
+    tt.tt_clear(tt.TT)
+    uci = search.think(board, time_left_ms=600_000, max_depth=6)
+    info = search.uci_info(board)
+    assert info is not None
+    fields = info.split()
+    assert fields[fields.index("depth") + 1] == "6"
+    assert fields[fields.index("score") + 1] == "cp"
+    pv = fields[fields.index("pv") + 1 :]
+    assert pv[0] == uci
+    assert len(pv) > 1, "the table held no reply to the best move"
+    walk = board.copy()
+    for move in pv:
+        assert chess.Move.from_uci(move) in walk.legal_moves, (pv, walk.fen())
+        walk.push_uci(move)
+
+
+def test_info_reports_a_mate_in_moves() -> None:
+    board = chess.Board(MATE_IN_ONE)
+    search.think(board, time_left_ms=600_000, max_depth=6)
+    info = search.uci_info(board)
+    assert info is not None
+    assert " score mate 1 " in info
+    assert info.endswith(" pv a1a8")
+
+
+def test_uci_score_counts_moves_not_plies() -> None:
+    assert search.uci_score(35) == "cp 35"
+    assert search.uci_score(-120) == "cp -120"
+    assert search.uci_score(search.MATE - 1) == "mate 1"
+    assert search.uci_score(search.MATE - 3) == "mate 2"
+    assert search.uci_score(-search.MATE + 2) == "mate -1"
+    assert search.uci_score(-search.MATE + 4) == "mate -2"
+
+
 def test_pruning_does_not_break_a_won_pawn_endgame() -> None:
     # White queens by force. A search that pruned the winning line would shuffle instead.
     assert search.search_value(chess.Board("8/8/8/8/8/1k6/1P6/1K6 w - - 0 1"), depth=8) >= 0

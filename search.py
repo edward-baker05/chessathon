@@ -60,7 +60,9 @@ MAX_DEPTH = 127
 I_NODES, I_ABORT, I_NODE_LIMIT, I_HIST_LEN, I_AGE, I_SELDEPTH, I_NO_PRUNING = 0, 1, 2, 3, 4, 5, 6
 # Consecutive completed iterations whose best move did not change.
 I_STABLE = 7
-INT_SLOTS = 8
+# The last iteration that finished: its depth, score and move. Read back by `uci_info`.
+I_DEPTH, I_SCORE, I_BEST = 8, 9, 10
+INT_SLOTS = 11
 
 # Indices into Work.floats. Both arrays are one-dimensional, so adding slots does not
 # change any jitted signature and costs no compile time.
@@ -793,6 +795,9 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
 
         if work.ints[I_ABORT] != 0 or abandoned:
             break
+        work.ints[I_DEPTH] = depth
+        work.ints[I_SCORE] = best_score
+        work.ints[I_BEST] = best_move
         # A forced mate is found; searching deeper cannot improve on it.
         if best_score >= MATE_IN_MAX or best_score <= -MATE_IN_MAX:
             break
@@ -918,6 +923,9 @@ def _prepare(
     work.ints[I_NODE_LIMIT] = node_limit
     work.ints[I_AGE] = (int(work.ints[I_AGE]) + 1) & AGE_MASK
     work.ints[I_STABLE] = 0
+    work.ints[I_DEPTH] = 0
+    work.ints[I_SCORE] = 0
+    work.ints[I_BEST] = 0
     soft, hard = budget_ms(time_left_ms, increment_ms, ply_of(board))
     now = time.time()
     work.floats[F_START] = now
@@ -955,6 +963,68 @@ def search_value(board: chess.Board, depth: int, work: Work = WORK) -> int:
 
 def nodes(work: Work = WORK) -> int:
     return int(work.ints[I_NODES])
+
+
+_pv_state, _pv_mail = new_stacks()
+
+
+def principal_variation(board: chess.Board, work: Work = WORK) -> list[str]:
+    """The last search's best move and the replies it expects, in UCI.
+
+    There is no PV array: the line is walked out of the transposition table, one probe per
+    ply. A later store can have replaced a step, so the walk stops at the first position the
+    table has no move for, at a move that is not legal there, or at a repeated position, and
+    never runs longer than the depth searched.
+    """
+    first = int(work.ints[I_BEST])
+    if first == 0:
+        return []
+    walk = board.copy(stack=False)
+    line = [move_to_uci(first)]
+    walk.push_uci(line[0])
+    seen: set[int] = set()
+    while len(line) < int(work.ints[I_DEPTH]):
+        encode(walk, _pv_state[0], _pv_mail[0])
+        key = _pv_state[0][KEY]
+        if int(key) in seen:
+            break
+        seen.add(int(key))
+        hit, _, move, _, _, _ = tt_probe(work.table, key, 0)
+        if not hit or move == 0:
+            break
+        uci = move_to_uci(int(move))
+        if chess.Move.from_uci(uci) not in walk.legal_moves:
+            break
+        line.append(uci)
+        walk.push_uci(uci)
+    return line
+
+
+def uci_score(score: int) -> str:
+    """A search score as UCI writes it: `cp N`, or `mate N` in moves, negative when mated."""
+    if score >= MATE_IN_MAX:
+        return f"mate {(MATE - score + 1) // 2}"
+    if score <= -MATE_IN_MAX:
+        return f"mate {-((MATE + score) // 2)}"
+    return f"cp {score}"
+
+
+def uci_info(board: chess.Board, work: Work = WORK) -> str | None:
+    """The last search of `board` as a UCI `info` line, or None if no depth finished.
+
+    Call it straight after `think`: the time and speed are measured up to now.
+    """
+    depth = int(work.ints[I_DEPTH])
+    if depth == 0:
+        return None
+    elapsed_ms = max(int((time.time() - work.floats[F_START]) * 1000.0), 1)
+    count = nodes(work)
+    return (
+        f"info depth {depth} seldepth {max(int(work.ints[I_SELDEPTH]), depth)}"
+        f" score {uci_score(int(work.ints[I_SCORE]))} nodes {count}"
+        f" nps {count * 1000 // elapsed_ms} time {elapsed_ms}"
+        f" pv {' '.join(principal_variation(board, work))}"
+    )
 
 
 # Warm every jitted function at import, with the argument types the real calls use.

@@ -58,6 +58,7 @@ def clock_from(board: chess.Board, tokens: list[str]) -> tuple[int, int]:
 def serve_game(stream: TextIO) -> None:
     """Speak UCI on `stream` for a single game, then return."""
     import agent
+    import search
 
     def send(line: str) -> None:
         stream.write(line + "\n")
@@ -78,7 +79,12 @@ def serve_game(stream: TextIO) -> None:
             time_left_ms, increment_ms = clock_from(board, tokens)
             # The agent reads this per move; the harness default is 500.
             agent.INCREMENT_MS = increment_ms
-            send(f"bestmove {agent.get_move(board.fen(), time_left_ms)}")
+            move = agent.get_move(board.fen(), time_left_ms)
+            # lichess-bot keeps the last info before bestmove: it logs it after every move,
+            # writes it into the saved PGN, and answers `!eval` in the game chat with it.
+            if (info := search.uci_info(board)) is not None:
+                send(info)
+            send(f"bestmove {move}")
         elif command == "quit":
             return
         # ucinewgame, setoption and stop need nothing: each game is a new process, there

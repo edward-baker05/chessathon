@@ -13,20 +13,20 @@ engine:
   polyglot:
     enabled: true                  # no book: games should show the agent, not a book
   draw_or_resign:
-    resign_enabled: false          # the agent reports no score, so neither of these could fire
+    resign_enabled: false          # the agent reports a score now, so either of these can be enabled
     offer_draw_enabled: false
   uci_options: {}                  # the agent declares no UCI options
 
 move_overhead: 1000                # ms held back from our clock for the round trip to lichess
 
 challenge:
-  concurrency: 1                   # one game at a time, so a game gets the whole core
+  concurrency: 2                   # one game at a time, so a game gets the whole core
   accept_bot: false
   only_bot: false
-  min_base: 10
-  max_base: 6000
+  min_base: 30
+  max_base: 600
   min_increment: 0
-  max_increment: 60
+  max_increment: 10
   bullet_requires_increment: true  # bullet with no increment tests the clock more than the agent
   variants:
     - standard
@@ -48,9 +48,9 @@ greeting:
 pgn_directory: "../games"          # lichess/games/, one PGN per game
 
 matchmaking:
-  allow_matchmaking: false         # set true to have the bot challenge other bots when idle
+  allow_matchmaking: true          # set true to have the bot challenge other bots when idle
   challenge_initial_time:
-    - 120
+    - 180
   challenge_increment:
-    - 1
+    - 2
   challenge_mode: "casual"
