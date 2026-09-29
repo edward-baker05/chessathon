@@ -10,6 +10,9 @@ the project.
 - `agent.py` game tracking and move validation around `search.think`.
 - `search.py`, `position.py`, `movegen.py`, `bitboard.py`, `tt.py` the jitted search.
 - `nnue.py`, `evaluate.py`, `weights/net.npz` the evaluation.
+- `cpp/` the same engine ported to a C++ UCI binary; see `cpp/README.md`. It searches the same
+  tree as the Python engine node for node, and `tests/test_cpp.py` keeps it that way, so a
+  search or evaluation change made in one has to be made in both.
 - `harness/` local referee, clock and subprocess protocol. Edit it freely.
 - `tools/`, `tests/`, `lichess/`, `baselines/` training, tests, the lichess bridge and opponents.
 - `audit/`, `logs/` historical measurements. Read-only records; do not rewrite them.
@@ -31,6 +34,7 @@ make play      # one game against a baseline
 make arena     # 20 fast games against a baseline, with a score
 make gate      # ruff, mypy, and two games that have to finish cleanly
 make bench     # import time and search speed
+make -C cpp    # build the C++ engine; `perft` and `bench` targets too
 ```
 
 Judge strength changes with `make ab` over hundreds of fixed-opening games, not a handful of
