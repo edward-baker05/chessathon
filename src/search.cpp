@@ -65,11 +65,21 @@ constexpr int SCORE_KILLER_2 = (1 << 21) + 1;
 constexpr int SCORE_COUNTER = 1 << 21;
 constexpr int SCORE_BAD_CAPTURE = -(1 << 22);
 constexpr int HISTORY_MAX = 1 << 14;
+// A ply less reduction for every this much history, from the main and continuation tables.
+constexpr int LMR_HISTORY_DIVISOR = 8192;
 
 constexpr int HISTORY_CAPACITY = 2048;
 
-// Most valuable victim, least valuable attacker. Indexed [victim][attacker].
-int MVV_LVA[6][6];
+// Correction history: how far the static evaluation has been from the search result, by
+// pawn structure and by each side's pieces. The pawn table counts twice and each piece table
+// once, and the sum is divided by CORRECTION_DIVISOR, so the correction is at most 32
+// centipawns and one update moves it by about diff * depth / 256.
+constexpr int CORRECTION_SIZE = 16384;
+constexpr int CORRECTION_MAX = 1024;
+constexpr int CORRECTION_DIVISOR = 128;
+
+// Captures are ordered by the victim's value, this many times over, plus capture history.
+constexpr int CAPTURE_VICTIM_WEIGHT = 16;
 // Late move reductions, indexed [depth][move number].
 int LMR_TABLE[64][64];
 
@@ -89,6 +99,11 @@ struct Work {
     // [distance][piece][to][piece][to]: how a reply fared after a given earlier move, one
     // and two plies back.
     int32_t cont_hist[2][6][64][6][64];
+    // [piece][to][victim]: how captures have fared, to order them beyond the victim's value.
+    int32_t capture_hist[6][64][6];
+    // [side to move][structure], and [side to move][colour][structure] for the pieces.
+    int32_t pawn_correction[2][CORRECTION_SIZE];
+    int32_t piece_correction[2][2][CORRECTION_SIZE];
     Key hist_keys[HISTORY_CAPACITY];
     int hist_len;
 
@@ -192,6 +207,12 @@ bool is_repetition(int ply) {
     return false;
 }
 
+// Move a history entry toward the bonus. The step shrinks as the entry nears the limit, so
+// no entry can pass it and none has to be rescaled.
+inline void gravity(int32_t& entry, int bonus, int limit) {
+    entry += bonus - entry * std::abs(bonus) / limit;
+}
+
 int continuation_score(int ply, int piece, int to) {
     int total = 0;
     for (int distance = 0; distance < 2; ++distance) {
@@ -202,6 +223,16 @@ int continuation_score(int ply, int piece, int to) {
         total += W->cont_hist[distance][prior_piece][move_to(W->played[previous])][piece][to];
     }
     return total;
+}
+
+inline bool takes(const Position& pos, Move move) {
+    return pos.mail[move_to(move)] >= 0 || move_flag(move) == FLAG_EP;
+}
+
+// The capture history entry for a capture. En passant takes a pawn from an empty square.
+inline int32_t& capture_entry(const Position& pos, Move move) {
+    int victim = pos.mail[move_to(move)];
+    return W->capture_hist[pos.mail[move_from(move)]][move_to(move)][victim >= 0 ? victim : PAWN];
 }
 
 // Assign an ordering score to each generated move. Never sorts the whole list.
@@ -223,7 +254,7 @@ void score_moves(int ply, int count, Move tt_move) {
         int to = move_to(move);
         int victim = pos.mail[to];
         if (victim >= 0 || move_flag(move) == FLAG_EP) {
-            int base = MVV_LVA[victim >= 0 ? victim : 0][pos.mail[from]];
+            int base = CAPTURE_VICTIM_WEIGHT * SEE_VALUE[victim >= 0 ? victim : PAWN] + capture_entry(pos, move);
             scores[i] = see(pos, move) >= 0 ? SCORE_GOOD_CAPTURE + base : SCORE_BAD_CAPTURE + base;
         } else if (move == W->killers[ply][0]) {
             scores[i] = SCORE_KILLER_1;
@@ -259,43 +290,89 @@ void update_continuation(int ply, int piece, int to, int bonus) {
         if (previous < 0 || W->played[previous] == 0) continue;
         int prior_piece = W->moved_piece[previous];
         if (prior_piece < 0) continue;
-        int32_t& entry = W->cont_hist[distance][prior_piece][move_to(W->played[previous])][piece][to];
-        entry = std::clamp(entry + bonus, -HISTORY_MAX, HISTORY_MAX);
+        gravity(W->cont_hist[distance][prior_piece][move_to(W->played[previous])][piece][to], bonus, HISTORY_MAX);
     }
 }
 
-// Reward the move that caused a cutoff and punish the moves tried before it.
+// Reward the move that caused a cutoff and punish the moves tried before it: quiet moves
+// in the quiet tables, and captures in capture history, whichever kind the best move was.
 void update_history(int ply, Move best_move, int depth, int tried) {
     const Position& pos = W->state[ply];
     int black = pos.stm;
-    int bonus = std::min(depth * depth, 400);
+    int bonus = std::min(16 * depth * depth + 32 * depth + 16, 1536);
 
-    if (W->killers[ply][0] != best_move) {
-        W->killers[ply][1] = W->killers[ply][0];
-        W->killers[ply][0] = best_move;
+    bool best_quiet = !takes(pos, best_move);
+    if (best_quiet) {
+        if (W->killers[ply][0] != best_move) {
+            W->killers[ply][1] = W->killers[ply][0];
+            W->killers[ply][0] = best_move;
+        }
+
+        int from = move_from(best_move);
+        int to = move_to(best_move);
+        gravity(W->history[black][from][to], bonus, HISTORY_MAX);
+        update_continuation(ply, pos.mail[from], to, bonus);
+
+        Move previous = ply > 0 ? W->played[ply - 1] : 0;
+        if (previous) W->counter[black][move_from(previous)][move_to(previous)] = best_move;
+    } else {
+        gravity(capture_entry(pos, best_move), bonus, HISTORY_MAX);
     }
-
-    int from = move_from(best_move);
-    int to = move_to(best_move);
-    W->history[black][from][to] += bonus;
-    update_continuation(ply, pos.mail[from], to, bonus);
-    if (W->history[black][from][to] > HISTORY_MAX) {
-        for (auto& row : W->history[black])
-            for (int32_t& entry : row) entry = static_cast<int32_t>(floor_div(entry, 2));
-    }
-
-    Move previous = ply > 0 ? W->played[ply - 1] : 0;
-    if (previous) W->counter[black][move_from(previous)][move_to(previous)] = best_move;
 
     for (int i = 0; i < tried; ++i) {
         Move move = W->moves[ply][i];
         if (move == best_move) continue;
-        W->history[black][move_from(move)][move_to(move)] -= bonus;
-        update_continuation(ply, pos.mail[move_from(move)], move_to(move), -bonus);
+        if (takes(pos, move)) {
+            gravity(capture_entry(pos, move), -bonus, HISTORY_MAX);
+        } else if (best_quiet) {
+            gravity(W->history[black][move_from(move)][move_to(move)], -bonus, HISTORY_MAX);
+            update_continuation(ply, pos.mail[move_from(move)], move_to(move), -bonus);
+        }
     }
 }
 
 inline int evaluate(int ply) { return nnue::evaluate(W->acc[ply], W->state[ply]); }
+
+// Correction history indexes, hashed from the bitboards. The Zobrist key has no pawn-only
+// part, and these are only indexes, so a collision costs a little accuracy and nothing else.
+// The multiplies are independent of one another, which keeps this cheap enough for qsearch.
+inline size_t fold(uint64_t hash) {
+    return static_cast<size_t>((hash * 0x9e3779b97f4a7c15ULL) >> 32) % CORRECTION_SIZE;
+}
+
+inline size_t pawn_index(const Position& pos) {
+    return fold((pos.pieces[PAWN] & pos.colours[WHITE]) * 0xbf58476d1ce4e5b9ULL ^
+                (pos.pieces[PAWN] & pos.colours[BLACK]) * 0x94d049bb133111ebULL);
+}
+
+inline size_t piece_index(const Position& pos, int colour) {
+    Bitboard mine = pos.colours[colour];
+    return fold((pos.pieces[KNIGHT] & mine) * 0xbf58476d1ce4e5b9ULL ^
+                (pos.pieces[BISHOP] & mine) * 0x94d049bb133111ebULL ^
+                (pos.pieces[ROOK] & mine) * 0xd6e8feb86659fd93ULL ^
+                (pos.pieces[QUEEN] & mine) * 0xa0761d6478bd642fULL ^
+                (pos.pieces[KING] & mine) * 0xe7037ed1a0b428dbULL);
+}
+
+// The static evaluation, moved by what correction history has learned about positions like
+// this one.
+int corrected_eval(const Position& pos, int raw) {
+    int us = pos.stm;
+    int total = 2 * W->pawn_correction[us][pawn_index(pos)] +
+                W->piece_correction[us][WHITE][piece_index(pos, WHITE)] +
+                W->piece_correction[us][BLACK][piece_index(pos, BLACK)];
+    return std::clamp(raw + total / CORRECTION_DIVISOR, -MATE_IN_MAX + 1, MATE_IN_MAX - 1);
+}
+
+// Teach correction history the search's verdict on a node whose corrected evaluation was
+// `static_eval`. Every table moves by the same bonus, so together they learn what is left.
+void update_correction(const Position& pos, int depth, int diff) {
+    int us = pos.stm;
+    int bonus = std::clamp(diff * depth / 8, -CORRECTION_MAX / 4, CORRECTION_MAX / 4);
+    gravity(W->pawn_correction[us][pawn_index(pos)], bonus, CORRECTION_MAX);
+    gravity(W->piece_correction[us][WHITE][piece_index(pos, WHITE)], bonus, CORRECTION_MAX);
+    gravity(W->piece_correction[us][BLACK][piece_index(pos, BLACK)], bonus, CORRECTION_MAX);
+}
 
 // Search captures until the position is quiet, so the evaluation is not measured halfway
 // through an exchange.
@@ -307,22 +384,42 @@ int qsearch(int ply, int alpha, int beta) {
     W->seldepth = std::max(W->seldepth, ply);
 
     const Position& pos = W->state[ply];
+    bool is_pv = beta - alpha > 1;
+    // Any entry is deep enough here: qsearch stores at depth zero, and negamax deeper.
+    TTProbe entry = tt_storage->probe(pos.key, ply);
+    if (entry.hit && !is_pv) {
+        if (entry.bound == BOUND_EXACT) return entry.score;
+        if (entry.bound == BOUND_LOWER && entry.score >= beta) return entry.score;
+        if (entry.bound == BOUND_UPPER && entry.score <= alpha) return entry.score;
+    }
+
     bool checked = in_check(pos);
     int stand_pat, best, count;
+    int raw_eval = 0;
     if (checked) {
         // Standing pat while in check would claim a score the side to move cannot hold,
         // so every evasion has to be searched.
         stand_pat = best = -INF;
         count = generate(pos, W->moves[ply]);
     } else {
-        stand_pat = evaluate(ply);
-        if (stand_pat >= beta) return stand_pat;
+        raw_eval = entry.hit && entry.static_eval != 0 ? entry.static_eval : evaluate(ply);
+        stand_pat = corrected_eval(pos, raw_eval);
+        // A searched score is a better stand pat than the evaluation, where its bound
+        // allows it to be used.
+        if (entry.hit && entry.score > -MATE_IN_MAX && entry.score < MATE_IN_MAX &&
+            (entry.bound & (entry.score > stand_pat ? BOUND_LOWER : BOUND_UPPER)))
+            stand_pat = entry.score;
+        if (stand_pat >= beta) {
+            if (!entry.hit) tt_storage->store(pos.key, ply, stand_pat, 0, 0, BOUND_LOWER, raw_eval, W->age);
+            return stand_pat;
+        }
         alpha = std::max(alpha, stand_pat);
         best = stand_pat;
         count = generate_captures(pos, W->moves[ply]);
     }
-    score_moves(ply, count, 0);
+    score_moves(ply, count, entry.hit ? entry.move : 0);
 
+    Move best_move = 0;
     int black = pos.stm;
     int legal = 0;
     for (int index = 0; index < count; ++index) {
@@ -345,12 +442,16 @@ int qsearch(int ply, int alpha, int beta) {
         if (value > best) {
             best = value;
             if (value > alpha) {
+                best_move = move;
                 alpha = value;
                 if (alpha >= beta) break;
             }
         }
     }
     if (checked && legal == 0) return -MATE + ply;
+    // Only captures were searched, so short of a cutoff the score is no more than a bound.
+    tt_storage->store(pos.key, ply, best, best_move, 0, best >= beta ? BOUND_LOWER : BOUND_UPPER,
+                      raw_eval, W->age);
     return best;
 }
 
@@ -384,7 +485,9 @@ int negamax(int ply, int depth, int alpha, int beta, bool is_pv, bool can_null =
         if (entry.bound == BOUND_UPPER && entry.score <= alpha) return entry.score;
     }
 
-    int static_eval = entry.hit && entry.static_eval != 0 ? entry.static_eval : evaluate(ply);
+    // The table keeps the network's own evaluation; the correction is applied fresh each time.
+    int raw_eval = entry.hit && entry.static_eval != 0 ? entry.static_eval : evaluate(ply);
+    int static_eval = corrected_eval(pos, raw_eval);
     W->static_evals[ply] = static_eval;
 
     int black = pos.stm;
@@ -477,7 +580,14 @@ int negamax(int ply, int depth, int alpha, int beta, bool is_pv, bool can_null =
                 if (is_pv) --reduction;
                 if (move_score >= SCORE_COUNTER) --reduction;
                 if (!improving) ++reduction;
+                // A move with a good record is reduced less, and one with a bad record more.
+                int history = W->history[black][move_from(move)][to] +
+                              continuation_score(ply, pos.mail[move_from(move)], to);
+                reduction -= history / LMR_HISTORY_DIVISOR;
                 reduction = std::clamp(reduction, 0, std::max(depth - 2, 0));
+            } else if (depth >= 3 && legal >= 3 && move_score < SCORE_BAD_CAPTURE / 2) {
+                // A capture that loses material, this late in the list, is reduced mildly.
+                reduction = std::clamp(LMR_TABLE[std::min(depth, 63)][std::min(legal, 63)] / 2, 1, depth - 2);
             }
             value = -negamax(ply + 1, depth - 1 - reduction, -alpha - 1, -alpha, false);
             // A reduced search that beat alpha proves nothing until it is repeated at full
@@ -495,7 +605,7 @@ int negamax(int ply, int depth, int alpha, int beta, bool is_pv, bool can_null =
             if (value > alpha) {
                 alpha = value;
                 if (alpha >= beta) {
-                    if (pos.mail[to] < 0) update_history(ply, move, depth, index + 1);
+                    update_history(ply, move, depth, index + 1);
                     break;
                 }
             }
@@ -505,7 +615,13 @@ int negamax(int ply, int depth, int alpha, int beta, bool is_pv, bool can_null =
     if (legal == 0) return checked ? -MATE + ply : 0;
 
     int bound = best <= original_alpha ? BOUND_UPPER : best >= beta ? BOUND_LOWER : BOUND_EXACT;
-    tt_storage->store(key, ply, best, best_move, depth, bound, static_eval, W->age);
+    // A capture's result says more about the capture than about the evaluation, and a bound
+    // on the wrong side of the evaluation says nothing about how far off it was.
+    bool quiet_best = bound == BOUND_UPPER || (!takes(pos, best_move) && move_flag(best_move) != FLAG_PROMO);
+    if (!checked && quiet_best && best > -MATE_IN_MAX && best < MATE_IN_MAX &&
+        !(bound == BOUND_LOWER && best <= static_eval) && !(bound == BOUND_UPPER && best >= static_eval))
+        update_correction(pos, depth, best - static_eval);
+    tt_storage->store(key, ply, best, best_move, depth, bound, raw_eval, W->age);
     return best;
 }
 
@@ -730,9 +846,6 @@ void prepare(const Position& root, const Limits& limits) {
 }  // namespace
 
 void init() {
-    for (int victim = 0; victim < 6; ++victim)
-        for (int attacker = 0; attacker < 6; ++attacker)
-            MVV_LVA[victim][attacker] = 100 * (victim + 1) - attacker;
     // Later moves in a well-ordered list are progressively less likely to be best, so they
     // are searched shallower first and re-searched only if they beat alpha.
     for (int depth = 1; depth < 64; ++depth) {
@@ -779,6 +892,9 @@ void clear_tables() {
         std::fill(w.played, w.played + STACK_PLIES, 0);
         std::fill(w.moved_piece, w.moved_piece + STACK_PLIES, 0);
         std::fill(&w.cont_hist[0][0][0][0][0], &w.cont_hist[0][0][0][0][0] + 2 * 6 * 64 * 6 * 64, 0);
+        std::fill(&w.capture_hist[0][0][0], &w.capture_hist[0][0][0] + 6 * 64 * 6, 0);
+        std::fill(&w.pawn_correction[0][0], &w.pawn_correction[0][0] + 2 * CORRECTION_SIZE, 0);
+        std::fill(&w.piece_correction[0][0][0], &w.piece_correction[0][0][0] + 2 * 2 * CORRECTION_SIZE, 0);
     }
 }
 
@@ -827,17 +943,22 @@ Report last_report() {
 std::vector<Move> principal_variation(const Position& root) {
     // There is no PV array: the line is walked out of the table, one probe per ply. A later
     // store can have replaced a step, so the walk stops at the first position the table has
-    // no legal move for, or at a repeated position, and never runs past the depth searched.
+    // no legal move for, and never runs past the depth searched. It also stops where the
+    // game would be drawn by rule, since the search scores that as a draw and plays no
+    // further: at a position already seen in the line or earlier in the game, or when the
+    // fifty-move rule applies.
     std::vector<Move> line;
     Move first = chosen->completed_best;
     if (first == 0) return line;
+    const Work& main = *workers[0];
+    std::unordered_set<Key> seen(main.hist_keys, main.hist_keys + main.hist_len);
+    seen.insert(root.key);
     Position walk = root, next;
     make(walk, next, first);
     walk = next;
     line.push_back(first);
-    std::unordered_set<Key> seen;
     while (static_cast<int>(line.size()) < chosen->completed_depth) {
-        if (!seen.insert(walk.key).second) break;
+        if (!seen.insert(walk.key).second || walk.halfmove >= 100) break;
         TTProbe entry = tt_storage->probe(walk.key, 0);
         if (!entry.hit || entry.move == 0) break;
         Move move = parse_uci_move(walk, move_to_uci(entry.move));

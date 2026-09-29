@@ -17,6 +17,40 @@ MATED = "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3"
 STALEMATE = "7k/5Q2/6K1/8/8/8/8/8 b - - 0 1"
 MATE_IN_ONE = "6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1"
 
+# Two games from a match, each stopped short of where the engine went on to report a PV that
+# played past a draw: past a threefold repetition in the first, the fifty-move rule in the
+# second. Both open from the same position.
+DRAWN_GAMES_FEN = "r1bqkbnr/pp3ppp/2npp3/8/2PN1P2/8/PP4PP/RNBQKB1R w KQkq - 0 8"
+REPEATED_GAME = [
+    "b1c3", "g8f6", "c1e3", "f8e7", "f1e2", "d6d5", "c4d5", "f6d5", "c3d5", "e6d5", "e1g1",
+    "e8g8", "a1c1", "c8d7", "d4b3", "f8e8", "e2f3", "e7f6", "e3f2", "f6b2", "c1b1", "d8f6",
+    "d1d5", "d7e6", "d5b5", "c6d4", "b3d4", "b2d4", "b5b7", "a8d8", "f2d4", "f6d4", "g1h1",
+    "e6c4", "f1g1", "c4a2", "b1a1", "d8d7", "b7b5", "a2c4", "b5a4", "e8d8", "g1d1", "c4d3",
+    "a4d4", "d7d4", "a1a7", "d3e4", "d1d4", "d8d4", "a7e7", "f7f5", "h1g1", "e4f3", "g2f3",
+    "d4f4", "g1g2", "h7h5", "e7e5", "g8f7", "g2g3", "f7f6", "e5e1", "f6g5", "e1g1", "h5h4",
+    "g3g2", "f4b4", "g2h3", "g5h6", "g1a1", "b4b3", "h3h4", "b3f3", "a1a6", "g7g6", "h2h3",
+    "f3f4", "h4g3", "f4b4", "a6c6", "h6g5", "c6c7", "f5f4", "g3f3", "b4b3", "f3g2", "b3b2",
+    "g2f3", "b2h2", "c7h7", "g5f5", "h7h8", "g6g5", "h8f8", "f5e6", "f8h8", "e6f6", "f3g4",
+    "h2g2", "g4f3", "g2g3", "f3f2", "f6e5", "h3h4"
+]
+FIFTY_MOVE_GAME = [
+    "b1c3", "g8f6", "c1e3", "d6d5", "c4d5", "e6d5", "f1b5", "c8d7", "d4b3", "f8d6", "e1g1",
+    "e8g8", "c3d5", "f8e8", "d5f6", "d8f6", "e3c5", "d6c5", "b3c5", "d7c8", "d1d2", "e8d8",
+    "d2f2", "c6d4", "b5d3", "c8f5", "d3f5", "d4f5", "f1e1", "h7h6", "c5e4", "f6a6", "a2a3",
+    "a8c8", "a1d1", "d8d1", "e1d1", "h6h5", "d1e1", "h5h4", "h2h3", "g7g6", "e4c3", "g8g7",
+    "c3d5", "a6d3", "d5e3", "f5e3", "f2e3", "d3e3", "e1e3", "c8c1", "g1f2", "c1c2", "e3e2",
+    "c2c4", "f2f3", "g7f6", "e2d2", "b7b6", "d2d7", "c4c2", "b2b4", "c2c3", "f3g4", "c3a3",
+    "g4h4", "a3a4", "h4g3", "b6b5", "d7b7", "a4b4", "b7a7", "b4c4", "g3g4", "b5b4", "a7b7",
+    "c4c2", "g4f3", "c2c3", "f3g4", "b4b3", "b7b6", "f6g7", "g2g3", "f7f5", "g4h4", "g7h6",
+    "g3g4", "c3f3", "g4f5", "f3f4", "h4g3", "f4f5", "b6b3", "f5f7", "b3e3", "f7f8", "g3h4",
+    "f8f5", "h4g3", "f5f7", "e3b3", "h6g7", "b3e3", "g7g8", "g3g4", "f7c7", "g4g3", "c7b7",
+    "g3h4", "b7a7", "h4g5", "g8g7", "g5g4", "a7b7", "g4g3", "b7b8", "e3e2", "b8f8", "e2e3",
+    "f8f7", "g3h2", "g7h7", "h2g3", "f7b7", "g3g4", "h7h6", "g4g3", "b7b6", "e3e8", "b6b3",
+    "g3h2", "h6g7", "e8e2", "b3b7", "h2g3", "g7h7", "e2e8", "b7c7", "e8e2", "c7c8", "e2e3",
+    "c8f8", "e3e7", "h7h6", "e7e3", "f8d8", "g3h2", "d8c8", "h2g3", "c8b8", "g3h2", "h6g7",
+    "h2g3", "g7f8", "g3g4", "b8b7"
+]
+
 
 def ready(engine: Engine) -> list[str]:
     """Everything the engine said before answering an `isready`."""
@@ -320,6 +354,31 @@ def test_info_lines_are_well_formed(engine: Engine) -> None:
         board = chess.Board()
         for move in line.split(" pv ")[1].split():
             board.push_uci(move)
+
+
+@pytest.mark.parametrize("moves", [REPEATED_GAME, FIFTY_MOVE_GAME], ids=["threefold", "fifty-move"])
+def test_pv_stops_where_the_game_is_drawn(engine: Engine, moves: list[str]) -> None:
+    # The PV is walked out of the table, which knows nothing of the game: entries left from
+    # earlier moves lead it on past a draw, and a GUI checking it against the rules rejects
+    # the line. The engine plays both sides here, as in a match, so those entries exist.
+    board = chess.Board(DRAWN_GAMES_FEN)
+    for move in moves:
+        board.push_uci(move)
+    for _ in range(40):
+        if board.is_game_over(claim_draw=True):
+            break
+        played = " ".join(move.uci() for move in board.move_stack)
+        engine.send(f"position fen {DRAWN_GAMES_FEN} moves {played}")
+        engine.send("go nodes 20000")
+        lines = engine.until("bestmove")
+        for line in lines:
+            if not line.startswith("info depth"):
+                continue
+            line_board = board.copy()
+            for move in line.split(" pv ")[1].split():
+                assert not line_board.is_repetition(3) and not line_board.is_fifty_moves(), line
+                line_board.push_uci(move)
+        board.push_uci(bestmove_of(lines)[0])
 
 
 @pytest.mark.parametrize(
