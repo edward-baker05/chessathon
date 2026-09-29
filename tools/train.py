@@ -8,7 +8,7 @@ per node in the engine against 87 ns for a single output row.
 
 The float network and the quantised one are the same function. With input weights scaled
 by QA, output weights by QB and clipped ReLU saturating at QA, the quantised arithmetic in
-cpp/src/nnue.cpp reduces exactly to
+src/nnue.cpp reduces exactly to
 
     eval_cp = SCALE * (sum_i screlu(acc_i) * w_i + bias)
 

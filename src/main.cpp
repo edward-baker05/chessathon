@@ -135,7 +135,7 @@ bool follows(const Position& from, const Position& pos) {
 }
 
 void handle_uci() {
-    say("id name chessathon-cpp");
+    say("id name chessathon");
     say("id author edward-baker05");
     say("option name Hash type spin default " + std::to_string(DEFAULT_HASH_MB) + " min 1 max " +
         std::to_string(MAX_HASH_MB));

@@ -1,7 +1,7 @@
-"""The C++ engine's move generator and game tracking, spoken to over UCI.
+"""The engine's move generator and game tracking, spoken to over UCI.
 
 Perft is the gate: one illegal move loses a game outright. Skipped until the engine is built
-with `make -C cpp`.
+with `make`.
 """
 
 import chess

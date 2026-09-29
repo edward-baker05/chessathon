@@ -1,13 +1,13 @@
 # Working in this repo
 
-A chess engine in C++: a UCI binary with an NNUE evaluation whose network is embedded in it.
+A chess engine: a C++ UCI binary with an NNUE evaluation whose network is embedded in it.
 The old Python engine it was ported from lives on the `python-old` branch.
 
 ## Layout
 
-- `cpp/src/` the engine: `bitboard`, `position`, `movegen`, `nnue`, `search`, `tt`, and `main`
-  for UCI. `cpp/README.md` describes the UCI surface and how the engine tracks a game.
-- `weights/net.npz` the network. `tools/export_cpp.py` flattens it to a blob the build links
+- `src/` the engine: `bitboard`, `position`, `movegen`, `nnue`, `search`, `tt`, and `main`
+  for UCI. `docs/uci.md` describes the UCI surface and how the engine tracks a game.
+- `weights/net.npz` the network. `tools/export_net.py` flattens it to a blob the build links
   into the binary, so the engine carries its network with it.
 - `tools/` net training (`extract`, `dataset`, `train`, `quantise`, `random_net`) and
   `sprt.py`, the strength tester.
@@ -17,7 +17,7 @@ The old Python engine it was ported from lives on the `python-old` branch.
 ## Working notes
 
 - The process starts once per game. It starts in milliseconds, so nothing needs warming.
-- `cpp/src/zobrist.inc` and the move, score and stack encodings in `types.h` are fixed: a
+- `src/zobrist.inc` and the move, score and stack encodings in `types.h` are fixed: a
   change to them changes every hash and every search.
 - Never name a Python file after a module you import (`chess.py`, `types.py`, `random.py`).
 - Only ship a network you trained yourself.
@@ -25,7 +25,7 @@ The old Python engine it was ported from lives on the `python-old` branch.
 ## Verify
 
 ```
-make -C cpp          # build cpp/build/engine; `perft` and `bench` targets too
+make                 # build build/engine; `perft` and `bench` targets too
 make test            # builds, then pytest
 make gate            # ruff, mypy, perft and pytest
 ```

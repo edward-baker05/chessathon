@@ -1,4 +1,4 @@
-"""The C++ engine's UCI layer: every command and parameter the specification defines.
+"""The engine's UCI layer: every command and parameter the specification defines.
 
 The specification asks an engine to accept anything a GUI may send, to skip what it does
 not understand and parse the rest of the line, and to answer `isready` even mid-search.

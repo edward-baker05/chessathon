@@ -1,6 +1,6 @@
-"""A driver for the C++ engine, shared by the tests that speak UCI to it.
+"""A driver for the engine, shared by the tests that speak UCI to it.
 
-Skipped until the engine is built with `make -C cpp`.
+Skipped until the engine is built with `make`.
 """
 
 import subprocess
@@ -8,10 +8,10 @@ from pathlib import Path
 
 import pytest
 
-ENGINE = Path(__file__).resolve().parent.parent / "cpp" / "build" / "engine"
+ENGINE = Path(__file__).resolve().parent.parent / "build" / "engine"
 
 pytestmark = pytest.mark.skipif(
-    not ENGINE.exists(), reason="the C++ engine is not built; run `make -C cpp`"
+    not ENGINE.exists(), reason="the engine is not built; run `make`"
 )
 
 

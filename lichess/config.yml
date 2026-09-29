@@ -6,8 +6,8 @@ token: "set LICHESS_BOT_TOKEN or write lichess/token"
 url: "https://lichess.org/"
 
 engine:
-  dir: "../../cpp/build/"          # cpp/build/, which lichess/run.sh builds before starting
-  name: "engine"                   # the C++ engine, a UCI binary with the network inside it
+  dir: "../../build/"              # build/, which lichess/run.sh builds before starting
+  name: "engine"                   # the engine, a UCI binary with the network inside it
   protocol: "uci"
   ponder: true                     # search on the opponent's time; `go ponder` and ponderhit
   polyglot:

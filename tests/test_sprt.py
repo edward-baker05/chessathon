@@ -10,15 +10,15 @@ from tools.sprt import copy_worktree, freeze, tally, uci_options
 def test_the_working_tree_is_copied_with_what_the_build_reads(tmp_path: Path) -> None:
     copy_worktree(tmp_path)
     root = Path(__file__).resolve().parent.parent
-    assert (tmp_path / "cpp" / "Makefile").is_file()
-    assert (tmp_path / "cpp" / "src" / "search.cpp").read_bytes() == (
-        root / "cpp" / "src" / "search.cpp"
+    assert (tmp_path / "Makefile").is_file()
+    assert (tmp_path / "src" / "search.cpp").read_bytes() == (
+        root / "src" / "search.cpp"
     ).read_bytes()
     assert (tmp_path / "weights" / "net.npz").is_file()
-    assert (tmp_path / "tools" / "export_cpp.py").is_file()
+    assert (tmp_path / "tools" / "export_net.py").is_file()
     # Only what the build reads: no tests, and no build directory carried across.
     assert not (tmp_path / "tests").exists()
-    assert not (tmp_path / "cpp" / "build").exists()
+    assert not (tmp_path / "build").exists()
 
 
 def test_an_executable_is_played_directly(tmp_path: Path) -> None:

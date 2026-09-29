@@ -1,35 +1,8 @@
-# The engine
-
-A single UCI binary with `weights/net.npz` embedded in it. It began as a port of a
-Python/numba engine, kept on the `python-old` branch; the two searched the same tree node for
-node when the port was finished, and no longer need to.
-
-```
-make -C cpp                 # build cpp/build/engine for this machine
-make -C cpp perft           # move generator against known node counts
-make -C cpp bench           # node rate over a fixed set of positions
-uv run pytest tests/test_cpp.py tests/test_cpp_uci.py
-```
-
-The build needs g++ (or clang++) with C++20, and `uv` to export the network: the npz is
-deflate-compressed, so `tools/export_cpp.py` flattens it to a blob the build links into
-`.rodata`. `make PYTHON=python3` uses another interpreter with numpy for that step, and
-`make ARCH=x86-64-v3` builds a binary that runs on any AVX2 machine rather than only this one.
-
-## Playing it
-
-- lichess: `make lichess` builds the engine, checks perft, and runs lichess-bot, which starts
-  `cpp/build/engine` once per game. It ponders on the opponent's time; `ponder` in
-  `lichess/config.yml` turns that off.
-- fastchess and `tools/sprt.py`: the binary carries its network, so
-  `make sprt DEV=cpp/build/engine` plays it against HEAD directly, and a bare `make sprt`
-  builds the working tree and HEAD itself.
-
-## UCI
+# UCI and game tracking
 
 Every command and `go` parameter in the specification is accepted, in any order, and
 anything not understood is skipped, as the specification asks: `joho debug on` turns
-debugging on. `isready` is answered mid-search. `tests/test_cpp_uci.py` sends the awkward
+debugging on. `isready` is answered mid-search. `tests/test_uci.py` sends the awkward
 forms as well as the usual ones.
 
 | Input | What it does |
@@ -54,7 +27,7 @@ forms as well as the usual ones.
 one that will not.
 
 Beyond UCI it answers `perft N`, `eval`, `d` and `bench [nodes]`, and runs its command-line
-arguments as one command, so `cpp/build/engine bench` works.
+arguments as one command, so `build/engine bench` works.
 
 ## Game tracking
 

@@ -6,19 +6,19 @@ sequential test is decided either way.
 
 A build is one of:
 
-  worktree        cpp/ as it stands, uncommitted changes included (the default for --dev)
-  a git ref       HEAD, main, a sha: cpp/ and the network at that commit
+  worktree        the source tree as it stands, uncommitted changes included (the default for --dev)
+  a git ref       HEAD, main, a sha: the sources and the network at that commit
   an executable   a UCI engine, played as it is. It is copied alone, so it has to carry its
-                  network inside it, as cpp/build/engine does.
+                  network inside it, as build/engine does.
 
-A source build is compiled into the run directory, so `make -C cpp` need not have been run
+A source build is compiled into the run directory, so `make` need not have been run
 and its result is never what is measured. Every build is frozen there before the first game,
 so editing the tree during a match cannot change who is playing.
 
     make sprt                                  # the working tree against HEAD
     make sprt BASE=main~3                      # against an older commit
     make sprt DEV=../other-engine/build/engine # a UCI binary against HEAD
-    make sprt DEV=cpp/build/engine BASE=cpp/build/engine ARGS="--dev-option Threads=2"
+    make sprt DEV=build/engine BASE=build/engine ARGS="--dev-option Threads=2"
                                                # the same binary, two threads against one
     uv run python tools/sprt.py --games 200    # a fixed-length run with no SPRT
 
@@ -53,7 +53,7 @@ RUNS = ROOT / "sprt"
 
 WORKTREE = "worktree"
 # What building the engine reads: the sources, the network and the tool that embeds it.
-SOURCES = ["cpp/Makefile", "cpp/src", "weights/net.npz", "tools/export_cpp.py"]
+SOURCES = ["Makefile", "src", "weights/net.npz", "tools/export_net.py"]
 # An SPRT stops itself. This only bounds a test whose true value sits between the bounds.
 MAX_GAMES = 40_000
 # Endings that are chess. Anything else is an engine fault: a flag, a crash, an illegal move.
@@ -108,7 +108,7 @@ def compile_engine(root: Path, name: str, run_dir: Path) -> Path:
             [
                 "make",
                 "-C",
-                str(root / "cpp"),
+                str(root),
                 f"-j{os.cpu_count() or 1}",
                 f"PYTHON={sys.executable}",
             ],
@@ -118,7 +118,7 @@ def compile_engine(root: Path, name: str, run_dir: Path) -> Path:
     if result.returncode:
         log_text = (run_dir / f"{name}-build.log").read_text(errors="replace")
         sys.exit(f"the {name} build failed:\n{log_text[-2000:]}")
-    return root / "cpp" / "build" / "engine"
+    return root / "build" / "engine"
 
 
 def freeze(name: str, spec: str, run_dir: Path) -> Build:

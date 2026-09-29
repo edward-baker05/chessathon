@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the C++ engine if it is out of date, then run lichess-bot with it.
+# Build the engine if it is out of date, then run lichess-bot with it.
 # Extra arguments go to lichess-bot, e.g. `lichess/run.sh -u` to upgrade the account to a bot.
 #
 # lichess-bot starts the engine binary itself, once per game. It starts in milliseconds, so
@@ -24,9 +24,9 @@ if [[ -z "${LICHESS_BOT_TOKEN:-}" ]]; then
     fi
 fi
 
-make -C "$root/cpp" --no-print-directory
+make -C "$root" --no-print-directory
 # A broken build should not reach a rated game: the move generator has to pass first.
-make -C "$root/cpp" --no-print-directory perft
+make -C "$root" --no-print-directory perft
 
 cd "$bot"
 venv/bin/python lichess-bot.py --config "$here/config.yml" "$@"

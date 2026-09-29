@@ -3,7 +3,7 @@
 The float and quantised networks are the same function by construction, so this is a scale
 and a round rather than a calibration. What this tool actually adds is a proof.
 
-`dot` in cpp/src/nnue.cpp accumulates the output sum in int32, because int64 halves the
+`dot` in src/nnue.cpp accumulates the output sum in int32, because int64 halves the
 vector width and measured six times slower. int32 can overflow: at QA 255 the worst case
 over 1024 terms is 9.3e9 against an int32 maximum of 2.1e9. Rather than pick a scale that
 looks safe, this computes the exact worst case from the weights it is about to write and
@@ -37,7 +37,7 @@ MAX_ACTIVE_FEATURES = 32
 
 
 def output_bound(out_weight: np.ndarray, qa: int) -> int:
-    """Largest magnitude `dot` in cpp/src/nnue.cpp can reach, over every bucket.
+    """Largest magnitude `dot` in src/nnue.cpp can reach, over every bucket.
 
     Every activation saturated at QA, every product agreeing in sign. Unreachable on a
     real board, but "unreachable in practice" is how an engine loses a game at move 60.
@@ -120,7 +120,7 @@ def main() -> int:
     error = float(np.abs(ft * qa - ft_weight).mean())
     print(f"  mean input weight rounding error: {error:.4f} of a quantisation step")
     print(f"  clipped input weights:  {int((np.abs(ft_weight) == np.abs(ft_weight).max()).sum())}")
-    print("\nverify with: make -C cpp && cpp/build/engine bench")
+    print("\nverify with: make && build/engine bench")
     return 0
 
 

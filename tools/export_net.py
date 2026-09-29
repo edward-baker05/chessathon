@@ -1,9 +1,7 @@
-"""Export the network the C++ engine in cpp/ embeds.
+"""Flatten weights/net.npz to a little-endian blob, which the build embeds in the binary so
+it carries its network with it.
 
-    net      weights/net.npz as a flat little-endian blob, which the build embeds in the
-             binary so it carries its network with it
-
-The npz is deflate-compressed, and reading zip in C++ means either zlib at runtime or a zip
+The npz is deflate-compressed, and reading zip in the engine means either zlib at runtime or a zip
 parser in the engine. A flat blob written here needs neither.
 
 Blob layout, every field little-endian:
@@ -48,10 +46,8 @@ def export_net(source: Path, destination: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    commands = parser.add_subparsers(dest="command", required=True)
-    net = commands.add_parser("net", help="write the network blob")
-    net.add_argument("out", type=Path)
-    net.add_argument("--source", type=Path, default=ROOT / "weights" / "net.npz")
+    parser.add_argument("out", type=Path)
+    parser.add_argument("--source", type=Path, default=ROOT / "weights" / "net.npz")
     arguments = parser.parse_args()
 
     export_net(arguments.source, arguments.out)
