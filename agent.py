@@ -51,7 +51,12 @@ def _key_of(board: chess.Board) -> int:
 
 
 def _signature(board: chess.Board) -> tuple[str, bool, int, int | None]:
-    return (board.board_fen(), board.turn, board.castling_rights, board.ep_square)
+    # python-chess records an en passant square after every double push, but the harness
+    # FEN carries one only when the capture is legal. Comparing the raw square read every
+    # double push the opponent made that could not be taken as a new game, and threw the
+    # tables and the repetition history away mid-game.
+    ep_square = board.ep_square if board.has_legal_en_passant() else None
+    return (board.board_fen(), board.turn, board.castling_rights, ep_square)
 
 
 def _continues_our_game(board: chess.Board) -> bool:
