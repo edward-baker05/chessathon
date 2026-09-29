@@ -737,6 +737,9 @@ def search_root(work: Bits, max_depth: Square) -> Bits:
                 nnue_apply(work.acc, 0, state, mail, move)
                 legal += 1
                 work.played[0] = move
+                # Continuation history one and two plies down reads this. Left unwritten it
+                # held zero, a pawn, for every root move.
+                work.moved_piece[0] = mail[np.int64(move & 63)]
                 if legal == 1:
                     value = -negamax(work, 1, depth - 1, -beta, -local_alpha, True)
                 else:

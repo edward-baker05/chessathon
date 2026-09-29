@@ -512,6 +512,9 @@ Move search_root(int max_depth, const std::function<void(const Report&)>& on_ite
                 nnue::apply(W->acc[0], W->acc[1], pos, move);
                 ++legal;
                 W->played[0] = move;
+                // Continuation history one and two plies down reads this. Left unwritten it
+                // held zero, a pawn, for every root move.
+                W->moved_piece[0] = static_cast<int8_t>(pos.mail[move_from(move)]);
                 int value;
                 if (legal == 1) {
                     value = -negamax(1, depth - 1, -beta, -local_alpha, true);
