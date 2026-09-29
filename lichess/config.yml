@@ -6,16 +6,17 @@ token: "set LICHESS_BOT_TOKEN or write lichess/token"
 url: "https://lichess.org/"
 
 engine:
-  dir: "../"                       # lichess/
-  name: "uci_client.py"            # relays UCI to the zygote, which holds the warmed agent
+  dir: "../../cpp/build/"          # cpp/build/, which lichess/run.sh builds before starting
+  name: "engine"                   # the C++ engine, a UCI binary with the network inside it
   protocol: "uci"
-  ponder: false                    # the engine does not search on the opponent's time
+  ponder: true                     # search on the opponent's time; `go ponder` and ponderhit
   polyglot:
     enabled: true                  # no book: games should show the agent, not a book
   draw_or_resign:
     resign_enabled: false          # the agent reports a score now, so either of these can be enabled
     offer_draw_enabled: false
-  uci_options: {}                  # the agent declares no UCI options
+  uci_options:
+    Hash: 128                      # MB per game, and `concurrency` games at once
 
 move_overhead: 1000                # ms held back from our clock for the round trip to lichess
 

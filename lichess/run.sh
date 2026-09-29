@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Start the zygote, wait for the agent to finish its import, then run lichess-bot.
+# Build the C++ engine if it is out of date, then run lichess-bot with it.
 # Extra arguments go to lichess-bot, e.g. `lichess/run.sh -u` to upgrade the account to a bot.
+#
+# lichess-bot starts the engine binary itself, once per game. It starts in milliseconds, so
+# nothing has to be kept warm; zygote.py remains for serving Python builds to tools/sprt.py.
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(dirname "$here")
 bot="$here/lichess-bot"
-socket="$here/zygote.sock"
 
 if [[ ! -d "$bot/venv" ]]; then
     echo "lichess-bot is not installed; run \`make lichess-setup\` first" >&2
@@ -22,20 +24,9 @@ if [[ -z "${LICHESS_BOT_TOKEN:-}" ]]; then
     fi
 fi
 
-rm -f "$socket"
-echo "importing the agent (about a minute); zygote log in $here/zygote.log"
-"$root/.venv/bin/python" "$here/zygote.py" --socket "$socket" 2> "$here/zygote.log" &
-zygote=$!
-trap 'kill "$zygote" 2>/dev/null; rm -f "$socket"' EXIT
-
-until [[ -S "$socket" ]]; do
-    if ! kill -0 "$zygote" 2>/dev/null; then
-        echo "the zygote exited during the import:" >&2
-        cat "$here/zygote.log" >&2
-        exit 1
-    fi
-    sleep 1
-done
+make -C "$root/cpp" --no-print-directory
+# A broken build should not reach a rated game: the move generator has to pass first.
+make -C "$root/cpp" --no-print-directory perft
 
 cd "$bot"
-ENGINE_ZYGOTE_SOCKET="$socket" venv/bin/python lichess-bot.py --config "$here/config.yml" "$@"
+venv/bin/python lichess-bot.py --config "$here/config.yml" "$@"

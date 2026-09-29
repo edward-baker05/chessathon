@@ -22,28 +22,60 @@ only this one.
 
 ## Playing it
 
+- lichess: `make lichess` builds the engine, checks perft, and runs lichess-bot, which starts
+  `cpp/build/engine` once per game. It ponders on the opponent's time; `ponder` in
+  `lichess/config.yml` turns that off.
 - The harness: `cpp/agent.py` relays `get_move` to the binary, so `cpp` is an agent directory
   like any other: `uv run python -m harness.play --white cpp --black .`
-- fastchess and `tools/sprt.py`: the binary is a native UCI engine that carries its network,
-  so `make sprt DEV=cpp/build/engine` plays it against HEAD directly.
-- Anything else that speaks UCI: `id name chessathon-cpp`, with a `Hash` option in MB.
+- fastchess and `tools/sprt.py`: the binary carries its network, so
+  `make sprt DEV=cpp/build/engine` plays it against HEAD directly.
+
+## UCI
+
+Every command and `go` parameter in the specification is accepted, in any order, and
+anything not understood is skipped, as the specification asks: `joho debug on` turns
+debugging on. `isready` is answered mid-search. `tests/test_cpp_uci.py` sends the awkward
+forms as well as the usual ones.
+
+| Input | What it does |
+| --- | --- |
+| `go wtime btime winc binc` | the Python engine's time allocation, from our side's clock |
+| `go movetime N` | searches for N ms, less 10 ms to answer |
+| `go nodes N`, `go depth N` | stops there |
+| `go infinite`, a bare `go` | searches until `stop`; `infinite` also holds `bestmove` until then |
+| `go ponder` ... `ponderhit` | searches on the opponent's time; the clock starts at `ponderhit` |
+| `go searchmoves m1 m2 ...` | only those root moves; a list with none legal restricts nothing |
+| `go movestogo`, `go mate` | accepted, not used yet |
+| `setoption name Hash value N` | transposition table size in MB |
+| `setoption name Clear Hash` | empties the table |
+| `Ponder`, `Threads` | declared and accepted; pondering follows `go ponder`, and the search has one thread |
+| `debug on` | explains ignored input and new games in `info string` lines |
+| `register` | accepted; nothing needs registering |
+
+`bestmove` names a ponder move whenever the principal variation has one, and is
+`bestmove (none)` when the side to move is mated or stalemated. A `position`, `go` or
+`setoption` that arrives mid-search waits for a search that will end on its own and stops
+one that will not.
 
 Beyond UCI it answers `perft N`, `eval`, `d` and `bench [nodes]`, and runs its command-line
 arguments as one command, so `cpp/build/engine bench` works.
 
-## Where it deliberately differs
+## Game tracking
 
-- Game tracking. Like `agent.py`, a bare `position fen` one legal move on from our last reply
-  continues the game, and anything else starts a new one and clears the tables. `agent.py`
-  compares raw en passant squares, and python-chess records one after every double push
-  while a FEN only shows it when the capture is legal, so any double push the opponent makes
-  that cannot be taken reads there as a new game: the transposition table, the history
-  tables and the repetition history are all thrown away mid-game. This port compares
-  positions the way the Zobrist key does, en passant only where it is capturable.
-- `position ... moves ...` is used as the repetition history directly, and `ucinewgame`
-  clears the tables.
+A `position ... moves ...` command is the game record, and is the repetition history. A game
+record that passes through our last reply is the game being played, and anything else starts
+a new one and clears the tables; so does `ucinewgame`. A bare `position fen`, which is all
+the Python harness sends, continues the game when it is one legal move on from our last
+reply, as in `agent.py`. A ponder search that is stopped rather than hit was never our move,
+and does not count as a reply.
+
+## Where it differs from the Python engine
+
+The search and evaluation do not differ: that is what `tests/test_cpp.py` checks. Around
+them:
+
 - `go movetime` searches for that long, as UCI means it. The zygote hands a movetime to the
   Python agent as a whole clock, which spends a small share of it.
-- The search runs on its own thread, so `stop` and `go infinite` work.
+- Pondering, `searchmoves`, `stop` and `go infinite` exist only here.
 - Beyond 2048 plies the repetition history keeps the most recent positions rather than the
   earliest.
