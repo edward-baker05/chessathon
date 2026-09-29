@@ -41,18 +41,32 @@ def position_from(tokens: list[str]) -> chess.Board:
     return board
 
 
+# The clock handed over when a `go` carries none, long enough that the node limit and not
+# the time budget is what ends the search.
+UNTIMED_MS = 24 * 60 * 60 * 1000
+
+
 def clock_from(board: chess.Board, tokens: list[str]) -> tuple[int, int]:
     """Our clock and increment in ms from a UCI `go` command, tokens after the word `go`.
 
     lichess-bot sends `movetime` for the first move of a game and the clocks after that.
     A fixed move time is handed over as the whole clock with no increment: the agent never
-    spends all of what it has, so it stays inside the limit.
+    spends all of what it has, so it stays inside the limit. A fixed-node test sends
+    `go nodes N` with no clock at all.
     """
     values = dict(zip(tokens[::2], tokens[1::2], strict=False))
     if "movetime" in values:
         return int(values["movetime"]), 0
     ours = "w" if board.turn == chess.WHITE else "b"
+    if f"{ours}time" not in values:
+        return UNTIMED_MS, 0
     return int(values[f"{ours}time"]), int(values.get(f"{ours}inc", "0"))
+
+
+def node_limit_from(tokens: list[str]) -> int:
+    """The `nodes` limit of a UCI `go` command, or 0 for none."""
+    values = dict(zip(tokens[::2], tokens[1::2], strict=False))
+    return int(values.get("nodes", "0"))
 
 
 def serve_game(stream: TextIO) -> None:
@@ -77,12 +91,15 @@ def serve_game(stream: TextIO) -> None:
             board = position_from(tokens)
         elif command == "go":
             time_left_ms, increment_ms = clock_from(board, tokens)
-            # The agent reads this per move; the harness default is 500.
+            # The agent reads both per move; the harness default increment is 500.
             agent.INCREMENT_MS = increment_ms
+            agent.NODE_LIMIT = node_limit_from(tokens)
             move = agent.get_move(board.fen(), time_left_ms)
             # lichess-bot keeps the last info before bestmove: it logs it after every move,
             # writes it into the saved PGN, and answers `!eval` in the game chat with it.
-            if (info := search.uci_info(board)) is not None:
+            # Builds older than the info line are served too, when a match freezes one.
+            uci_info = getattr(search, "uci_info", None)
+            if uci_info is not None and (info := uci_info(board)) is not None:
                 send(info)
             send(f"bestmove {move}")
         elif command == "quit":
@@ -94,6 +111,8 @@ def serve_game(stream: TextIO) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--socket", type=Path, default=DEFAULT_SOCKET)
+    # tools/sprt.py serves frozen copies of the engine through this same server.
+    parser.add_argument("--root", type=Path, default=ROOT, help="the engine directory to serve")
     arguments = parser.parse_args()
 
     # One core, and no thread pools that a fork could leave locked.
@@ -103,7 +122,7 @@ def main() -> None:
     # The harness points fd 1 at stderr before the import, so agent output never reaches
     # the protocol. Here the protocol is the socket, so the same move keeps prints in the log.
     os.dup2(2, 1)
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(arguments.root.resolve()))
     import agent  # noqa: F401  (the import is the warm-up)
 
     arguments.socket.unlink(missing_ok=True)

@@ -25,6 +25,8 @@ make test                                          # pytest
 make gate                                          # ruff, mypy, and two games that must finish
 make bench                                         # import time and search speed
 make ab OPPONENT=<dir>                             # fixed-opening A/B match, in tests/match.py
+make fastchess-setup                               # build fastchess, fetch the opening book
+make sprt [BASE=<ref>] [DEV=<ref|dir|binary>]      # SPRT under fastchess, see tools/sprt.py
 make replay PGN=<file>                             # time allocation over a played game
 make train / quantise                            # train and ship a new network
 make lichess-setup / lichess                       # play on lichess through lichess-bot

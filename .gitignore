@@ -16,3 +16,6 @@ lichess/token
 lichess/games/
 lichess/zygote.sock
 lichess/zygote.log
+# fastchess and the opening book come from `make fastchess-setup`; runs from `make sprt`.
+third_party/
+sprt/

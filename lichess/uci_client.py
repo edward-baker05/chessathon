@@ -17,11 +17,13 @@ SOCKET = Path(
 
 
 def main() -> None:
+    # A match runner cannot set a per-engine environment, so it names the socket instead.
+    path = Path(sys.argv[1]) if len(sys.argv) > 1 else SOCKET
     connection = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
-        connection.connect(str(SOCKET))
+        connection.connect(str(path))
     except OSError as error:
-        sys.exit(f"cannot reach the zygote at {SOCKET} ({error}); start it with `make lichess`")
+        sys.exit(f"cannot reach the zygote at {path} ({error}); start it with `make lichess`")
 
     def forward_stdin() -> None:
         while chunk := os.read(sys.stdin.fileno(), 4096):

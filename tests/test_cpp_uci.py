@@ -39,9 +39,13 @@ def fen_of(engine: Engine) -> str:
     return line.split(" key ")[0]
 
 
-def bestmove(engine: Engine) -> tuple[str, str | None]:
-    tokens = engine.until("bestmove")[-1].split()
+def bestmove_of(lines: list[str]) -> tuple[str, str | None]:
+    tokens = lines[-1].split()
     return tokens[1], tokens[3] if len(tokens) >= 4 and tokens[2] == "ponder" else None
+
+
+def bestmove(engine: Engine) -> tuple[str, str | None]:
+    return bestmove_of(engine.until("bestmove"))
 
 
 def test_uci_handshake_declares_options(engine: Engine) -> None:
@@ -80,6 +84,8 @@ def test_setoption_in_every_form(engine: Engine) -> None:
         "setoption name Clear Hash",
         "setoption name Ponder value true",
         "setoption name Threads value 1",
+        "setoption name Threads value 0",
+        "setoption name Threads value many",
         "setoption name UCI_Opponent value none 2800 computer Some Engine 1.0",
         "setoption name No Such Option value with several words",
         "setoption name",
@@ -322,3 +328,73 @@ def test_info_lines_are_well_formed(engine: Engine) -> None:
         board = chess.Board()
         for move in line.split(" pv ")[1].split():
             board.push_uci(move)
+
+
+@pytest.mark.parametrize(
+    "go",
+    ["go depth 8", "go nodes 200000", "go movetime 200", "go wtime 3000 btime 3000 winc 50"],
+)
+def test_threads_search(engine: Engine, go: str) -> None:
+    engine.send("setoption name Threads value 4")
+    board = chess.Board()
+    for _ in range(4):
+        engine.send(f"position fen {board.fen()}")
+        engine.send(go)
+        lines = engine.until("bestmove")
+        move, ponder = bestmove_of(lines)
+        board.push_uci(move)
+        if ponder is not None:
+            assert chess.Move.from_uci(ponder) in board.legal_moves
+        final = [line for line in lines if line.startswith("info depth")][-1]
+        if go.startswith("go nodes"):
+            # Every thread's nodes count, and the limit is checked every 2048 nodes.
+            assert 200_000 <= int(info_field(final, "nodes")) < 220_000
+        if go == "go depth 8":
+            assert int(info_field(final, "depth")) >= 8
+
+
+def test_threads_stop_ponder_and_mate(engine: Engine) -> None:
+    engine.send("setoption name Threads value 3")
+    engine.send(f"position fen {MATE_IN_ONE}")
+    engine.send("go infinite")
+    time.sleep(0.2)
+    assert not any(line.startswith("bestmove") for line in ready(engine))
+    engine.send("stop")
+    assert bestmove(engine)[0] == "a1a8"
+
+    engine.send("position startpos moves e2e4 e7e5")
+    engine.send("go ponder wtime 4000 btime 4000")
+    time.sleep(0.5)
+    assert not any(line.startswith("bestmove") for line in ready(engine))
+    hit = time.monotonic()
+    engine.send("ponderhit")
+    bestmove(engine)
+    assert time.monotonic() - hit < 1.0
+
+    engine.send(f"position fen {MATED}")
+    engine.send("go depth 5")
+    assert bestmove(engine) == ("(none)", None)
+
+
+def test_back_to_one_thread_is_deterministic_again(engine: Engine) -> None:
+    def fixed_search(process: Engine) -> list[str]:
+        """The last report and the move, less the time and node rate, which vary."""
+        process.send("ucinewgame")
+        process.send("position startpos moves d2d4 g8f6")
+        process.send("go nodes 30000")
+        lines = process.until("bestmove")
+        final = [line for line in lines if line.startswith("info depth")][-1].split()
+        timing = {i + 1 for i, token in enumerate(final) if token in {"nps", "time"}}
+        return [t for i, t in enumerate(final) if i not in timing] + [lines[-1]]
+
+    engine.send("setoption name Threads value 4")
+    engine.send("position startpos")
+    engine.send("go depth 8")
+    bestmove(engine)
+    engine.send("setoption name Threads value 1")
+    fresh = Engine()
+    try:
+        expected = fixed_search(fresh)
+    finally:
+        fresh.close()
+    assert fixed_search(engine) == expected

@@ -141,7 +141,7 @@ void handle_uci() {
         std::to_string(MAX_HASH_MB));
     say("option name Clear Hash type button");
     say("option name Ponder type check default false");
-    say("option name Threads type spin default 1 min 1 max 1");
+    say("option name Threads type spin default 1 min 1 max " + std::to_string(search::MAX_THREADS));
     say("uciok");
 }
 
@@ -172,9 +172,17 @@ void handle_setoption(const Tokens& args) {
         }
     } else if (name == "clear hash") {
         search::table().clear();
-    } else if (name == "ponder" || name == "threads") {
-        // Pondering happens when a GUI sends `go ponder`, whatever this says, and the search
-        // runs on one thread. Both are accepted so that GUIs which always set them can.
+    } else if (name == "threads") {
+        std::optional<int64_t> count = to_int(value);
+        if (!count) return debug("Threads needs a number, not '" + value + "'");
+        try {
+            search::set_threads(static_cast<int>(std::clamp<int64_t>(*count, 1, search::MAX_THREADS)));
+        } catch (const std::bad_alloc&) {
+            say("info string cannot allocate " + value + " threads");
+        }
+    } else if (name == "ponder") {
+        // Pondering happens when a GUI sends `go ponder`, whatever this says. It is accepted
+        // so that GUIs which always set it can.
     } else {
         debug("no option named '" + name + "'");
     }

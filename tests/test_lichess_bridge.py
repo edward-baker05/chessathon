@@ -1,7 +1,7 @@
 import chess
 import pytest
 
-from lichess.zygote import clock_from, position_from
+from lichess.zygote import UNTIMED_MS, clock_from, node_limit_from, position_from
 
 
 def test_startpos_with_moves() -> None:
@@ -36,3 +36,19 @@ def test_missing_increment_is_zero() -> None:
 
 def test_movetime_is_the_whole_clock() -> None:
     assert clock_from(chess.Board(), ["movetime", "10000"]) == (10000, 0)
+
+
+def test_fixed_node_search_has_no_clock() -> None:
+    tokens = ["nodes", "200000"]
+    assert clock_from(chess.Board(), tokens) == (UNTIMED_MS, 0)
+    assert node_limit_from(tokens) == 200000
+
+
+def test_nodes_with_a_clock_keeps_both() -> None:
+    tokens = ["wtime", "60000", "btime", "60000", "nodes", "5000"]
+    assert clock_from(chess.Board(), tokens) == (60000, 0)
+    assert node_limit_from(tokens) == 5000
+
+
+def test_no_node_limit_is_zero() -> None:
+    assert node_limit_from(["wtime", "60000", "btime", "60000"]) == 0

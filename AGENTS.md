@@ -37,8 +37,10 @@ make bench     # import time and search speed
 make -C cpp    # build the C++ engine; `perft` and `bench` targets too
 ```
 
-Judge strength changes with `make ab` over hundreds of fixed-opening games, not a handful of
-games.
+Judge strength changes with `make sprt` (fastchess, installed once by `make fastchess-setup`):
+it plays the working tree against HEAD until an SPRT decides, which hundreds of games cannot
+do for the 5 to 15 Elo most changes are worth. Builds are frozen into `sprt/<run>/` first, so
+the tree is free to edit while it runs. `tools/sprt.py --help` lists the options.
 
 ## Style
 

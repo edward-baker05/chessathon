@@ -9,6 +9,8 @@
 //   42..47  age
 //   48..63  static evaluation, biased
 //
+// Search threads share one table without locks; see load() and save() in tt.cpp.
+//
 // The table is never cleared between moves of one game: last move's entries describe the
 // same game. The UCI layer clears it only when a position does not chain onto the game.
 

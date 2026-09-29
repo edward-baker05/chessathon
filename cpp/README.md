@@ -48,7 +48,8 @@ forms as well as the usual ones.
 | `go movestogo`, `go mate` | accepted, not used yet |
 | `setoption name Hash value N` | transposition table size in MB |
 | `setoption name Clear Hash` | empties the table |
-| `Ponder`, `Threads` | declared and accepted; pondering follows `go ponder`, and the search has one thread |
+| `setoption name Threads value N` | searches with N threads (Lazy SMP); 1 by default |
+| `Ponder` | declared and accepted; pondering follows `go ponder` |
 | `debug on` | explains ignored input and new games in `info string` lines |
 | `register` | accepted; nothing needs registering |
 
@@ -73,6 +74,11 @@ and does not count as a reply.
 
 The search and evaluation do not differ: that is what `tests/test_cpp.py` checks. Around
 them:
+
+- `Threads` above 1 runs Lazy SMP: helper threads search the same root with their own
+  history tables and share the transposition table, and the main thread keeps the clock. A
+  helper that completes a deeper iteration with a better score supplies the move. Such a
+  search is not reproducible, and `go nodes` counts every thread's nodes.
 
 - `go movetime` searches for that long, as UCI means it. The zygote hands a movetime to the
   Python agent as a whole clock, which spends a small share of it.

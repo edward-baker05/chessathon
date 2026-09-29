@@ -17,15 +17,18 @@ engine:
     offer_draw_enabled: false
   uci_options:
     Hash: 128                      # MB per game, and `concurrency` games at once
+    Threads: 4
+
+quit_after_all_games_finish: true
 
 move_overhead: 1000                # ms held back from our clock for the round trip to lichess
 
 challenge:
-  concurrency: 2                   # one game at a time, so a game gets the whole core
-  accept_bot: false
+  concurrency: 1
+  accept_bot: true
   only_bot: false
-  min_base: 30
-  max_base: 600
+  min_base: 1
+  max_base: 1800
   min_increment: 0
   max_increment: 10
   bullet_requires_increment: true  # bullet with no increment tests the clock more than the agent
@@ -51,7 +54,8 @@ pgn_directory: "../games"          # lichess/games/, one PGN per game
 matchmaking:
   allow_matchmaking: true          # set true to have the bot challenge other bots when idle
   challenge_initial_time:
-    - 180
+    - 300
   challenge_increment:
     - 2
-  challenge_mode: "casual"
+  challenge_mode: "rated"
+  challenge_timeout: 1             # minutes idle before challenging (lichess-bot default is 30)

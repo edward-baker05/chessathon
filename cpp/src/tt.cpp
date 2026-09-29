@@ -1,5 +1,6 @@
 #include "tt.h"
 
+#include <atomic>
 #include <cstdlib>
 #include <cstring>
 #include <new>
@@ -51,6 +52,17 @@ inline int field(uint64_t data, int shift, uint64_t mask) {
     return static_cast<int>((data >> shift) & mask);
 }
 
+// Every search thread reads and writes the table with no lock. Each word is read and written
+// whole, and a slot's key word holds key ^ data, so a slot whose two words come from two
+// different stores fails the key check and reads as a miss rather than as a wrong entry.
+inline uint64_t load(const uint64_t& word) {
+    return std::atomic_ref(const_cast<uint64_t&>(word)).load(std::memory_order_relaxed);
+}
+
+inline void save(uint64_t& word, uint64_t value) {
+    std::atomic_ref(word).store(value, std::memory_order_relaxed);
+}
+
 }  // namespace
 
 void TranspositionTable::FreeDeleter::operator()(Bucket* p) const { std::free(p); }
@@ -82,12 +94,12 @@ void TranspositionTable::store(Key key, int ply, int score, Move move, int depth
     int worst = 1 << 30;
     Move kept_move = move;
     for (int i = 0; i < ENTRIES_PER_BUCKET; ++i) {
-        Key stored_key = slots[i * 2];
+        uint64_t stored = load(slots[i * 2 + 1]);
+        Key stored_key = load(slots[i * 2]) ^ stored;
         if (stored_key == 0) {
             slot = i;
             break;
         }
-        uint64_t stored = slots[i * 2 + 1];
         int stored_depth = field(stored, DEPTH_SHIFT, DEPTH_MASK);
         int stored_age = field(stored, AGE_SHIFT, AGE_MASK);
         if (stored_key == key) {
@@ -106,16 +118,16 @@ void TranspositionTable::store(Key key, int ply, int score, Move move, int depth
             slot = i;
         }
     }
-    slots[slot * 2] = key;
-    slots[slot * 2 + 1] = pack_entry(adjusted, kept_move, depth, bound, static_eval, age);
+    uint64_t data = pack_entry(adjusted, kept_move, depth, bound, static_eval, age);
+    save(slots[slot * 2], key ^ data);
+    save(slots[slot * 2 + 1], data);
 }
 
 TTProbe TranspositionTable::probe(Key key, int ply) const {
     const uint64_t* slots = buckets_[key & mask_].slots;
     for (int i = 0; i < ENTRIES_PER_BUCKET; ++i) {
-        if (slots[i * 2] != key) continue;
-        uint64_t stored = slots[i * 2 + 1];
-        if (stored == 0) continue;
+        uint64_t stored = load(slots[i * 2 + 1]);
+        if ((load(slots[i * 2]) ^ stored) != key || stored == 0) continue;
         int score = field(stored, SCORE_SHIFT, 0xFFFF) - static_cast<int>(SCORE_BIAS);
         if (score >= MATE_IN_MAX)
             score -= ply;

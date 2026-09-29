@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <thread>
 #include <unordered_set>
 
 #include "movegen.h"
@@ -72,7 +73,8 @@ int MVV_LVA[6][6];
 // Late move reductions, indexed [depth][move number].
 int LMR_TABLE[64][64];
 
-// Every mutable array the search touches.
+// Every mutable array the search touches. Each search thread has its own; only the
+// transposition table is shared.
 struct Work {
     Position state[STACK_PLIES];
     nnue::Accumulator acc[STACK_PLIES];
@@ -90,8 +92,11 @@ struct Work {
     Key hist_keys[HISTORY_CAPACITY];
     int hist_len;
 
-    int64_t nodes;
+    // Written only by its own thread, and read by the main thread for the total.
+    std::atomic<int64_t> nodes;
     int64_t node_limit;
+    // A helper thread: it stops when the main thread does, and keeps no clock of its own.
+    bool helper;
     bool abort;
     int age;
     int seldepth;
@@ -110,8 +115,16 @@ struct Work {
     double last_iter, prev_iter;
 };
 
-std::unique_ptr<Work> work_storage;
-Work* W = nullptr;
+// workers[0] is the main thread's. The others are Lazy SMP helpers: each runs the same
+// iterative deepening over the same root, and they help only through the shared table, where
+// their results reorder and cut the main thread's search.
+std::vector<std::unique_ptr<Work>> workers;
+// The Work of the thread this code runs on.
+thread_local Work* W = nullptr;
+// The thread whose result the last search played, for reports and the principal variation.
+Work* chosen = nullptr;
+// Set when the main thread has finished, to stop the helpers.
+std::atomic<bool> helpers_stop{false};
 std::unique_ptr<TranspositionTable> tt_storage;
 
 // The root moves `go searchmoves` allows, or empty for all of them.
@@ -135,11 +148,26 @@ inline double used() {
     return read_clock() - clock_start.load(std::memory_order_relaxed);
 }
 
+inline void count_node() {
+    W->nodes.store(W->nodes.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
+}
+
+int64_t total_nodes() {
+    int64_t total = 0;
+    for (const auto& work : workers) total += work->nodes.load(std::memory_order_relaxed);
+    return total;
+}
+
 // Abort the search when the hard limit, the node limit or a stop is reached. Reading the
-// clock every node would cost more than the search; every 2048 nodes it is free.
+// clock every node would cost more than the search; every 2048 nodes it is free. A node
+// limit counts every thread's nodes.
 inline void check_time() {
-    if (W->nodes & CLOCK_INTERVAL_MASK) return;
-    if (W->node_limit != 0 && W->nodes >= W->node_limit) {
+    if (W->nodes.load(std::memory_order_relaxed) & CLOCK_INTERVAL_MASK) return;
+    if (W->helper) {
+        if (helpers_stop.load(std::memory_order_relaxed)) W->abort = true;
+        return;
+    }
+    if (W->node_limit != 0 && total_nodes() >= W->node_limit) {
         W->abort = true;
         return;
     }
@@ -272,7 +300,7 @@ inline int evaluate(int ply) { return nnue::evaluate(W->acc[ply], W->state[ply])
 // Search captures until the position is quiet, so the evaluation is not measured halfway
 // through an exchange.
 int qsearch(int ply, int alpha, int beta) {
-    ++W->nodes;
+    count_node();
     check_time();
     if (W->abort) return 0;
     if (ply >= STACK_PLIES - 2) return evaluate(ply);
@@ -328,7 +356,7 @@ int qsearch(int ply, int alpha, int beta) {
 
 // Principal variation search.
 int negamax(int ply, int depth, int alpha, int beta, bool is_pv, bool can_null = true) {
-    ++W->nodes;
+    count_node();
     check_time();
     if (W->abort) return 0;
     if (ply >= STACK_PLIES - 4) return evaluate(ply);
@@ -656,19 +684,6 @@ int ply_of(const Position& pos) {
 }
 
 void prepare(const Position& root, const Limits& limits) {
-    W->state[0] = root;
-    // The only full rebuild. Every ply below this is reached incrementally.
-    nnue::refresh(W->acc[0], root);
-    W->nodes = 0;
-    W->abort = false;
-    W->seldepth = 0;
-    W->node_limit = limits.node_limit;
-    W->age = (W->age + 1) & AGE_MASK;
-    W->stable = 0;
-    W->completed_depth = 0;
-    W->completed_score = 0;
-    W->completed_best = 0;
-
     double now = read_clock();
     double infinity = std::numeric_limits<double>::infinity();
     double soft_ms = infinity, hard_ms = infinity;
@@ -677,14 +692,39 @@ void prepare(const Position& root, const Limits& limits) {
     } else if (limits.has_clock) {
         std::tie(soft_ms, hard_ms) = budget_ms(limits.time_left_ms, limits.increment_ms, ply_of(root));
     }
-    W->began = now;
     clock_start = now;
-    W->soft_span = soft_ms / 1000.0;
-    W->soft = soft_ms / 1000.0;
-    W->hard = hard_ms / 1000.0;
-    W->stretch = std::min(soft_ms * STRETCH_MULTIPLE / 1000.0, W->hard);
-    W->last_iter = 0.0;
-    W->prev_iter = 0.0;
+    Work& main = *workers[0];
+    main.age = (main.age + 1) & AGE_MASK;
+
+    for (const auto& work : workers) {
+        Work& w = *work;
+        w.state[0] = root;
+        // The only full rebuild. Every ply below this is reached incrementally.
+        nnue::refresh(w.acc[0], root);
+        w.nodes = 0;
+        w.abort = false;
+        w.seldepth = 0;
+        w.stable = 0;
+        w.completed_depth = 0;
+        w.completed_score = 0;
+        w.completed_best = 0;
+        w.began = now;
+        w.last_iter = 0.0;
+        w.prev_iter = 0.0;
+        w.helper = &w != &main;
+        if (!w.helper) continue;
+        // A helper runs until the main thread stops it, so it has no limits of its own.
+        w.node_limit = 0;
+        w.age = main.age;
+        w.soft_span = w.soft = w.hard = w.stretch = infinity;
+        std::copy(main.hist_keys, main.hist_keys + main.hist_len, w.hist_keys);
+        w.hist_len = main.hist_len;
+    }
+    main.node_limit = limits.node_limit;
+    main.soft_span = soft_ms / 1000.0;
+    main.soft = soft_ms / 1000.0;
+    main.hard = hard_ms / 1000.0;
+    main.stretch = std::min(soft_ms * STRETCH_MULTIPLE / 1000.0, main.hard);
 }
 
 }  // namespace
@@ -702,9 +742,16 @@ void init() {
             LMR_TABLE[depth][index] = std::max(0, std::min(reduction, depth - 1));
         }
     }
-    work_storage = std::make_unique<Work>();
-    W = work_storage.get();
+    set_threads(1);
     tt_storage = std::make_unique<TranspositionTable>();
+}
+
+void set_threads(int count) {
+    workers.resize(static_cast<size_t>(std::clamp(count, 1, MAX_THREADS)));
+    // Value-initialised, so a new thread starts with every table empty.
+    for (auto& work : workers)
+        if (!work) work = std::make_unique<Work>();
+    chosen = workers[0].get();
 }
 
 TranspositionTable& table() { return *tt_storage; }
@@ -716,22 +763,29 @@ void ponderhit() {
 
 void set_game_history(const std::vector<Key>& keys) {
     // The most recent positions, if a game ever outgrows the buffer: the root has to be last.
+    // The helpers copy it from the main thread's Work when a search starts.
+    Work& main = *workers[0];
     size_t length = std::min(keys.size(), static_cast<size_t>(HISTORY_CAPACITY));
-    std::copy(keys.end() - static_cast<std::ptrdiff_t>(length), keys.end(), W->hist_keys);
-    W->hist_len = static_cast<int>(length);
+    std::copy(keys.end() - static_cast<std::ptrdiff_t>(length), keys.end(), main.hist_keys);
+    main.hist_len = static_cast<int>(length);
 }
 
 void clear_tables() {
-    std::fill(&W->history[0][0][0], &W->history[0][0][0] + 2 * 64 * 64, 0);
-    std::fill(&W->counter[0][0][0], &W->counter[0][0][0] + 2 * 64 * 64, 0);
-    std::fill(&W->killers[0][0], &W->killers[0][0] + STACK_PLIES * 2, 0);
-    std::fill(W->played, W->played + STACK_PLIES, 0);
-    std::fill(W->moved_piece, W->moved_piece + STACK_PLIES, 0);
-    std::fill(&W->cont_hist[0][0][0][0][0], &W->cont_hist[0][0][0][0][0] + 2 * 6 * 64 * 6 * 64, 0);
+    for (const auto& work : workers) {
+        Work& w = *work;
+        std::fill(&w.history[0][0][0], &w.history[0][0][0] + 2 * 64 * 64, 0);
+        std::fill(&w.counter[0][0][0], &w.counter[0][0][0] + 2 * 64 * 64, 0);
+        std::fill(&w.killers[0][0], &w.killers[0][0] + STACK_PLIES * 2, 0);
+        std::fill(w.played, w.played + STACK_PLIES, 0);
+        std::fill(w.moved_piece, w.moved_piece + STACK_PLIES, 0);
+        std::fill(&w.cont_hist[0][0][0][0][0], &w.cont_hist[0][0][0][0][0] + 2 * 6 * 64 * 6 * 64, 0);
+    }
 }
 
 Move think(const Position& root, const Limits& limits,
            const std::function<void(const Report&)>& on_iteration) {
+    W = workers[0].get();
+    chosen = W;
     prepare(root, limits);
     // Moves that are not legal here are dropped, and a list with nothing legal left in it
     // restricts nothing: searching every move beats answering with no move at all.
@@ -740,13 +794,34 @@ Move think(const Position& root, const Limits& limits,
     int count = generate_legal(root, legal);
     for (Move move : limits.searchmoves)
         if (std::find(legal, legal + count, move) != legal + count) root_moves.push_back(move);
-    return search_root(std::clamp(limits.max_depth, 1, MAX_DEPTH), on_iteration);
+    int max_depth = std::clamp(limits.max_depth, 1, MAX_DEPTH);
+
+    helpers_stop = false;
+    std::vector<std::thread> helpers;
+    for (size_t i = 1; i < workers.size(); ++i) {
+        helpers.emplace_back([i, max_depth] {
+            W = workers[i].get();
+            search_root(max_depth, {});
+        });
+    }
+    // The main thread alone keeps the clock and reports, and the search ends when it does.
+    Move best = search_root(max_depth, on_iteration);
+    helpers_stop = true;
+    for (std::thread& helper : helpers) helper.join();
+
+    // A helper that completed a deeper iteration with a better score saw further.
+    for (const auto& work : workers) {
+        if (work->completed_depth > chosen->completed_depth && work->completed_score > chosen->completed_score)
+            chosen = work.get();
+    }
+    return chosen == workers[0].get() ? best : chosen->completed_best;
 }
 
 Report last_report() {
-    auto elapsed = static_cast<int64_t>((read_clock() - W->began) * 1000.0);
-    return {W->completed_best, W->completed_depth, W->completed_score,
-            std::max(W->seldepth, W->completed_depth), W->nodes, std::max<int64_t>(elapsed, 1)};
+    const Work& w = *chosen;
+    auto elapsed = static_cast<int64_t>((read_clock() - workers[0]->began) * 1000.0);
+    return {w.completed_best, w.completed_depth, w.completed_score,
+            std::max(w.seldepth, w.completed_depth), total_nodes(), std::max<int64_t>(elapsed, 1)};
 }
 
 std::vector<Move> principal_variation(const Position& root) {
@@ -754,14 +829,14 @@ std::vector<Move> principal_variation(const Position& root) {
     // store can have replaced a step, so the walk stops at the first position the table has
     // no legal move for, or at a repeated position, and never runs past the depth searched.
     std::vector<Move> line;
-    Move first = W->completed_best;
+    Move first = chosen->completed_best;
     if (first == 0) return line;
     Position walk = root, next;
     make(walk, next, first);
     walk = next;
     line.push_back(first);
     std::unordered_set<Key> seen;
-    while (static_cast<int>(line.size()) < W->completed_depth) {
+    while (static_cast<int>(line.size()) < chosen->completed_depth) {
         if (!seen.insert(walk.key).second) break;
         TTProbe entry = tt_storage->probe(walk.key, 0);
         if (!entry.hit || entry.move == 0) break;

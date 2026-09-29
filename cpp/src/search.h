@@ -1,6 +1,7 @@
 // Search: iterative deepening, PVS, quiescence, move ordering and time control. A port of
 // search.py that makes the same decisions in the same order, so a fixed-node search here
-// visits the same tree as one there.
+// visits the same tree as one there. That holds for one thread; with more (see set_threads)
+// the threads race through the shared table, and no two searches are alike.
 
 #pragma once
 
@@ -16,6 +17,7 @@
 namespace search {
 
 constexpr int MAX_DEPTH = 127;
+constexpr int MAX_THREADS = 256;
 
 struct Limits {
     // Our clock and increment. Without a clock the search runs until a node or depth
@@ -31,7 +33,8 @@ struct Limits {
     std::vector<Move> searchmoves;
 };
 
-// The last completed iteration of the last search.
+// The last completed iteration of the last search, from the thread whose move it played,
+// with every thread's nodes.
 struct Report {
     Move best;
     int depth;
@@ -41,8 +44,12 @@ struct Report {
     int64_t elapsed_ms;
 };
 
-// Allocates the search state. Call once, after init_bitboards and nnue::load.
+// Allocates the search state for one thread. Call once, after init_bitboards and nnue::load.
 void init();
+
+// Search with this many threads (Lazy SMP), clamped to 1..MAX_THREADS. Threads added start
+// with empty history tables; not to be called during a search.
+void set_threads(int count);
 
 TranspositionTable& table();
 
