@@ -8,9 +8,6 @@ make -C cpp                  # builds cpp/build/engine
 cpp/build/engine             # speaks UCI on stdin/stdout
 ```
 
-It was ported from a Python/numba engine, which is kept on the `python-old` branch. The engine
-is documented in [cpp/README.md](cpp/README.md).
-
 ## Commands
 
 ```
