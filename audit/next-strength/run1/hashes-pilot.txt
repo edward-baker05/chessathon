@@ -1,8 +1,0 @@
-=== snapshots/run1-pilot-kb1 ===
-735c6503dfa60c855240b390376da2080601e3ee2f0fef03902c9ba7a22f6893  search.py
-4972523fd97fe1412bdf6efb244a3e1c76f7646a57d67aec7f9dd33c7e90811a  tt.py
-b7fc484346a0cbe6cbeec2cfec1888e18a4dae9ee3c09b504c659f6eab2c9f92  weights/net.npz
-=== snapshots/run1-pilot-kb4 ===
-735c6503dfa60c855240b390376da2080601e3ee2f0fef03902c9ba7a22f6893  search.py
-4972523fd97fe1412bdf6efb244a3e1c76f7646a57d67aec7f9dd33c7e90811a  tt.py
-1b392de25a2eea7d6924b8044fc5b1ca33e988b6a02cfaf5131f88c0fbe0285c  weights/net.npz

@@ -1,13 +1,12 @@
 """The packed training record, and the one place features are derived from it.
 
 `tools/extract.py` writes these records and `tools/train.py` reads them. Both go through
-this module, and `tests/test_dataset.py` proves that the features it produces are exactly
-the ones `nnue.refresh` builds when the engine plays. That agreement is the property the
-whole project depends on and the one that fails most quietly: a net trained under one
-feature convention and played under another still trains to a plausible loss and then
-plays badly, with nothing anywhere to say why.
-
-Not shipped: tools/ never reaches the zip.
+this module, and its features have to be exactly the ones `feature` in cpp/src/nnue.cpp
+builds when the engine plays. That agreement is the property the whole network depends on
+and the one that fails most quietly: a net trained under one feature convention and played
+under another still trains to a plausible loss and then plays badly, with nothing anywhere
+to say why. Nothing tests it now that the Python runtime that did is gone; compare
+`engine eval` on a few positions against the trained net's own output after any change here.
 """
 
 import struct
@@ -86,7 +85,7 @@ def unpack(records: np.ndarray) -> Unpacked:
     flat_codes = codes[occupied]
     index = np.repeat(np.arange(records.shape[0], dtype=np.int64), counts)
 
-    # This must match `feature` in nnue.py exactly:
+    # This must match `feature` in cpp/src/nnue.cpp exactly:
     #     ((colour ^ perspective) * 6 + piece) * 64 + (square ^ (perspective * 56))
     # With code = colour * 6 + piece, white's view is code * 64 + square, and black's view
     # swaps the colour half, which is (code + 6) mod 12, and flips the rank.

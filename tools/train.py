@@ -1,13 +1,14 @@
 """Train the network. torch, offline, never imported by anything that ships.
 
 The architecture is `768 -> L1x2 -> 1` with squared clipped ReLU and output buckets by
-piece count. See docs/superpowers/specs/2026-09-06-nnue-evaluation-design.md for why that
-shape and not a deeper one: an output stack of `2*L1 -> 16 -> 32 -> 1` measured at 1386 ns
+piece count. The python-old branch's
+docs/superpowers/specs/2026-09-06-nnue-evaluation-design.md says why that shape and not a
+deeper one: an output stack of `2*L1 -> 16 -> 32 -> 1` measured at 1386 ns
 per node in the engine against 87 ns for a single output row.
 
 The float network and the quantised one are the same function. With input weights scaled
 by QA, output weights by QB and clipped ReLU saturating at QA, the quantised arithmetic in
-nnue.py reduces exactly to
+cpp/src/nnue.cpp reduces exactly to
 
     eval_cp = SCALE * (sum_i screlu(acc_i) * w_i + bias)
 

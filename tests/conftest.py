@@ -4,6 +4,9 @@ import random
 from collections.abc import Iterator
 
 import chess
+import pytest
+
+from tests.engine import Engine
 
 
 def random_positions(count: int, seed: int, max_plies: int = 40) -> Iterator[chess.Board]:
@@ -25,3 +28,10 @@ def random_positions(count: int, seed: int, max_plies: int = 40) -> Iterator[che
             continue
         yield board.copy()
         produced += 1
+
+
+@pytest.fixture
+def engine() -> Iterator[Engine]:
+    process = Engine()
+    yield process
+    process.close()

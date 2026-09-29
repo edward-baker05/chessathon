@@ -3,7 +3,7 @@
 #   make                 build for this machine
 #   make ARCH=x86-64-v3  build for any AVX2 machine, e.g. to copy elsewhere
 #   make perft           the move generator against known node counts
-#   make bench           node rate over tests/bench.py's positions
+#   make bench           node rate over a fixed set of positions
 
 CXX ?= g++
 ARCH ?= native
@@ -11,6 +11,8 @@ BUILD := build
 ROOT := $(abspath ..)
 NET := $(ROOT)/weights/net.npz
 BLOB := $(abspath $(BUILD))/net.bin
+# What exports the network; tools/sprt.py names the interpreter it is already running under.
+PYTHON ?= uv run python
 
 CXXFLAGS := -std=c++20 -O3 -march=$(ARCH) -flto=auto -DNDEBUG -Wall -Wextra -Wshadow
 LDFLAGS := -pthread
@@ -33,12 +35,12 @@ $(BUILD)/nnue.o: $(BLOB)
 $(BUILD)/nnue.o: CXXFLAGS += -DNNUE_BLOB='"$(BLOB)"'
 
 $(BLOB): $(NET) $(ROOT)/tools/export_cpp.py | $(BUILD)
-	cd $(ROOT) && uv run python tools/export_cpp.py net $(BLOB)
+	cd $(ROOT) && $(PYTHON) tools/export_cpp.py net $(BLOB)
 
 $(BUILD):
 	mkdir -p $@
 
-# Expected counts are tests/test_perft.py's.
+# Expected counts are tests/test_cpp.py's.
 perft: $(BUILD)/engine
 	@check() { got=$$(printf 'position fen %s\nperft %s\nquit\n' "$$1" "$$2" | \
 		$(BUILD)/engine | awk '/^nodes/ {print $$2}'); \

@@ -1,77 +1,42 @@
-"""The C++ engine in cpp/ against the Python engine it was ported from.
+"""The C++ engine's move generator and game tracking, spoken to over UCI.
 
-The port makes the same decisions in the same order and hashes with the same Zobrist keys,
-so a fixed-node search visits the same tree: the same move, depth, score and node count.
-That is a far stronger check than playing games against it, and it is what these tests hold
-it to. A change to either engine's search that is not made in both fails here.
-
-Skipped until the engine is built with `make -C cpp`.
+Perft is the gate: one illegal move loses a game outright. Skipped until the engine is built
+with `make -C cpp`.
 """
-
-import subprocess
-from collections.abc import Iterator
-from pathlib import Path
 
 import chess
 import pytest
 
-import search
-import tt
-from bitboard import KEY
-from tests.conftest import random_positions
+from tests.engine import Engine, info_field
+from tests.engine import pytestmark as pytestmark
 from tests.openings import OPENINGS
-from tests.test_nnue import AWKWARD, encoded, evaluate_board
-from tests.test_perft import CASES
 
-ENGINE = Path(__file__).resolve().parent.parent / "cpp" / "build" / "engine"
+CASES = [
+    ("startpos", chess.STARTING_FEN, [20, 400, 8902, 197281, 4865609]),
+    (
+        "kiwipete",
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+        [48, 2039, 97862, 4085603],
+    ),
+    ("ep-pin", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", [14, 191, 2812, 43238, 674624]),
+    (
+        "promotion",
+        "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1",
+        [6, 264, 9467, 422333],
+    ),
+    (
+        "position5",
+        "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
+        [44, 1486, 62379, 2103487],
+    ),
+    (
+        "position6",
+        "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+        [46, 2079, 89890, 3894594],
+    ),
+]
 
-pytestmark = pytest.mark.skipif(
-    not ENGINE.exists(), reason="the C++ engine is not built; run `make -C cpp`"
-)
-
-SEARCH_NODES = 30_000
-# Long enough that the node limit, not the clock, ends every Python search.
-UNTIMED_MS = 24 * 60 * 60 * 1000
-
-
-class Engine:
-    """One engine process, spoken to over UCI a command at a time."""
-
-    def __init__(self) -> None:
-        self.process = subprocess.Popen(
-            [str(ENGINE)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1
-        )
-
-    def send(self, line: str) -> None:
-        assert self.process.stdin is not None
-        self.process.stdin.write(line + "\n")
-        self.process.stdin.flush()
-
-    def until(self, prefix: str) -> list[str]:
-        """Every line up to and including the first that starts with `prefix`."""
-        assert self.process.stdout is not None
-        lines = []
-        for line in self.process.stdout:
-            lines.append(line.strip())
-            if line.startswith(prefix):
-                return lines
-        raise AssertionError(f"the engine exited before printing {prefix!r}: {lines}")
-
-    def close(self) -> None:
-        self.send("quit")
-        self.process.wait(timeout=10)
-
-
-@pytest.fixture
-def engine() -> Iterator[Engine]:
-    process = Engine()
-    yield process
-    process.close()
-
-
-def info_field(line: str, name: str) -> str:
-    tokens = line.split()
-    return tokens[tokens.index(name) + 1]
+KIWIPETE = CASES[1][1]
 
 
 @pytest.mark.parametrize("name,fen,expected", CASES, ids=[c[0] for c in CASES])
@@ -81,40 +46,6 @@ def test_perft(engine: Engine, name: str, fen: str, expected: list[int]) -> None
         engine.send(f"perft {depth}")
         got = int(info_field(engine.until("nodes")[-1], "nodes"))
         assert got == want, f"{name} perft({depth}) = {got}, expected {want}"
-
-
-def test_keys_and_evaluation_match_python(engine: Engine) -> None:
-    boards = [chess.Board(fen) for fen in AWKWARD] + list(random_positions(200, seed=7))
-    for board in boards:
-        engine.send(f"position fen {board.fen()}")
-        engine.send("eval")
-        _, value, _, key = engine.until("eval")[-1].split()
-        state, _ = encoded(board)
-        assert int(key, 16) == int(state[0][KEY]), board.fen()
-        assert int(value) == evaluate_board(board), board.fen()
-
-
-@pytest.mark.parametrize("fen", [chess.STARTING_FEN, *AWKWARD[:4], *OPENINGS[:5]])
-def test_fixed_node_search_matches_python(engine: Engine, fen: str) -> None:
-    board = chess.Board(fen)
-    state, _ = encoded(board)
-    tt.tt_clear(tt.TT)
-    search.clear_tables()
-    search.set_game_history([int(state[0][KEY])])
-    expected_move = search.think(board, UNTIMED_MS, increment_ms=0, node_limit=SEARCH_NODES)
-
-    engine.send("ucinewgame")
-    engine.send(f"position fen {fen}")
-    engine.send(f"go nodes {SEARCH_NODES}")
-    lines = engine.until("bestmove")
-    final = [line for line in lines if line.startswith("info depth")][-1]
-
-    assert lines[-1].split()[1] == expected_move
-    assert int(info_field(final, "nodes")) == search.nodes()
-    assert int(info_field(final, "depth")) == int(search.WORK.ints[search.I_DEPTH])
-    assert final.split(" score ")[1].split(" nodes")[0] == search.uci_score(
-        int(search.WORK.ints[search.I_SCORE])
-    )
 
 
 def test_a_double_push_nobody_can_take_continues_the_game(engine: Engine) -> None:
@@ -142,7 +73,7 @@ def test_a_double_push_nobody_can_take_continues_the_game(engine: Engine) -> Non
 
 
 def test_timed_move_is_legal_and_prompt(engine: Engine) -> None:
-    board = chess.Board(AWKWARD[0])
+    board = chess.Board(KIWIPETE)
     engine.send(f"position fen {board.fen()}")
     engine.send("go wtime 2000 btime 2000 winc 0 binc 0")
     lines = engine.until("bestmove")

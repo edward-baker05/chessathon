@@ -1,7 +1,6 @@
 // Shared vocabulary: bitboards, pieces, the move codec and the stack sizes.
 //
-// The encodings are the Python engine's, bit for bit. A move is the same int32 in both,
-// which is what lets a fixed-node search here be checked against search.py node for node.
+// A move is an int32; the fields are in move_from and the functions beside it.
 
 #pragma once
 
@@ -45,9 +44,9 @@ constexpr int move_flag(Move m) { return (m >> 15) & 3; }
 
 constexpr Bitboard square_bit(int square) { return Bitboard{1} << square; }
 
-// Python's `//`, which floors. C++ division truncates toward zero, and the two disagree on
-// every negative odd quotient: a history halving or an evaluation scaled that way is off by
-// one, which is enough to make a fixed-node search diverge from the Python engine's.
+// Division that floors, as Python's `//` does. C++ division truncates toward zero, and the
+// two disagree on every negative odd quotient; the search and evaluation use this one, and
+// changing it changes every search.
 constexpr int64_t floor_div(int64_t a, int64_t b) {
     int64_t q = a / b;
     return (a % b != 0 && ((a < 0) != (b < 0))) ? q - 1 : q;

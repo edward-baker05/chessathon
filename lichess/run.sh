@@ -3,7 +3,7 @@
 # Extra arguments go to lichess-bot, e.g. `lichess/run.sh -u` to upgrade the account to a bot.
 #
 # lichess-bot starts the engine binary itself, once per game. It starts in milliseconds, so
-# nothing has to be kept warm; zygote.py remains for serving Python builds to tools/sprt.py.
+# nothing has to be kept warm.
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)

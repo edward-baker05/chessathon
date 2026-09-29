@@ -1,7 +1,6 @@
-// Search: iterative deepening, PVS, quiescence, move ordering and time control. A port of
-// search.py that makes the same decisions in the same order, so a fixed-node search here
-// visits the same tree as one there. That holds for one thread; with more (see set_threads)
-// the threads race through the shared table, and no two searches are alike.
+// Search: iterative deepening, PVS, quiescence, move ordering and time control. With one
+// thread a fixed-node search is deterministic; with more (see set_threads) the threads race
+// through the shared table, and no two searches are alike.
 
 #pragma once
 

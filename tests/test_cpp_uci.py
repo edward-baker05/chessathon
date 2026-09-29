@@ -6,24 +6,16 @@ These tests send the awkward forms as well as the usual ones.
 """
 
 import time
-from collections.abc import Iterator
 
 import chess
 import pytest
 
-from tests.test_cpp import Engine, info_field
-from tests.test_cpp import pytestmark as pytestmark
+from tests.engine import Engine, info_field
+from tests.engine import pytestmark as pytestmark
 
 MATED = "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3"
 STALEMATE = "7k/5Q2/6K1/8/8/8/8/8 b - - 0 1"
 MATE_IN_ONE = "6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1"
-
-
-@pytest.fixture
-def engine() -> Iterator[Engine]:
-    process = Engine()
-    yield process
-    process.close()
 
 
 def ready(engine: Engine) -> list[str]:

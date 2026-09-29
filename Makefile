@@ -1,34 +1,28 @@
 SHELL := /bin/bash
 
-.PHONY: setup play arena gate test bench ab sprt fastchess-setup replay random-net data train quantise lichess-setup lichess
+.PHONY: setup engine test gate perft bench sprt fastchess-setup random-net data train quantise lichess-setup lichess
 
 setup:
 	uv sync
 
-play:
-	uv run python -m harness.play --white . --black baselines/numba $(if $(FEN),--fen "$(FEN)") --pgn game.pgn
+# The C++ engine, cpp/build/engine. See cpp/README.md.
+engine:
+	$(MAKE) -C cpp
 
-arena:
-	uv run python -m harness.arena --opponent baselines/numba --games 20
-
-gate:
-	uv run ruff check .
-	uv run mypy
-	uv run python -m harness.arena --opponent baselines/random --games 2 --base-ms 5000
-
-test:
+test: engine
 	uv run pytest -q
 
+gate: engine
+	uv run ruff check .
+	uv run mypy
+	$(MAKE) -C cpp perft
+	uv run pytest -q
+
+perft:
+	$(MAKE) -C cpp perft
+
 bench:
-	uv run python tests/bench.py
-
-# Time allocation over a played game, at the real control. Cheap evidence about the clock
-# before spending arena hours on an A/B that measures strength.
-replay:
-	uv run python tools/replay.py $(if $(PGN),"$(PGN)",logs/*.pgn) --side $(if $(SIDE),$(SIDE),Edward)
-
-ab:
-	uv run python tests/match.py --opponent $(OPPONENT) --games $(if $(GAMES),$(GAMES),200) --nodes $(if $(NODES),$(NODES),200000)
+	$(MAKE) -C cpp bench
 
 # Strength tests. The working tree (or DEV) against HEAD (or BASE) under fastchess, until an
 # SPRT decides; see tools/sprt.py for what a build can be. ARGS go to tools/sprt.py.
@@ -47,7 +41,7 @@ fastchess-setup:
 		unzip -q UHO_Lichess_4852_v1.epd.zip && rm UHO_Lichess_4852_v1.epd.zip; fi
 
 # A randomly initialised network in the shipped format. Plays badly by construction; it
-# exists so the runtime can be tested before any training has happened.
+# exists so the engine can be tested before any training has happened.
 random-net:
 	uv run python tools/random_net.py
 
@@ -57,8 +51,8 @@ train:
 quantise:
 	uv run python tools/quantise.py
 
-# Play on lichess through lichess-bot. See lichess/zygote.py for why the agent runs behind a
-# fork server. ARGS go to lichess-bot, e.g. `make lichess ARGS=-u` upgrades the account.
+# Play on lichess through lichess-bot, which starts cpp/build/engine once per game. ARGS go
+# to lichess-bot, e.g. `make lichess ARGS=-u` upgrades the account.
 lichess-setup:
 	if [ -d lichess/lichess-bot ]; then git -C lichess/lichess-bot pull --ff-only; \
 	else git clone --depth 1 https://github.com/lichess-bot-devs/lichess-bot.git lichess/lichess-bot; fi

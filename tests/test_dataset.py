@@ -1,24 +1,16 @@
-"""The training pipeline agrees with the engine.
+"""The extractor and the record format, checked against python-chess.
 
-Two things are checked, and they are the two places this pipeline can go wrong silently.
-
-The extractor reads FENs with its own parser rather than python-chess, for speed. So that
-parser is checked against python-chess.
-
-The trainer derives features from packed records, and the engine derives them from the
-board. If those two ever disagree, the net trains under one convention and plays under
-another. It still reaches a plausible loss. It just plays badly, and nothing in the
-training curve says why. So the features are compared directly against `nnue.refresh`.
+The extractor reads FENs with its own parser rather than python-chess, for speed, and that
+parser is where the pipeline can go wrong silently: a net trained on misread boards still
+reaches a plausible loss. So the parser and the check test are compared with python-chess.
 """
 
 import chess
 import numpy as np
 
-import nnue
-import position
 from tests.conftest import random_positions
 from tools import dataset
-from tools.extract import parse_board
+from tools.extract import BOCC, KING, WOCC, attacked, parse_board
 
 FENS = [
     chess.STARTING_FEN,
@@ -53,32 +45,6 @@ def test_the_extractor_parses_boards_the_way_python_chess_does() -> None:
             assert code == colour * 6 + (piece.piece_type - 1), board.fen()
 
 
-def test_unpacked_features_build_the_accumulator_the_engine_builds() -> None:
-    """The agreement the whole pipeline rests on.
-
-    An accumulator assembled from the trainer's sparse features must equal, element for
-    element, the one `nnue.refresh` builds from the board.
-    """
-    for fen in FENS:
-        board = chess.Board(fen)
-        index, white, black, stm, score = dataset.unpack(packed(board))
-        assert score.tolist() == [123]
-        assert stm.tolist() == [1 if board.turn == chess.BLACK else 0]
-
-        built = np.stack([nnue.FT_BIAS.astype(np.int64)] * 2)
-        for feature in white[index == 0]:
-            built[0] += nnue.FT_WEIGHT[feature].astype(np.int64)
-        for feature in black[index == 0]:
-            built[1] += nnue.FT_WEIGHT[feature].astype(np.int64)
-
-        state, mail = position.new_stacks()
-        position.encode(board, state[0], mail[0])
-        acc = nnue.new_accumulator(2)
-        nnue.refresh(acc, 0, state[0], mail[0])
-
-        assert np.array_equal(built, acc[0].astype(np.int64)), fen
-
-
 def test_unpacking_a_batch_keeps_positions_separate() -> None:
     """The sparse layout is a flat coordinate list, so an off-by-one in the row index
     would quietly mix pieces between positions rather than fail."""
@@ -103,3 +69,13 @@ def test_scores_survive_the_round_trip_including_negatives() -> None:
         batch = np.frombuffer(record, dtype=np.uint8).reshape(1, dataset.RECORD)
         _index, _white, _black, _stm, unpacked = dataset.unpack(batch)
         assert unpacked.tolist() == [score]
+
+
+def test_the_extractor_finds_check_the_way_python_chess_does() -> None:
+    for board in random_positions(count=300, seed=5, max_plies=80):
+        parsed = parse_board(board.board_fen().encode())
+        assert parsed is not None
+        state = parsed[2]
+        ours = state[BOCC] if board.turn == chess.BLACK else state[WOCC]
+        king = int(state[KING] & ours).bit_length() - 1
+        assert attacked(state, king, board.turn == chess.WHITE) == board.is_check(), board.fen()

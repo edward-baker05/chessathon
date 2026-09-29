@@ -14,10 +14,9 @@ throws away. Instead the three fields that matter are located with `bytes.find`.
 
 It does not use python-chess. Constructing a `chess.Board` per position would cost more
 than everything else combined. The FEN board field is unpacked directly into bitboards,
-and the engine's own `attacked` decides whether the side to move is in check.
+and `attacked` below decides whether the side to move is in check.
 
-Output is a flat file of 32 byte records, described in `RECORD`. Not shipped: tools/ never
-reaches the zip, which only carries root *.py and weights/.
+Output is a flat file of 32 byte records, described in `RECORD`.
 """
 
 import argparse
@@ -33,9 +32,13 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from bitboard import BOCC, KING, NFIELDS, STM, WOCC  # noqa: E402
-from position import attacked, king_square  # noqa: E402
 from tools.dataset import MAX_PIECES, RECORD, pack  # noqa: E402
+
+# The engine's own layout for a board: a piece bitboard per type, then the two colours'
+# occupancy and the side to move. Piece types are indexed 0 to 5, PAWN to KING.
+KING = 5
+WOCC, BOCC, STM = 6, 7, 8
+NFIELDS = 9
 
 PIECE_CODE = {
     "P": 0, "N": 1, "B": 2, "R": 3, "Q": 4, "K": 5,
@@ -78,6 +81,58 @@ class Filters:
             f"  dropped score out of range:              {self.extreme:,}\n"
             f"  dropped malformed:                       {self.malformed:,}"
         )
+
+
+def _steps(square: int, deltas: tuple[tuple[int, int], ...]) -> int:
+    mask = 0
+    for file_step, rank_step in deltas:
+        file, rank = square % 8 + file_step, square // 8 + rank_step
+        if 0 <= file < 8 and 0 <= rank < 8:
+            mask |= 1 << (rank * 8 + file)
+    return mask
+
+
+KNIGHT_STEPS = ((1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-2, 1), (-1, 2))
+KING_STEPS = ((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))
+KNIGHT_ATT = [_steps(sq, KNIGHT_STEPS) for sq in range(64)]
+KING_ATT = [_steps(sq, KING_STEPS) for sq in range(64)]
+# Where a pawn of each colour would have to stand to attack a square: index 0 is the
+# squares a white pawn attacks from, one rank below.
+PAWN_FROM = [
+    [_steps(sq, ((-1, -1), (1, -1))) for sq in range(64)],
+    [_steps(sq, ((-1, 1), (1, 1))) for sq in range(64)],
+]
+ORTHOGONAL = ((1, 0), (0, 1), (-1, 0), (0, -1))
+DIAGONAL = ((1, 1), (-1, 1), (-1, -1), (1, -1))
+
+
+def _slides(square: int, occupied: int, directions: tuple[tuple[int, int], ...]) -> int:
+    """Squares reached by sliding from `square`, up to and including the first blocker."""
+    mask = 0
+    for file_step, rank_step in directions:
+        file, rank = square % 8 + file_step, square // 8 + rank_step
+        while 0 <= file < 8 and 0 <= rank < 8:
+            bit = 1 << (rank * 8 + file)
+            mask |= bit
+            if occupied & bit:
+                break
+            file, rank = file + file_step, rank + rank_step
+    return mask
+
+
+def attacked(state: np.ndarray, square: int, by_black: bool) -> bool:
+    """Is `square` attacked by the given colour? Colour comes from the occupancy bitboards."""
+    occupied = int(state[WOCC] | state[BOCC])
+    them = int(state[BOCC] if by_black else state[WOCC])
+    pieces = [int(bits) & them for bits in state[:6]]
+    pawns, knights, bishops, rooks, queens, kings = pieces
+    if PAWN_FROM[1 if by_black else 0][square] & pawns:
+        return True
+    if KNIGHT_ATT[square] & knights or KING_ATT[square] & kings:
+        return True
+    if _slides(square, occupied, DIAGONAL) & (bishops | queens):
+        return True
+    return bool(_slides(square, occupied, ORTHOGONAL) & (rooks | queens))
 
 
 def parse_board(field: bytes) -> tuple[int, list[int], np.ndarray] | None:
@@ -220,7 +275,8 @@ def convert(payload: tuple[list[bytes], int]) -> tuple[bytes, Filters]:
         if state[KING] & (state[BOCC] if black_to_move else state[WOCC]) == 0:
             counts.malformed += 1
             continue
-        if attacked(state, king_square(state, int(black_to_move)), int(not black_to_move)):
+        king = int(state[KING] & (state[BOCC] if black_to_move else state[WOCC]))
+        if attacked(state, king.bit_length() - 1, not black_to_move):
             counts.in_check += 1
             continue
 

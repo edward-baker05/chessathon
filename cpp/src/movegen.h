@@ -1,5 +1,5 @@
 // Pseudo-legal move generation, filtered afterwards by making each move and testing whether
-// the mover left its king attacked. The order moves come out in is the Python engine's,
+// the mover left its king attacked. The order moves come out in matters,
 // because move ordering breaks ties by that order.
 
 #pragma once

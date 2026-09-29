@@ -15,18 +15,3 @@ jobs:
           enable-cache: true
       - run: uv sync
       - run: make gate
-
-  harness:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v7
-        with:
-          python-version: "3.12"
-          enable-cache: true
-      - run: uv sync
-      - run: uv run python -m harness.arena --opponent baselines/random --games 2 --base-ms 5000

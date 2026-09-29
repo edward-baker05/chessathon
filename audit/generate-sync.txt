@@ -1,8 +1,0 @@
-generated opening 1, total 6
-generated opening 2, total 8
-generated opening 3, total 14
-generated opening 4, total 20
-generated opening 5, total 26
-generated opening 6, total 32
-generated opening 7, total 38
-generated opening 8, total 43

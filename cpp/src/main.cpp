@@ -1,4 +1,4 @@
-// The UCI front end, and the game tracking agent.py does for the Python engine.
+// The UCI front end, and the game tracking that lets a bare FEN continue a game.
 //
 // Every command in the UCI specification is accepted, with every parameter, in any order,
 // and whatever is not understood is ignored rather than rejected: the specification asks an
@@ -7,7 +7,7 @@
 // anything yet; the notes on each handler say which.
 //
 // Game tracking. A `position ... moves ...` command carries the whole game and is the
-// repetition history. The Python harness hands over a bare FEN with no game identity, so
+// repetition history. A bare FEN carries no game identity, so
 // there a position one legal move on from our last reply continues the game, and anything
 // else starts a new one, clearing what was learned.
 //
@@ -341,8 +341,8 @@ void handle_eval() {
 }
 
 // Node rate and depth over fixed positions. The positions and the node limit are
-// tests/bench.py's, and the table is carried from one position to the next as it is there,
-// so the two engines' moves and node counts can be compared line by line.
+// fixed, and the table is carried from one position to the next, so the moves and node counts
+// can be compared line by line between builds.
 void handle_bench(const Tokens& args) {
     const std::pair<const char*, const char*> positions[] = {
         {"startpos", START_FEN},

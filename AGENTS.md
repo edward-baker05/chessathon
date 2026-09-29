@@ -1,48 +1,42 @@
 # Working in this repo
 
-A chess engine. `agent.py` exposes `get_move(fen, time_left_ms) -> str` (UCI) and is the engine's
-entry point; the search, evaluation and tooling live in the modules beside it. There are no
-external rules or limits on it: time control, memory, dependencies and file size are all up to
-the project.
+A chess engine in C++: a UCI binary with an NNUE evaluation whose network is embedded in it.
+The old Python engine it was ported from lives on the `python-old` branch.
 
 ## Layout
 
-- `agent.py` game tracking and move validation around `search.think`.
-- `search.py`, `position.py`, `movegen.py`, `bitboard.py`, `tt.py` the jitted search.
-- `nnue.py`, `evaluate.py`, `weights/net.npz` the evaluation.
-- `cpp/` the same engine ported to a C++ UCI binary; see `cpp/README.md`. It searches the same
-  tree as the Python engine node for node, and `tests/test_cpp.py` keeps it that way, so a
-  search or evaluation change made in one has to be made in both.
-- `harness/` local referee, clock and subprocess protocol. Edit it freely.
-- `tools/`, `tests/`, `lichess/`, `baselines/` training, tests, the lichess bridge and opponents.
-- `audit/`, `logs/` historical measurements. Read-only records; do not rewrite them.
+- `cpp/src/` the engine: `bitboard`, `position`, `movegen`, `nnue`, `search`, `tt`, and `main`
+  for UCI. `cpp/README.md` describes the UCI surface and how the engine tracks a game.
+- `weights/net.npz` the network. `tools/export_cpp.py` flattens it to a blob the build links
+  into the binary, so the engine carries its network with it.
+- `tools/` net training (`extract`, `dataset`, `train`, `quantise`, `random_net`) and
+  `sprt.py`, the strength tester.
+- `tests/` pytest, driving the built binary over UCI, plus the dataset and sprt tools.
+- `lichess/` the lichess-bot config and launcher.
 
 ## Working notes
 
-- The process starts once per game and stays alive between moves. Module state survives to the
-  next move in the same game, so `agent.py` detects a new game and clears its tables.
-- numba functions are warmed once at import so compilation stays off the game clock. Keep new
-  jitted functions warmed with the argument types the real calls use.
-- Never name a file after a module you import (`chess.py`, `types.py`, `random.py`).
+- The process starts once per game. It starts in milliseconds, so nothing needs warming.
+- `cpp/src/zobrist.inc` and the move, score and stack encodings in `types.h` are fixed: a
+  change to them changes every hash and every search.
+- Never name a Python file after a module you import (`chess.py`, `types.py`, `random.py`).
 - Only ship a network you trained yourself.
 
 ## Verify
 
 ```
-make test      # pytest
-make play      # one game against a baseline
-make arena     # 20 fast games against a baseline, with a score
-make gate      # ruff, mypy, and two games that have to finish cleanly
-make bench     # import time and search speed
-make -C cpp    # build the C++ engine; `perft` and `bench` targets too
+make -C cpp          # build cpp/build/engine; `perft` and `bench` targets too
+make test            # builds, then pytest
+make gate            # ruff, mypy, perft and pytest
 ```
 
 Judge strength changes with `make sprt` (fastchess, installed once by `make fastchess-setup`):
-it plays the working tree against HEAD until an SPRT decides, which hundreds of games cannot
-do for the 5 to 15 Elo most changes are worth. Builds are frozen into `sprt/<run>/` first, so
-the tree is free to edit while it runs. `tools/sprt.py --help` lists the options.
+it builds the working tree and HEAD and plays them until an SPRT decides, which hundreds of
+games cannot do for the 5 to 15 Elo most changes are worth. Builds are frozen into
+`sprt/<run>/` first, so the tree is free to edit while it runs. `tools/sprt.py --help` lists
+the options.
 
 ## Style
 
-Python 3.12, type-annotated, ruff and mypy strict clean. Match the comment density and naming of
-the surrounding code.
+C++20, warning clean under `-Wall -Wextra -Wshadow`. Python 3.12, type-annotated, ruff and
+mypy strict clean. Match the comment density and naming of the surrounding code.

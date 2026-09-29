@@ -1,5 +1,5 @@
 // Quantised NNUE evaluation: `768 -> L1x2 -> 1` with squared clipped ReLU and piece-count
-// output buckets, the network nnue.py evaluates, with identical integer arithmetic.
+// output buckets, evaluated in integer arithmetic.
 //
 // The network is embedded in the binary at build time (see the Makefile), so the engine
 // is one file that carries its own weights.

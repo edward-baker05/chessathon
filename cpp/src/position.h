@@ -1,6 +1,6 @@
 // Position state, FEN, copy-make and attack detection.
 //
-// A Position is the Python engine's state row and mailbox in one struct. It lives in a
+// A Position is the state row and mailbox in one struct. It lives in a
 // preallocated per-ply stack so the search never allocates, and moves are made by copying
 // into the next ply rather than unmaking. The mailbox carries only the piece type; colour
 // is read from the colour bitboards.

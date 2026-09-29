@@ -1,26 +1,23 @@
-"""Play one build against another under fastchess, until an SPRT decides.
+"""Play one build of the engine against another under fastchess, until an SPRT decides.
 
-`tests/match.py` imports the agent afresh for every game, which costs about a minute of
-numba compilation per side per game, and plays a length fixed in advance. That capped a
-match at a few hundred games, whose 95% interval of about +-30 Elo cannot see the 5 to 15
-Elo most real changes are worth. This keeps each build warm in a zygote (lichess/zygote.py)
-that forks a fresh process per game, so a game costs its own clock and nothing else, and
-lets fastchess stop the match as soon as the sequential test is decided either way.
+A match of a few hundred games has a 95% interval of about +-30 Elo, which cannot see the 5
+to 15 Elo most real changes are worth. This lets fastchess stop the match as soon as the
+sequential test is decided either way.
 
 A build is one of:
 
-  worktree        the working tree, uncommitted changes included (the default for --dev)
-  a git ref       HEAD, main, a sha: the top-level .py files and weights at that commit
-  a directory     a snapshot holding agent.py, e.g. snapshots/<tag>
-  an executable   a native UCI engine, played directly. It is copied alone, so it has to
-                  carry its network inside it.
+  worktree        cpp/ as it stands, uncommitted changes included (the default for --dev)
+  a git ref       HEAD, main, a sha: cpp/ and the network at that commit
+  an executable   a UCI engine, played as it is. It is copied alone, so it has to carry its
+                  network inside it, as cpp/build/engine does.
 
-Every build is frozen into the run directory before the first game, so editing the tree
-during a match cannot change who is playing.
+A source build is compiled into the run directory, so `make -C cpp` need not have been run
+and its result is never what is measured. Every build is frozen there before the first game,
+so editing the tree during a match cannot change who is playing.
 
     make sprt                                  # the working tree against HEAD
     make sprt BASE=main~3                      # against an older commit
-    make sprt DEV=../engine-cpp/build/engine   # a UCI binary against HEAD
+    make sprt DEV=../other-engine/build/engine # a UCI binary against HEAD
     make sprt DEV=cpp/build/engine BASE=cpp/build/engine ARGS="--dev-option Threads=2"
                                                # the same binary, two threads against one
     uv run python tools/sprt.py --games 200    # a fixed-length run with no SPRT
@@ -35,7 +32,6 @@ simplification is `--elo0 -10 --elo1 0`.
 
 import argparse
 import collections
-import contextlib
 import datetime
 import io
 import json
@@ -44,26 +40,20 @@ import re
 import secrets
 import shlex
 import shutil
-import signal
 import subprocess
 import sys
 import tarfile
-import tempfile
-import time
 from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 FASTCHESS = ROOT / "third_party" / "fastchess" / "fastchess"
 BOOK = ROOT / "third_party" / "books" / "UHO_Lichess_4852_v1.epd"
-ZYGOTE = ROOT / "lichess" / "zygote.py"
-UCI_CLIENT = ROOT / "lichess" / "uci_client.py"
 RUNS = ROOT / "sprt"
 
 WORKTREE = "worktree"
-# The import compiles every jitted function. It takes about a minute alone; allow for a
-# loaded machine before calling a zygote stuck.
-IMPORT_TIMEOUT_S = 600.0
+# What building the engine reads: the sources, the network and the tool that embeds it.
+SOURCES = ["cpp/Makefile", "cpp/src", "weights/net.npz", "tools/export_cpp.py"]
 # An SPRT stops itself. This only bounds a test whose true value sits between the bounds.
 MAX_GAMES = 40_000
 # Endings that are chess. Anything else is an engine fault: a flag, a crash, an illegal move.
@@ -81,8 +71,7 @@ class Build:
     # What the spec resolved to, for the record: a commit, a path.
     origin: str
     root: Path
-    # A native UCI engine, played directly. None for a Python build served by a zygote.
-    executable: Path | None = None
+    executable: Path
 
 
 def git(*arguments: str) -> str:
@@ -91,19 +80,19 @@ def git(*arguments: str) -> str:
     ).stdout.strip()
 
 
-def copy_python_build(source: Path, destination: Path) -> None:
-    """The files the engine runs from: the top-level modules and the network."""
-    for module in sorted(source.glob("*.py")):
-        shutil.copy2(module, destination / module.name)
-    if (source / "weights").is_dir():
-        shutil.copytree(source / "weights", destination / "weights")
+def copy_worktree(destination: Path) -> None:
+    for source in SOURCES:
+        target = destination / source
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if (ROOT / source).is_dir():
+            shutil.copytree(ROOT / source, target)
+        else:
+            shutil.copy2(ROOT / source, target)
 
 
 def extract_commit(sha: str, destination: Path) -> None:
-    top_level = git("ls-tree", "--name-only", sha).splitlines()
-    wanted = [name for name in top_level if name.endswith(".py") or name == "weights"]
     archive = subprocess.run(
-        ["git", "archive", "--format=tar", sha, "--", *wanted],
+        ["git", "archive", "--format=tar", sha, "--", *SOURCES],
         cwd=ROOT,
         check=True,
         capture_output=True,
@@ -112,73 +101,47 @@ def extract_commit(sha: str, destination: Path) -> None:
         tar.extractall(destination, filter="data")
 
 
+def compile_engine(root: Path, name: str, run_dir: Path) -> Path:
+    print(f"building {name}", flush=True)
+    with open(run_dir / f"{name}-build.log", "wb") as log:
+        result = subprocess.run(
+            [
+                "make",
+                "-C",
+                str(root / "cpp"),
+                f"-j{os.cpu_count() or 1}",
+                f"PYTHON={sys.executable}",
+            ],
+            stdout=log,
+            stderr=subprocess.STDOUT,
+        )
+    if result.returncode:
+        log_text = (run_dir / f"{name}-build.log").read_text(errors="replace")
+        sys.exit(f"the {name} build failed:\n{log_text[-2000:]}")
+    return root / "cpp" / "build" / "engine"
+
+
 def freeze(name: str, spec: str, run_dir: Path) -> Build:
-    """Copy the build `spec` names into the run directory, where nothing else will touch it."""
+    """Build or copy what `spec` names into the run directory, where nothing else will touch it."""
     root = run_dir / name
     root.mkdir()
     path = Path(spec)
     if spec == WORKTREE:
-        copy_python_build(ROOT, root)
-        dirty = git("status", "--porcelain", "--", "*.py", "weights")
+        copy_worktree(root)
+        dirty = git("status", "--porcelain", "--", *SOURCES)
         origin = f"working tree at {git('rev-parse', '--short=12', 'HEAD')}"
-        return Build(name, spec, origin + (" with changes" if dirty else ""), root)
+        origin += " with changes" if dirty else ""
+        return Build(name, spec, origin, root, compile_engine(root, name, run_dir))
     if path.is_file() and os.access(path, os.X_OK):
         executable = root / path.name
         shutil.copy2(path, executable)
         return Build(name, spec, str(path.resolve()), root, executable)
-    if path.is_dir() and (path / "agent.py").is_file():
-        copy_python_build(path, root)
-        return Build(name, spec, str(path.resolve()), root)
     try:
         sha = git("rev-parse", "--verify", "--quiet", f"{spec}^{{commit}}")
     except subprocess.CalledProcessError:
-        sys.exit(f"{spec!r} is not a git ref, a directory holding agent.py or an executable")
+        sys.exit(f"{spec!r} is not a git ref or an executable")
     extract_commit(sha, root)
-    return Build(name, spec, f"{spec} at {sha[:12]}", root)
-
-
-Zygote = tuple[subprocess.Popen[bytes], Path]
-
-
-def start_zygote(build: Build, sockets: Path, run_dir: Path) -> Zygote:
-    socket = sockets / f"{build.name}.sock"
-    with open(run_dir / f"{build.name}-zygote.log", "wb") as log:
-        process = subprocess.Popen(
-            [sys.executable, str(ZYGOTE), "--root", str(build.root), "--socket", str(socket)],
-            stdout=subprocess.DEVNULL,
-            stderr=log,
-            # Its own group, so stopping it also stops any game it forked.
-            start_new_session=True,
-        )
-    return process, socket
-
-
-def wait_for(zygotes: dict[str, Zygote], run_dir: Path) -> None:
-    deadline = time.monotonic() + IMPORT_TIMEOUT_S
-    waiting = dict(zygotes)
-    while waiting:
-        for name, (process, _) in list(waiting.items()):
-            # Printed after listen(), where the socket file already exists after bind().
-            log = (run_dir / f"{name}-zygote.log").read_text(errors="replace")
-            if "zygote ready" in log:
-                del waiting[name]
-            elif process.poll() is not None:
-                sys.exit(f"the {name} build failed to import:\n{log}")
-        if time.monotonic() > deadline:
-            sys.exit(f"still importing after {IMPORT_TIMEOUT_S:.0f} s: {', '.join(waiting)}")
-        time.sleep(0.5)
-
-
-def engine_command(build: Build, socket: Path | None, run_dir: Path) -> Path:
-    """What fastchess runs for `build`: the binary itself, or a relay to its zygote."""
-    if build.executable is not None:
-        return build.executable
-    assert socket is not None
-    script = run_dir / f"{build.name}.sh"
-    relay = [sys.executable, str(UCI_CLIENT), str(socket)]
-    script.write_text(f"#!/bin/sh\nexec {shlex.join(relay)}\n")
-    script.chmod(0o755)
-    return script
+    return Build(name, spec, f"{spec} at {sha[:12]}", root, compile_engine(root, name, run_dir))
 
 
 def uci_options(options: list[str]) -> list[str]:
@@ -190,13 +153,6 @@ def uci_options(options: list[str]) -> list[str]:
             sys.exit(f"an engine option is NAME=VALUE, not {option!r}")
         arguments.append(f"option.{name.strip()}={value}")
     return arguments
-
-
-def stop(zygotes: dict[str, Zygote]) -> None:
-    for process, _ in zygotes.values():
-        with contextlib.suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGTERM)
-        process.wait()
 
 
 def tally(pgn: Path) -> collections.Counter[str]:
@@ -281,20 +237,13 @@ def main() -> int:
         print(f"{build.name}: {build.origin}")
     print(f"results in {run_dir.relative_to(ROOT)}/")
 
-    sockets = Path(tempfile.mkdtemp(prefix="sprt-"))
-    zygotes = {b.name: start_zygote(b, sockets, run_dir) for b in builds if b.executable is None}
     pv_warnings = 0
     try:
-        if zygotes:
-            print("importing the Python builds (about a minute)", flush=True)
-            wait_for(zygotes, run_dir)
         command = [str(FASTCHESS)]
         for build in builds:
-            socket = zygotes[build.name][1] if build.name in zygotes else None
-            executable = engine_command(build, socket, run_dir)
             command += [
                 "-engine",
-                f"cmd={executable}",
+                f"cmd={build.executable}",
                 f"name={build.name}",
                 *limits[build.name],
                 *options[build.name],
@@ -336,9 +285,6 @@ def main() -> int:
             status = fastchess.wait()
     except KeyboardInterrupt:
         status = 130
-    finally:
-        stop(zygotes)
-        shutil.rmtree(sockets, ignore_errors=True)
 
     counts = tally(run_dir / "games.pgn")
     print(f"\n{sum(counts.values())} games; endings: {dict(counts)}")

@@ -66,7 +66,7 @@ inline void move_two(int16_t* dst, const int16_t* src, const int16_t* sub0, cons
 }
 
 // Squared clipped ReLU against one output row, side to move first. The sum wraps at 32 bits
-// exactly as nnue.py's int32 does; tools/quantise.py proves the shipped weights never wrap.
+// in int32; tools/quantise.py proves the shipped weights never wrap.
 int32_t dot(const int16_t* us, const int16_t* them, const int16_t* weights) {
 #if defined(__AVX2__)
     if (net.madd_exact) {
