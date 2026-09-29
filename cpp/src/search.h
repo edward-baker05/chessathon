@@ -18,14 +18,17 @@ namespace search {
 constexpr int MAX_DEPTH = 127;
 
 struct Limits {
-    // Our clock and increment. A negative clock means there is none: the search runs until
-    // a node or depth limit, or a stop.
-    int64_t time_left_ms = -1;
+    // Our clock and increment. Without a clock the search runs until a node or depth
+    // limit, or a stop.
+    bool has_clock = false;
+    int64_t time_left_ms = 0;
     int64_t increment_ms = 0;
     // Search exactly this long, when positive, whatever the clock says.
     int64_t movetime_ms = 0;
     int64_t node_limit = 0;
     int max_depth = MAX_DEPTH;
+    // Only these root moves, when not empty. Moves not legal at the root are ignored.
+    std::vector<Move> searchmoves;
 };
 
 // The last completed iteration of the last search.
@@ -45,6 +48,14 @@ TranspositionTable& table();
 
 // Set from another thread to end the current search at the next clock check.
 extern std::atomic<bool> stop_requested;
+
+// While set, the search is on the opponent's time: no time limit applies. Set it before
+// starting a `go ponder` search; ponderhit() clears it.
+extern std::atomic<bool> pondering;
+
+// The opponent played the expected move. The limits the search was started with apply from
+// now, as if it had been started now.
+void ponderhit();
 
 // Positions already played in this game, oldest first, ending with the root.
 void set_game_history(const std::vector<Key>& keys);

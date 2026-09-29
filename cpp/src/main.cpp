@@ -1,17 +1,26 @@
 // The UCI front end, and the game tracking agent.py does for the Python engine.
 //
-// The Python harness hands over a bare FEN with no game identity, so a position that is one
-// legal move on from our last reply continues the game and anything else starts a new one,
-// clearing what was learned. A `position ... moves ...` command carries the whole game and is
-// used as the repetition history directly.
+// Every command in the UCI specification is accepted, with every parameter, in any order,
+// and whatever is not understood is ignored rather than rejected: the specification asks an
+// engine to skip unknown tokens and "try to parse the rest of the string in this line", so
+// `joho debug on` still turns debugging on. Some input is accepted without changing
+// anything yet; the notes on each handler say which.
 //
-// Beyond UCI: `perft N`, `eval`, `d` and `bench [nodes]`. Arguments on the command line
-// run as one command and exit, so `engine bench` works.
+// Game tracking. A `position ... moves ...` command carries the whole game and is the
+// repetition history. The Python harness hands over a bare FEN with no game identity, so
+// there a position one legal move on from our last reply continues the game, and anything
+// else starts a new one, clearing what was learned.
+//
+// Beyond UCI: `perft N`, `eval`, `d` and `bench [nodes]`. Arguments on the command line run
+// as one command and exit, so `engine bench` works.
 
+#include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <cstdio>
 #include <iostream>
 #include <mutex>
+#include <new>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -24,11 +33,22 @@
 
 namespace {
 
+using Tokens = std::vector<std::string>;
+
+constexpr int64_t MAX_HASH_MB = 65536;
+
 std::mutex output_mutex;
 
 void say(const std::string& line) {
     std::lock_guard lock(output_mutex);
     std::cout << line << '\n' << std::flush;
+}
+
+// `debug on` asks for extra information as `info string` lines.
+bool debugging = false;
+
+void debug(const std::string& text) {
+    if (debugging) say("info string " + text);
 }
 
 struct Game {
@@ -40,10 +60,59 @@ struct Game {
 };
 
 Game game;
-std::thread worker;
 
-void wait_for_search() {
-    if (worker.joinable()) worker.join();
+// The search in progress, if any, and whether it would ever end on its own.
+std::thread worker;
+bool infinite_search = false;
+bool unlimited_search = false;
+
+// Waits for the search to finish, stopping it first if it never would on its own. What
+// the GUI sends after `go` is not meant to arrive until `bestmove` has, but waiting on an
+// infinite search would never answer at all.
+void finish_search() {
+    if (!worker.joinable()) return;
+    if (infinite_search || unlimited_search || search::pondering) search::stop_requested = true;
+    worker.join();
+}
+
+void stop_search() {
+    if (!worker.joinable()) return;
+    search::stop_requested = true;
+    worker.join();
+}
+
+Tokens split(const std::string& line) {
+    Tokens tokens;
+    std::istringstream in(line);
+    for (std::string token; in >> token;) tokens.push_back(token);
+    return tokens;
+}
+
+std::string lower(std::string text) {
+    std::transform(text.begin(), text.end(), text.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return text;
+}
+
+std::string join(const Tokens& tokens, size_t from, size_t to) {
+    std::string out;
+    for (size_t i = from; i < to && i < tokens.size(); ++i) out += (out.empty() ? "" : " ") + tokens[i];
+    return out;
+}
+
+std::optional<int64_t> to_int(const std::string& token) {
+    int64_t value = 0;
+    const char* begin = token.data() + (token.starts_with('+') ? 1 : 0);
+    const char* end = token.data() + token.size();
+    auto [ptr, error] = std::from_chars(begin, end, value);
+    if (error != std::errc() || ptr != end) return std::nullopt;
+    return value;
+}
+
+std::string hex(Key key) {
+    char text[32];
+    std::snprintf(text, sizeof text, "%016llx", static_cast<unsigned long long>(key));
+    return text;
 }
 
 void new_game() {
@@ -65,43 +134,95 @@ bool follows(const Position& from, const Position& pos) {
     return false;
 }
 
-void handle_position(std::istringstream& in) {
-    std::string token, fen;
-    in >> token;
-    if (token == "startpos") {
-        fen = START_FEN;
-        in >> token;
-    } else if (token == "fen") {
-        while (in >> token && token != "moves") fen += (fen.empty() ? "" : " ") + token;
+void handle_uci() {
+    say("id name chessathon-cpp");
+    say("id author edward-baker05");
+    say("option name Hash type spin default " + std::to_string(DEFAULT_HASH_MB) + " min 1 max " +
+        std::to_string(MAX_HASH_MB));
+    say("option name Clear Hash type button");
+    say("option name Ponder type check default false");
+    say("option name Threads type spin default 1 min 1 max 1");
+    say("uciok");
+}
+
+void handle_debug(const Tokens& args) {
+    // A bare `debug` is taken as `debug on`.
+    debugging = args.empty() || args[0] != "off";
+}
+
+// `setoption name <id> [value <x>]`. Both the name and the value may contain spaces, and
+// names are matched without regard to case, as most GUIs expect.
+void handle_setoption(const Tokens& args) {
+    auto name_at = std::find(args.begin(), args.end(), "name");
+    if (name_at == args.end()) return;
+    auto value_at = std::find(name_at, args.end(), "value");
+    size_t name_index = static_cast<size_t>(name_at - args.begin()) + 1;
+    size_t value_index = static_cast<size_t>(value_at - args.begin());
+    std::string name = lower(join(args, name_index, value_index));
+    std::string value = value_at == args.end() ? "" : join(args, value_index + 1, args.size());
+
+    finish_search();
+    if (name == "hash") {
+        std::optional<int64_t> megabytes = to_int(value);
+        if (!megabytes) return debug("Hash needs a number of megabytes, not '" + value + "'");
+        try {
+            search::table().resize(static_cast<size_t>(std::clamp<int64_t>(*megabytes, 1, MAX_HASH_MB)));
+        } catch (const std::bad_alloc&) {
+            say("info string cannot allocate " + value + " MB for the hash; keeping the current table");
+        }
+    } else if (name == "clear hash") {
+        search::table().clear();
+    } else if (name == "ponder" || name == "threads") {
+        // Pondering happens when a GUI sends `go ponder`, whatever this says, and the search
+        // runs on one thread. Both are accepted so that GUIs which always set them can.
     } else {
-        say("info string unrecognised position command");
-        return;
+        debug("no option named '" + name + "'");
+    }
+}
+
+// `position [fen <fenstring> | startpos] [moves <move1> ... <movei>]`.
+void handle_position(const Tokens& args) {
+    if (args.empty()) return;
+    std::string fen;
+    size_t i = 1;
+    if (args[0] == "startpos") {
+        fen = START_FEN;
+    } else if (args[0] == "fen") {
+        for (; i < args.size() && args[i] != "moves"; ++i) fen += (fen.empty() ? "" : " ") + args[i];
+    } else {
+        return debug("position needs startpos or fen, not '" + args[0] + "'");
     }
     Position pos;
     if (!from_fen(pos, fen)) {
-        say("info string invalid fen: " + fen);
+        say("info string invalid fen '" + fen + "'; keeping the previous position");
         return;
     }
+    while (i < args.size() && args[i] != "moves") ++i;
+
     std::vector<Key> keys{pos.key};
     bool listed = false;
-    if (token == "moves") {
-        while (in >> token) {
-            Move move = parse_uci_move(pos, token);
-            if (move == 0) {
-                say("info string illegal move " + token + " in " + to_fen(pos));
-                break;
-            }
-            Position next;
-            make(pos, next, move);
-            pos = next;
-            keys.push_back(pos.key);
-            listed = true;
+    for (++i; i < args.size(); ++i) {
+        Move move = parse_uci_move(pos, lower(args[i]));
+        if (move == 0) {
+            say("info string illegal move '" + args[i] + "' in " + to_fen(pos) + "; ignoring the rest");
+            break;
         }
+        Position next;
+        make(pos, next, move);
+        pos = next;
+        keys.push_back(pos.key);
+        listed = true;
     }
 
-    if (!game.last_reply || !follows(*game.last_reply, pos)) {
+    // A listed game that passes through our last reply is the game we are playing, however
+    // it went on from there; that is what a GUI sends after pondering on a move that was
+    // not played. A bare FEN has to be exactly one move on.
+    bool continues =
+        game.last_reply && ((listed && std::find(keys.begin(), keys.end(), game.last_reply->key) != keys.end()) ||
+                            follows(*game.last_reply, pos));
+    if (!continues) {
         new_game();
-        say("info string new game");
+        debug("new game");
     }
     if (listed)
         game.history = keys;
@@ -110,56 +231,95 @@ void handle_position(std::istringstream& in) {
     game.root = pos;
 }
 
-void handle_go(std::istringstream& in) {
+bool is_go_keyword(const std::string& token) {
+    static const char* const KEYWORDS[] = {"searchmoves", "ponder", "wtime", "btime", "winc", "binc",
+                                           "movestogo", "depth", "nodes", "mate", "movetime", "infinite"};
+    return std::find(std::begin(KEYWORDS), std::end(KEYWORDS), token) != std::end(KEYWORDS);
+}
+
+// `go` with any of its parameters. `movestogo` and `mate` are accepted and do not change
+// the search yet: the time allocation already caps one move at a twelfth of the clock, and
+// the search stops at the first forced mate it proves.
+void handle_go(const Tokens& args) {
     search::Limits limits;
     bool infinite = false;
-    std::string token;
-    int64_t wtime = -1, btime = -1, winc = 0, binc = 0;
-    while (in >> token) {
+    bool ponder = false;
+    std::optional<int64_t> wtime, btime, winc, binc;
+    bool depth_given = false;
+    for (size_t i = 0; i < args.size(); ++i) {
+        const std::string& token = args[i];
         if (token == "infinite") {
             infinite = true;
-            continue;
+        } else if (token == "ponder") {
+            ponder = true;
+        } else if (token == "searchmoves") {
+            while (i + 1 < args.size() && !is_go_keyword(args[i + 1])) {
+                Move move = parse_uci_move(game.root, lower(args[++i]));
+                if (move != 0) limits.searchmoves.push_back(move);
+            }
+        } else if (is_go_keyword(token)) {
+            std::optional<int64_t> value = i + 1 < args.size() ? to_int(args[i + 1]) : std::nullopt;
+            if (!value) continue;
+            ++i;
+            if (token == "wtime") wtime = value;
+            else if (token == "btime") btime = value;
+            else if (token == "winc") winc = value;
+            else if (token == "binc") binc = value;
+            else if (token == "movetime") limits.movetime_ms = std::max<int64_t>(*value, 1);
+            else if (token == "nodes") limits.node_limit = std::max<int64_t>(*value, 0);
+            else if (token == "depth") {
+                limits.max_depth = static_cast<int>(std::clamp<int64_t>(*value, 1, search::MAX_DEPTH));
+                depth_given = true;
+            }
         }
-        int64_t value = 0;
-        if (!(in >> value)) break;
-        if (token == "wtime") wtime = value;
-        else if (token == "btime") btime = value;
-        else if (token == "winc") winc = value;
-        else if (token == "binc") binc = value;
-        else if (token == "movetime") limits.movetime_ms = value;
-        else if (token == "nodes") limits.node_limit = value;
-        else if (token == "depth") limits.max_depth = static_cast<int>(value);
     }
-    bool white = game.root.stm == WHITE;
-    if (!infinite) {
-        limits.time_left_ms = white ? wtime : btime;
-        limits.increment_ms = white ? winc : binc;
+    const std::optional<int64_t>& clock = game.root.stm == WHITE ? wtime : btime;
+    const std::optional<int64_t>& increment = game.root.stm == WHITE ? winc : binc;
+    if (clock && !infinite) {
+        limits.has_clock = true;
+        limits.time_left_ms = *clock;
+        limits.increment_ms = increment.value_or(0);
     }
 
+    infinite_search = infinite;
+    unlimited_search = !limits.has_clock && limits.movetime_ms == 0 && limits.node_limit == 0 && !depth_given;
     search::stop_requested = false;
+    search::pondering = ponder;
     search::set_game_history(game.history);
-    worker = std::thread([limits, infinite] {
+    worker = std::thread([limits, infinite, ponder] {
         const Position root = game.root;
         Move best = search::think(root, limits, [&root](const search::Report& report) {
             say(search::uci_info(root, report));
         });
-        // UCI forbids answering an infinite search before it is told to stop.
-        while (infinite && !search::stop_requested) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        // UCI forbids answering an infinite or pondering search before it is told to stop,
+        // or, when pondering, that the expected move was played.
+        while ((infinite || search::pondering) && !search::stop_requested)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        // A ponder search that was stopped rather than hit was never a move we played.
+        bool played = !(ponder && search::pondering);
+        search::pondering = false;
+
         search::Report report = search::last_report();
         if (report.depth > 0) say(search::uci_info(root, report));
-        if (best != 0) {
+        if (best == 0) {
+            say("bestmove (none)");
+            return;
+        }
+        if (played) {
             Position reply;
             make(root, reply, best);
             game.history.push_back(reply.key);
             game.last_reply = reply;
         }
-        say("bestmove " + move_to_uci(best));
+        std::string line = "bestmove " + move_to_uci(best);
+        std::vector<Move> pv = search::principal_variation(root);
+        if (pv.size() >= 2 && pv[0] == best) line += " ponder " + move_to_uci(pv[1]);
+        say(line);
     });
 }
 
-void handle_perft(std::istringstream& in) {
-    int depth = 1;
-    in >> depth;
+void handle_perft(const Tokens& args) {
+    int depth = static_cast<int>(std::clamp<int64_t>(args.empty() ? 1 : to_int(args[0]).value_or(1), 0, 20));
     auto started = std::chrono::steady_clock::now();
     uint64_t nodes = perft(game.root, depth);
     double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
@@ -169,15 +329,13 @@ void handle_perft(std::istringstream& in) {
 void handle_eval() {
     nnue::Accumulator acc;
     nnue::refresh(acc, game.root);
-    char key[32];
-    std::snprintf(key, sizeof key, "%016llx", static_cast<unsigned long long>(game.root.key));
-    say("eval " + std::to_string(nnue::evaluate(acc, game.root)) + " key " + key);
+    say("eval " + std::to_string(nnue::evaluate(acc, game.root)) + " key " + hex(game.root.key));
 }
 
 // Node rate and depth over fixed positions. The positions and the node limit are
 // tests/bench.py's, and the table is carried from one position to the next as it is there,
 // so the two engines' moves and node counts can be compared line by line.
-void handle_bench(std::istringstream& in) {
+void handle_bench(const Tokens& args) {
     const std::pair<const char*, const char*> positions[] = {
         {"startpos", START_FEN},
         {"kiwipete", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"},
@@ -185,19 +343,20 @@ void handle_bench(std::istringstream& in) {
         {"endgame", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"},
         {"tactical", "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8"},
     };
-    int64_t node_limit = 400000;
-    in >> node_limit;
+    int64_t node_limit = args.empty() ? 400000 : to_int(args[0]).value_or(400000);
     int64_t total_nodes = 0;
     double total_seconds = 0.0;
     char line[160];
     std::snprintf(line, sizeof line, "%-10s %10s %8s %8s %6s  %s", "position", "nodes", "time", "knps",
                   "depth", "move");
     say(line);
+    search::stop_requested = false;
     for (const auto& [name, fen] : positions) {
         Position root;
         from_fen(root, fen);
         search::set_game_history({root.key});
         search::Limits limits;
+        limits.has_clock = true;
         limits.time_left_ms = 600000;
         limits.increment_ms = 500;
         limits.node_limit = node_limit;
@@ -216,57 +375,61 @@ void handle_bench(std::istringstream& in) {
         std::to_string(static_cast<int64_t>(total_nodes / total_seconds)) + " nps");
 }
 
-// Returns false on quit.
+// Runs one input line. Returns false on quit.
 bool handle(const std::string& line) {
-    std::istringstream in(line);
-    std::string command;
-    in >> command;
+    Tokens tokens = split(line);
+    static const char* const COMMANDS[] = {"uci",  "debug", "isready", "setoption", "register", "ucinewgame",
+                                           "position", "go", "stop", "ponderhit", "quit", "perft",
+                                           "eval", "d", "bench"};
+    auto at = std::find_if(tokens.begin(), tokens.end(), [](const std::string& token) {
+        return std::find(std::begin(COMMANDS), std::end(COMMANDS), token) != std::end(COMMANDS);
+    });
+    if (at == tokens.end()) {
+        if (!tokens.empty()) debug("unknown command '" + tokens[0] + "'");
+        return true;
+    }
+    std::string command = *at;
+    Tokens args(at + 1, tokens.end());
+
     if (command == "uci") {
-        say("id name chessathon-cpp");
-        say("id author edward-baker05");
-        say("option name Hash type spin default " + std::to_string(DEFAULT_HASH_MB) + " min 1 max 65536");
-        say("uciok");
+        handle_uci();
+    } else if (command == "debug") {
+        handle_debug(args);
     } else if (command == "isready") {
+        // Answered at once, even mid-search, as the specification requires.
         say("readyok");
     } else if (command == "setoption") {
-        std::string token, name, value;
-        in >> token;  // "name"
-        while (in >> token && token != "value") name += (name.empty() ? "" : " ") + token;
-        in >> value;
-        wait_for_search();
-        if (name == "Hash" && !value.empty()) search::table().resize(std::stoull(value));
+        handle_setoption(args);
+    } else if (command == "register") {
+        // No registration is needed; `register later` and a name and code are all fine.
     } else if (command == "ucinewgame") {
-        wait_for_search();
+        finish_search();
         new_game();
     } else if (command == "position") {
-        wait_for_search();
-        handle_position(in);
+        finish_search();
+        handle_position(args);
     } else if (command == "go") {
-        wait_for_search();
-        handle_go(in);
+        finish_search();
+        handle_go(args);
     } else if (command == "stop") {
-        search::stop_requested = true;
-        wait_for_search();
+        stop_search();
+    } else if (command == "ponderhit") {
+        if (search::pondering) search::ponderhit();
     } else if (command == "quit") {
-        search::stop_requested = true;
-        wait_for_search();
+        stop_search();
         return false;
     } else if (command == "perft") {
-        wait_for_search();
-        handle_perft(in);
+        finish_search();
+        handle_perft(args);
     } else if (command == "eval") {
-        wait_for_search();
+        finish_search();
         handle_eval();
     } else if (command == "d") {
-        wait_for_search();
-        char key[32];
-        std::snprintf(key, sizeof key, "%016llx", static_cast<unsigned long long>(game.root.key));
-        say(to_fen(game.root) + " key " + key);
+        finish_search();
+        say(to_fen(game.root) + " key " + hex(game.root.key));
     } else if (command == "bench") {
-        wait_for_search();
-        handle_bench(in);
-    } else if (!command.empty()) {
-        say("info string unknown command " + command);
+        finish_search();
+        handle_bench(args);
     }
     return true;
 }
@@ -288,13 +451,12 @@ int main(int argc, char** argv) {
         std::string line;
         for (int i = 1; i < argc; ++i) line += (i > 1 ? " " : "") + std::string(argv[i]);
         handle(line);
-        wait_for_search();
+        finish_search();
         return 0;
     }
-    std::string line;
-    while (std::getline(std::cin, line))
+    for (std::string line; std::getline(std::cin, line);)
         if (!handle(line)) return 0;
-    search::stop_requested = true;
-    wait_for_search();
+    // The GUI went away without saying quit.
+    stop_search();
     return 0;
 }

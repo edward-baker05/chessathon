@@ -13,6 +13,7 @@
 namespace search {
 
 std::atomic<bool> stop_requested{false};
+std::atomic<bool> pondering{false};
 
 namespace {
 
@@ -101,17 +102,37 @@ struct Work {
     int completed_score;
     Move completed_best;
 
-    // Seconds on the steady clock.
-    double start, soft, soft_span, hard, stretch, last_iter, prev_iter;
+    // When the search began, in seconds on the steady clock, for reporting.
+    double began;
+    // Limits in seconds from `clock_start`: when the search began, or the ponderhit.
+    double soft, soft_span, hard, stretch;
+    // How long the last two iterations took.
+    double last_iter, prev_iter;
 };
 
 std::unique_ptr<Work> work_storage;
 Work* W = nullptr;
 std::unique_ptr<TranspositionTable> tt_storage;
 
+// The root moves `go searchmoves` allows, or empty for all of them.
+std::vector<Move> root_moves;
+
+inline bool searchable(Move move) {
+    return root_moves.empty() || std::find(root_moves.begin(), root_moves.end(), move) != root_moves.end();
+}
+
 double read_clock() {
     using namespace std::chrono;
     return duration<double>(steady_clock::now().time_since_epoch()).count();
+}
+
+// Where our clock started. Atomic because ponderhit() moves it from the UCI thread.
+std::atomic<double> clock_start{0.0};
+
+// Seconds on our clock, or zero while pondering, when the time is the opponent's.
+inline double used() {
+    if (pondering.load(std::memory_order_relaxed)) return 0.0;
+    return read_clock() - clock_start.load(std::memory_order_relaxed);
 }
 
 // Abort the search when the hard limit, the node limit or a stop is reached. Reading the
@@ -122,7 +143,7 @@ inline void check_time() {
         W->abort = true;
         return;
     }
-    if (stop_requested.load(std::memory_order_relaxed) || read_clock() >= W->hard) W->abort = true;
+    if (stop_requested.load(std::memory_order_relaxed) || used() >= W->hard) W->abort = true;
 }
 
 // A position seen before, either in this line or earlier in the real game. One repetition
@@ -476,6 +497,7 @@ Move search_root(int max_depth, const std::function<void(const Report&)>& on_ite
     int count = generate(pos, moves);
     // Establish a legal move before anything is allowed to abort.
     for (int index = 0; index < count; ++index) {
+        if (!searchable(moves[index])) continue;
         make(pos, W->state[1], moves[index]);
         if (legal_after(W->state[1], black)) {
             best_move = moves[index];
@@ -507,6 +529,7 @@ Move search_root(int max_depth, const std::function<void(const Report&)>& on_ite
             int local_alpha = alpha;
             for (int index = 0; index < count; ++index) {
                 Move move = pick_move(0, index, count);
+                if (!searchable(move)) continue;
                 make(pos, W->state[1], move);
                 if (!legal_after(W->state[1], black)) continue;
                 nnue::apply(W->acc[0], W->acc[1], pos, move);
@@ -527,7 +550,7 @@ Move search_root(int max_depth, const std::function<void(const Report&)>& on_ite
                 // An iteration whose cost was underestimated is otherwise stopped only by
                 // the hard limit. The first root move is the previous best, so once one
                 // has finished there is always a move to fall back on.
-                if (read_clock() >= W->stretch) {
+                if (used() >= W->stretch) {
                     W->abort = true;
                     break;
                 }
@@ -542,7 +565,7 @@ Move search_root(int max_depth, const std::function<void(const Report&)>& on_ite
             if (score <= alpha) {
                 // Failed low: every root score is an upper bound, so the partial result
                 // must not be committed; abandoning keeps the last depth's move.
-                if (read_clock() >= W->stretch) {
+                if (used() >= W->stretch) {
                     abandoned = true;
                     break;
                 }
@@ -555,7 +578,7 @@ Move search_root(int max_depth, const std::function<void(const Report&)>& on_ite
                 continue;
             }
             if (score >= beta) {
-                if (read_clock() >= W->stretch) {
+                if (used() >= W->stretch) {
                     abandoned = true;
                     break;
                 }
@@ -580,9 +603,9 @@ Move search_root(int max_depth, const std::function<void(const Report&)>& on_ite
         // A forced mate is found; searching deeper cannot improve on it.
         if (best_score >= MATE_IN_MAX || best_score <= -MATE_IN_MAX) break;
 
-        double now = read_clock();
         W->prev_iter = W->last_iter;
-        W->last_iter = now - iteration_start;
+        W->last_iter = read_clock() - iteration_start;
+        double now = used();
 
         // Stability, in both directions. A changed best move or a falling score means the
         // position is not settled and is worth more time; a move that has survived several
@@ -593,20 +616,23 @@ Move search_root(int max_depth, const std::function<void(const Report&)>& on_ite
         W->stable = !unsettled && depth >= STABLE_MIN_DEPTH ? W->stable + 1 : 0;
         double scale = unsettled ? INSTABILITY_FACTOR
                                  : std::max(1.0 - STABLE_STEP * W->stable, STABLE_FLOOR);
-        double soft = std::min(W->start + W->soft_span * scale, W->hard);
+        double soft = std::min(W->soft_span * scale, W->hard);
         W->soft = soft;
         // Aim the prediction below at the stretch rather than the soft limit: iterations
         // grow by two to four times, so requiring the next to finish inside the soft limit
         // would throw most of the budget away.
-        double stretch = std::min(W->start + W->soft_span * scale * STRETCH_MULTIPLE, W->hard);
+        double stretch = std::min(W->soft_span * scale * STRETCH_MULTIPLE, W->hard);
         W->stretch = stretch;
 
         previous_move = best_move;
         previous_score = best_score;
 
+        if (W->prev_iter > 0.0) growth = std::clamp(W->last_iter / W->prev_iter, GROWTH_MIN, GROWTH_MAX);
+        // On the opponent's time there is nothing to save: keep going until a ponderhit
+        // starts the clock or a stop ends the search.
+        if (pondering.load(std::memory_order_relaxed)) continue;
         if (now >= soft) break;
         // Do not start an iteration that cannot finish.
-        if (W->prev_iter > 0.0) growth = std::clamp(W->last_iter / W->prev_iter, GROWTH_MIN, GROWTH_MAX);
         if (now + W->last_iter * growth >= stretch) break;
     }
     return best_move;
@@ -648,14 +674,15 @@ void prepare(const Position& root, const Limits& limits) {
     double soft_ms = infinity, hard_ms = infinity;
     if (limits.movetime_ms > 0) {
         soft_ms = hard_ms = std::max(static_cast<double>(limits.movetime_ms) - MOVETIME_OVERHEAD_MS, 1.0);
-    } else if (limits.time_left_ms >= 0) {
+    } else if (limits.has_clock) {
         std::tie(soft_ms, hard_ms) = budget_ms(limits.time_left_ms, limits.increment_ms, ply_of(root));
     }
-    W->start = now;
+    W->began = now;
+    clock_start = now;
     W->soft_span = soft_ms / 1000.0;
-    W->soft = now + soft_ms / 1000.0;
-    W->hard = now + hard_ms / 1000.0;
-    W->stretch = std::min(now + soft_ms * STRETCH_MULTIPLE / 1000.0, W->hard);
+    W->soft = soft_ms / 1000.0;
+    W->hard = hard_ms / 1000.0;
+    W->stretch = std::min(soft_ms * STRETCH_MULTIPLE / 1000.0, W->hard);
     W->last_iter = 0.0;
     W->prev_iter = 0.0;
 }
@@ -682,6 +709,11 @@ void init() {
 
 TranspositionTable& table() { return *tt_storage; }
 
+void ponderhit() {
+    clock_start = read_clock();
+    pondering = false;
+}
+
 void set_game_history(const std::vector<Key>& keys) {
     // The most recent positions, if a game ever outgrows the buffer: the root has to be last.
     size_t length = std::min(keys.size(), static_cast<size_t>(HISTORY_CAPACITY));
@@ -701,11 +733,18 @@ void clear_tables() {
 Move think(const Position& root, const Limits& limits,
            const std::function<void(const Report&)>& on_iteration) {
     prepare(root, limits);
+    // Moves that are not legal here are dropped, and a list with nothing legal left in it
+    // restricts nothing: searching every move beats answering with no move at all.
+    root_moves.clear();
+    Move legal[MAX_MOVES];
+    int count = generate_legal(root, legal);
+    for (Move move : limits.searchmoves)
+        if (std::find(legal, legal + count, move) != legal + count) root_moves.push_back(move);
     return search_root(std::clamp(limits.max_depth, 1, MAX_DEPTH), on_iteration);
 }
 
 Report last_report() {
-    auto elapsed = static_cast<int64_t>((read_clock() - W->start) * 1000.0);
+    auto elapsed = static_cast<int64_t>((read_clock() - W->began) * 1000.0);
     return {W->completed_best, W->completed_depth, W->completed_score,
             std::max(W->seldepth, W->completed_depth), W->nodes, std::max<int64_t>(elapsed, 1)};
 }

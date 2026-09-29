@@ -58,7 +58,8 @@ void TranspositionTable::FreeDeleter::operator()(Bucket* p) const { std::free(p)
 void TranspositionTable::resize(size_t megabytes) {
     size_t count = 1;
     while (count * 2 * sizeof(Bucket) <= megabytes * 1024 * 1024) count *= 2;
-    buckets_.reset();
+    // Allocated before the old table is freed, so a size the machine cannot give leaves the
+    // current table in place rather than none at all.
     void* memory = std::aligned_alloc(alignof(Bucket), count * sizeof(Bucket));
     if (!memory) throw std::bad_alloc();
     buckets_.reset(static_cast<Bucket*>(memory));

@@ -109,7 +109,7 @@ def test_fixed_node_search_matches_python(engine: Engine, fen: str) -> None:
     lines = engine.until("bestmove")
     final = [line for line in lines if line.startswith("info depth")][-1]
 
-    assert lines[-1] == f"bestmove {expected_move}"
+    assert lines[-1].split()[1] == expected_move
     assert int(info_field(final, "nodes")) == search.nodes()
     assert int(info_field(final, "depth")) == int(search.WORK.ints[search.I_DEPTH])
     assert final.split(" score ")[1].split(" nodes")[0] == search.uci_score(
@@ -124,6 +124,7 @@ def test_a_double_push_nobody_can_take_continues_the_game(engine: Engine) -> Non
     double push as a different position, and so as a new game.
     """
     board = chess.Board()
+    engine.send("debug on")
     engine.send(f"position fen {board.fen()}")
     engine.send("go nodes 5000")
     reply = engine.until("bestmove")[-1].split()[1]
