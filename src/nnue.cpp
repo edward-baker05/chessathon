@@ -12,17 +12,32 @@
 #error "NNUE_BLOB must name the network blob to embed; build through cpp/Makefile"
 #endif
 
-// The blob tools/export_cpp.py writes from weights/net.npz, linked straight into .rodata.
-asm(".section .rodata\n"
+// The blob tools/export_cpp.py writes from weights/net.npz, linked straight into read-only data.
+// Mach-O names the section differently and prefixes C symbols with an underscore. Its linker
+// also splits a section into atoms at each global symbol and may reorder them, so the size is
+// stored as a word computed from a local label rather than read off a trailing symbol.
+#if defined(__APPLE__)
+#define NNUE_SECTION ".pushsection __DATA,__const\n"
+#define NNUE_SYM(name) "_" name
+#define NNUE_LOCAL(name) "L" name
+#else
+#define NNUE_SECTION ".pushsection .rodata\n"
+#define NNUE_SYM(name) name
+#define NNUE_LOCAL(name) ".L" name
+#endif
+asm(NNUE_SECTION
     ".balign 64\n"
-    ".globl nnue_blob_start\n"
-    "nnue_blob_start:\n"
+    ".globl " NNUE_SYM("nnue_blob_start") "\n"
+    NNUE_SYM("nnue_blob_start") ":\n"
     ".incbin \"" NNUE_BLOB "\"\n"
-    ".globl nnue_blob_end\n"
-    "nnue_blob_end:\n"
-    ".previous\n");
+    NNUE_LOCAL("nnue_blob_end") ":\n"
+    ".balign 8\n"
+    ".globl " NNUE_SYM("nnue_blob_size") "\n"
+    NNUE_SYM("nnue_blob_size") ":\n"
+    ".quad " NNUE_LOCAL("nnue_blob_end") " - " NNUE_SYM("nnue_blob_start") "\n"
+    ".popsection\n");
 extern "C" const unsigned char nnue_blob_start[];
-extern "C" const unsigned char nnue_blob_end[];
+extern "C" const uint64_t nnue_blob_size;
 
 namespace nnue {
 
@@ -114,7 +129,7 @@ const unsigned char* read(const unsigned char* at, T* out, size_t count) {
 
 bool load(std::string& error) {
     const unsigned char* at = nnue_blob_start;
-    size_t size = static_cast<size_t>(nnue_blob_end - nnue_blob_start);
+    size_t size = static_cast<size_t>(nnue_blob_size);
     if (size < 28 || std::memcmp(at, "NNUE", 4) != 0) {
         error = "the embedded network is not an NNUE blob";
         return false;

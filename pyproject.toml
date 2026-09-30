@@ -12,7 +12,7 @@ dependencies = [
 package = false
 
 [tool.uv.sources]
-torch = { index = "pytorch-cu132" }
+torch = [{ index = "pytorch-cu132", marker = "sys_platform != 'darwin'" }]
 
 [[tool.uv.index]]
 name = "pytorch-cu132"
@@ -46,3 +46,7 @@ files = ["tests", "tools"]
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+
+# [[tool.uv.required-environments]]
+# sys_platform = 'darwin'
+# platform_machine = 'arm64'
